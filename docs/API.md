@@ -93,3 +93,9 @@ write via `service_role` → `recordAdminAction` (audit log) →
 | `/admin` | `app/admin/page.tsx` | Live aggregate counts; confirmed-payment revenue total is admin-only, hidden from moderators. |
 | `/admin/listings`, `/admin/verifications`, `/admin/reports`, `/admin/users` | `app/admin/*` | Moderation queues reading via `service_role` (RLS would otherwise require per-request checks that don't fit a queue view). |
 | `/notifications` | `app/notifications/page.tsx` + `actions.ts` | In-app notification center + preferences; `markNotificationReadAction`, `markAllNotificationsReadAction`, `updateNotificationPreferencesAction`. |
+
+## Milestone 8 — Support
+
+| Action | File | Behavior |
+|---|---|---|
+| `submitSupportTicketAction` | `app/help/actions.ts` | Creates a `support_tickets` row for the logged-in caller. No admin ticket-management UI exists yet — see `docs/IMPLEMENTATION_STATUS.md`. |

@@ -277,7 +277,112 @@ sending is gated on `EMAIL_PROVIDER` being configured, which it isn't —
 see `.env.example`). These are reasonable Milestone 8+/production-wiring
 items, not silently-dropped requirements.
 
-## Milestone 8 — Hardening & production readiness: ⏳ Not started
+## Milestone 8 — Hardening & production readiness: ✅ Done (same documented sandbox limitation)
+
+- **Missing public pages filled in**: `/legal/terms`, `/legal/privacy`,
+  `/legal/subscription-terms` (each with a visible "draft, pending legal
+  review" banner — `components/layout/LegalPageShell.tsx`), `/about`,
+  `/safety`, `/how-it-works`, and a functional `/help` page with a working
+  support-ticket submission form (new `support_tickets` table + RLS, 3/3
+  SQL assertions pass). These were referenced from the Header/Footer since
+  Milestone 1 but didn't exist until now — every nav link in the app now
+  resolves to a real page.
+- **Test suite expanded**: 29 Vitest unit tests across 4 files (was 6 in 1
+  file) — `MockPaymentProvider.verifyWebhook` (6), format utilities (8),
+  `listingCompleteness`/`slugify` (5), and Zod validation schemas (10).
+  **Writing the validation tests caught two real bugs**, fixed in this
+  milestone, not merely noted:
+  1. `optionalBooleanCheckbox` (amenity checkboxes in the property form)
+     rejected a genuinely absent form field with a Zod validation error
+     instead of treating it as "unchecked" — every property create/update
+     with an unchecked amenity box would have failed silently differently
+     than intended. Root cause: `z.undefined()` as a bare union member
+     doesn't make Zod treat the object key as optional; fixed by using
+     `.optional()` on the wrapping schema instead.
+  2. `optionalNumber` (bedrooms, bathrooms, floor area, advance rent,
+     deposit, other fees, lease duration) silently coerced an empty form
+     field to `0` instead of `null`, because `z.coerce.number()` happily
+     turns `""` into `0` and was tried before the `z.literal("")` branch
+     in the union. A property saved with blank "bedrooms" would have
+     displayed "0 bedrooms" instead of omitting the field. Fixed with
+     `z.preprocess` to normalize empty/absent input before coercion.
+  Both are exactly the kind of bug "ship the feature, add tests later"
+  misses — concrete evidence that writing real assertions earlier in each
+  milestone (not deferred to the end) is worth the overhead.
+- **Security headers added**: `X-Content-Type-Options`, `X-Frame-Options:
+  DENY`, `Referrer-Policy`, a restrictive `Permissions-Policy`, and a
+  `Content-Security-Policy` scoped to `'self'` + the configured Supabase
+  origin — verified by curling a running production build and confirming
+  every header is present on the response.
+- **SEO**: `app/sitemap.ts` (static routes + every published property,
+  with a safe fallback if Supabase is unreachable), `app/robots.ts`
+  (disallows every private route prefix), and `robots: { index: false,
+  follow: false }` was already added to every private page in Milestone 7.
+- **Error handling**: global `app/not-found.tsx` and `app/error.tsx`
+  (generic message only — no internal stack trace ever reaches the user),
+  both using the design system rather than Next's default error screen.
+- **Accessibility**: spot-checked image `alt` usage across the codebase —
+  the property gallery's hero image has a descriptive alt
+  (`"{title} — photo N of M"`); thumbnail/management-UI images use an
+  empty `alt` deliberately (decorative, with the property title already
+  shown as adjacent text), which is WCAG-compliant, not an oversight. The
+  `.focus-ring` utility, semantic form labels, and `prefers-reduced-
+  motion` support built in Milestone 1 apply uniformly across every
+  milestone's components — there was no separate "accessibility pass" to
+  bolt on because it was a day-one constraint, not an afterthought.
+- Verified:
+  - `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean (35
+    routes — up from 26, the new public pages plus `/sitemap.xml` and
+    `/robots.txt`).
+  - `npm run test`: 29/29 Vitest tests pass.
+  - Full regression: re-ran the complete M2–M8 SQL suite together against
+    one fresh database — **61/61 assertions pass** across 7 test files
+    (profiles/roles, properties, subscriptions/payments, messaging,
+    verification, admin/notifications, support tickets).
+  - Manually verified (via a running production build + `curl`) that
+    `/`, `/sitemap.xml`, `/robots.txt` all return 200 and that every
+    security header listed above is actually present on the response —
+    not just configured and assumed to work.
+  - Manually screenshot-verified `/how-it-works` and `/legal/terms`
+    render correctly against the design system (draft banner included).
+- **Not independently verified in this sandbox**: the same root-cause
+  limitation as every prior milestone — no live Supabase Auth/PostgREST/
+  Storage/Realtime instance was reachable here, so no milestone's UI was
+  exercised against real signed-in sessions and real data end to end. This
+  is the single biggest remaining verification gap before a real launch;
+  everything else in this document is either independently proven (SQL/
+  RLS assertions, unit tests, static rendering, HTTP-level checks) or
+  explicitly flagged as unproven.
+
+## Overall production-readiness summary
+
+All 8 milestones are functionally complete: free browsing and listing,
+the $5/30-day Direct Access Pass with server-verified payment activation,
+direct messaging gated correctly on subscription state, identity/property
+verification with private document storage, and a working admin/
+moderation console with audit logging — every one of the ten non-
+negotiable business rules in `CLAUDE.md` has a corresponding RLS policy or
+server-side check, and most have a reproducible, passing SQL or unit test
+proving it (90 total automated assertions: 61 SQL + 29 Vitest, all
+passing as of this milestone).
+
+**What stands between this and a real production launch** (see
+`docs/DEPLOYMENT.md` for the full list):
+1. A hosted Supabase project (or a Docker-capable machine to run
+   `supabase start`) — this is the one gap underlying every "not
+   independently verified in this sandbox" note across all 8 milestones.
+2. A real, Liberia-capable payment provider — no production payment
+   credentials exist; the architecture is ready, the provider isn't
+   chosen (see `docs/PAYMENTS.md`'s research notes).
+3. Legal review of the `/legal/*` pages and real business registration
+   details to replace the placeholders in `lib/config/brand.ts`.
+4. An email provider, if transactional email (password reset beyond
+   Supabase's default, notification emails) is wanted — in-app
+   notifications work without one.
+
+Nothing in this list is a silently-dropped requirement; each is a
+business/infrastructure decision that requires the project owner's
+credentials or input, not more engineering time against this codebase.
 
 ## Known production blockers (require the project owner)
 

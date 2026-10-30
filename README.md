@@ -49,9 +49,19 @@ npm run dev
 ## Test
 
 ```bash
-npm run test         # vitest
-npx tsc --noEmit       # typecheck
+npm run test         # vitest unit tests
+npm run typecheck      # tsc --noEmit
 npm run lint             # eslint
+```
+
+Database-layer business logic and RLS policies are verified with SQL
+assertion scripts in `supabase/local-shim/test_m*_rls.sql` (run against a
+local Postgres instance — see `docs/ARCHITECTURE.md` for why this project
+uses that instead of the full `supabase` CLI stack in its own development
+sandbox). Run them against your own local Postgres with:
+
+```bash
+for f in supabase/local-shim/test_m*_rls.sql; do psql -f "$f"; done
 ```
 
 ## Build

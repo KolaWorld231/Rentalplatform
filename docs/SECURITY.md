@@ -137,22 +137,42 @@ threat model, not a one-time checklist.
   per-record bypass, and is appropriate because RLS-scoped counts would
   undercount or require N queries per admin page load.
 
+## Response headers (Milestone 8)
+
+`next.config.ts` sets, on every route: `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`,
+a restrictive `Permissions-Policy` (camera/microphone/geolocation all
+denied — none of DomiLink's features use them), and a `Content-Security-
+Policy` scoped to `'self'` plus the configured Supabase origin for
+`connect-src`/`img-src`/WebSocket (Realtime). Verified by curling a
+running build and confirming every header is present (see
+`docs/IMPLEMENTATION_STATUS.md`). `script-src` still allows `'unsafe-
+inline'`/`'unsafe-eval'`, needed for Next's current runtime — tightening
+this with nonces is a reasonable follow-up once real hosting is in place,
+not a regression introduced here.
+
 ## Known gaps / not yet implemented
 
 - Rate limiting on auth endpoints (messaging has a basic application-level
-  limit — 10 messages/60s per sender, `services/messaging.ts` — stronger,
-  infrastructure-level limiting is a Milestone 8 hardening item).
+  limit — 10 messages/60s per sender, `services/messaging.ts`; auth
+  endpoints rely on Supabase Auth's own built-in rate limiting — stronger,
+  infrastructure-level limiting across all endpoints is a post-launch
+  hardening item, e.g. at a CDN/WAF layer).
 - CSRF: Server Actions get Next.js's built-in action-token protection; the
   payments Route Handler is a plain POST endpoint secured by the
   provider's own webhook-authenticity check (signature/secret), not CSRF
   tokens — that's the correct model for a server-to-server webhook, but
   worth re-confirming once a real provider's verification scheme is
   integrated.
-- Content Security Policy headers — not yet configured; tracked for M8.
-- Verification-document access controls and signed URLs — M6.
-- Audit logging for privileged actions — M7.
+- `script-src 'unsafe-inline'`/`'unsafe-eval'` in the CSP (see above) —
+  acceptable for now, a nonce-based tightening is future work.
+- No admin UI for `support_tickets` status/assignment yet — submission
+  works and is RLS-correct, but there's no moderation queue page for it
+  (unlike listings/verifications/reports, which all got one in Milestone
+  7). A straightforward addition following the same pattern.
 - This container's Docker daemon doesn't run, so RLS/auth have only been
   verified against a plain-Postgres shim and static page rendering, not
-  against live Supabase Auth/PostgREST/Storage. That gap is closed by
-  running `supabase start` on a Docker-capable machine or against a hosted
-  Supabase project before production launch — see `docs/DEPLOYMENT.md`.
+  against live Supabase Auth/PostgREST/Storage/Realtime. That gap is
+  closed by running `supabase start` on a Docker-capable machine or
+  against a hosted Supabase project before production launch — see
+  `docs/DEPLOYMENT.md`.

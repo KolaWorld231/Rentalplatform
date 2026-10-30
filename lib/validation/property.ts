@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { LIBERIA_COUNTIES, PROPERTY_CATEGORIES } from "@/types/database";
 
-const optionalNumber = z
-  .union([z.coerce.number(), z.literal("")])
-  .optional()
-  .transform((v) => (v === "" || v === undefined ? null : v));
+const optionalNumber = z.preprocess(
+  (v) => (v === "" || v === undefined || v === null ? undefined : v),
+  z.coerce.number().optional(),
+).transform((v) => v ?? null);
 
 const optionalBooleanCheckbox = z
-  .union([z.literal("on"), z.literal("true"), z.literal("false"), z.undefined()])
+  .union([z.literal("on"), z.literal("true"), z.literal("false")])
+  .optional()
   .transform((v) => (v === "on" || v === "true" ? true : v === "false" ? false : null));
 
 export const propertyFormSchema = z.object({

@@ -304,8 +304,18 @@ audit-log write transactionally inseparable from the moderation write
 itself (e.g. via a single `SECURITY DEFINER` function per action, as
 Milestone 4 did for payment confirmation).
 
+## Milestone 8 — support tickets
+
+### `support_tickets`
+Backs the Help & Support page's contact form. Same ownership pattern as
+every other user-submitted table: the submitter can create and read their
+own, `admin`/`moderator` can read all for triage, and status/assignment
+changes are `service_role`-only (no admin ticket-management UI exists yet
+— the table and policies are in place, but only submission is wired up in
+the app; this is noted honestly in `docs/IMPLEMENTATION_STATUS.md`).
+
 This completes the tables described in the original build brief's data
 model (profiles/roles, properties, subscriptions/payments, messaging,
-verification, admin/notifications). Any further schema changes from here
-are tracked as migrations with their own dated filename, not appended to
-this historical record.
+verification, admin/notifications, support). Any further schema changes
+from here are tracked as migrations with their own dated filename, not
+appended to this historical record.

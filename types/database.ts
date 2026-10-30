@@ -345,6 +345,20 @@ export type AdminAuditLog = {
   created_at: string;
 };
 
+export type SupportTicketStatus = "open" | "in_progress" | "resolved" | "closed";
+
+export type SupportTicket = {
+  id: string;
+  user_id: string;
+  subject: string;
+  message: string;
+  status: SupportTicketStatus;
+  assigned_to: string | null;
+  resolution_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type PaymentWebhookEvent = {
   id: string;
   provider: string;
@@ -435,6 +449,10 @@ export type Database = {
         AdminAuditLog,
         Partial<AdminAuditLog> & Pick<AdminAuditLog, "actor_id" | "action" | "target_table" | "target_id">
       >;
+      support_tickets: TableDef<
+        SupportTicket,
+        Partial<SupportTicket> & Pick<SupportTicket, "user_id" | "subject" | "message">
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -466,6 +484,7 @@ export type Database = {
       conversation_status: ConversationStatus;
       verification_status: VerificationStatus;
       notification_type: NotificationType;
+      support_ticket_status: SupportTicketStatus;
     };
     CompositeTypes: Record<string, never>;
   };
