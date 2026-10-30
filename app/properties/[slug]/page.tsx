@@ -2,7 +2,7 @@ import { BedDouble, Bath, Car, Droplets, MapPin, Ruler, ShieldCheck, Snowflake, 
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ContactOwnerCta } from "@/components/properties/ContactOwnerCta";
+import { ContactOwnerForm, ContactOwnerGuestPrompt } from "@/components/properties/ContactOwnerForm";
 import { FavouriteButton } from "@/components/properties/FavouriteButton";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyGallery } from "@/components/properties/PropertyGallery";
@@ -194,7 +194,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             </div>
           </Card>
 
-          <ContactOwnerCta />
+          {user ? (
+            <ContactOwnerForm propertyId={property.id} isOwnListing={property.owner_id === user.id} />
+          ) : (
+            <ContactOwnerGuestPrompt />
+          )}
         </div>
       </div>
 

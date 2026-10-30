@@ -66,9 +66,33 @@ threat model, not a one-time checklist.
   like a real provider's signature would; the mock provider itself refuses
   to construct in production (`lib/payments/index.ts`).
 
+## Messaging (Milestone 5)
+
+- The subscription gate on starting a new conversation is enforced by RLS
+  (`conversations_insert_renter`'s `WITH CHECK`), not application code —
+  there is no code path that could "forget" to check it. Verified in
+  `supabase/local-shim/test_m5_rls.sql`, including the specific scenario of
+  an expired subscriber being blocked from a *new* conversation while
+  remaining able to read/reply in an *existing* one.
+- `owner_id` on a conversation is never trusted from the client — a
+  BEFORE INSERT trigger (`enforce_conversation_owner`) derives it from the
+  property and rejects messaging your own listing, independent of
+  whatever the client submitted.
+- Only conversation participants (`renter_id`/`owner_id` matching
+  `auth.uid()`) can read a conversation or its messages; a non-participant
+  gets zero rows back and an INSERT attempt is rejected outright — both
+  verified directly.
+- Known MVP looseness: the `conversations` UPDATE policy scopes by
+  participant but not by column, so a participant could technically change
+  `status` on their own conversation (e.g. unilaterally archive it). Low
+  severity (it's already their own conversation), tracked for Milestone 8
+  tightening.
+
 ## Known gaps / not yet implemented
 
-- Rate limiting on auth endpoints and messaging (planned for M5).
+- Rate limiting on auth endpoints (messaging has a basic application-level
+  limit — 10 messages/60s per sender, `services/messaging.ts` — stronger,
+  infrastructure-level limiting is a Milestone 8 hardening item).
 - CSRF: Server Actions get Next.js's built-in action-token protection; the
   payments Route Handler is a plain POST endpoint secured by the
   provider's own webhook-authenticity check (signature/secret), not CSRF

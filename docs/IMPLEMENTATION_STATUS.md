@@ -144,7 +144,40 @@ listed as done unless it was built, run, and (where applicable) tested.
   unavailable here — same root cause as M2/M3). The business logic those
   routes call has been verified directly at the database layer instead.
 
-## Milestone 5 — Direct messaging: ⏳ Not started
+## Milestone 5 — Direct messaging: ✅ Done (same documented sandbox limitation)
+
+- Migration: `conversations`, `messages`, `message_reports` + RLS
+  (`20260104000100_messaging.sql`) and a `supabase_realtime` publication
+  migration for `messages` (`20260104000200_...realtime.sql` — not
+  applicable to the plain-Postgres shim, same caveat as the M3 Storage
+  bucket migration).
+- **The subscription gate is implemented as RLS on `conversations` INSERT
+  itself** (`has_active_subscription()` in the policy's `WITH CHECK`),
+  not as application logic that could be bypassed or forgotten — this was
+  a deliberate simplification over a SECURITY DEFINER RPC, recorded in
+  `docs/DATABASE_SCHEMA.md`. `owner_id` is derived server-side from the
+  property via a trigger, never trusted from the client.
+- Full messaging UI: conversation list (unread indicator, real data,
+  proper empty state), conversation thread (bubble layout, realtime
+  listener, report action), reply composer with a basic rate limit,
+  subscription-gate dialog wired into the property page's contact-owner
+  form (replacing Milestone 3's honest placeholder).
+- Verified:
+  - `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean (19
+    routes, including `/messages` and `/messages/[id]`).
+  - `supabase/local-shim/test_m5_rls.sql`: 11/11 assertions pass,
+    including the scenario that matters most — a subscriber starts a
+    conversation, the owner replies for free, a non-participant is
+    blocked from reading or writing, and **after the subscriber's
+    subscription expires they can still read and reply in that existing
+    conversation but are rejected when trying to start a brand-new one**.
+  - Full regression check: re-ran M2–M5's SQL suites together against one
+    fresh database (40/40 assertions pass) plus the M4 Vitest suite
+    (6/6), confirming the migrations compose correctly in order.
+- **Not independently verified in this sandbox**: the Realtime
+  publication migration (needs a live Supabase project, same root cause as
+  the M3 Storage migration) and no live end-to-end UI run of the
+  messaging pages against real Supabase Auth/PostgREST.
 
 ## Milestone 6 — Verification & trust: ⏳ Not started
 

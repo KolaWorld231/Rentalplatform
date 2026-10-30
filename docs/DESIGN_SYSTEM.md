@@ -118,6 +118,17 @@ mirrors the same layout for loading states. Search filters
 mobile and a plain inline panel on `lg:`+ rather than inventing a second
 pattern.
 
+## Messaging patterns (Milestone 5)
+
+`MessageThread` right-aligns the current user's own messages in brand
+green on an ivory canvas, left-aligns the other participant's in sage —
+the same two-tone convention most people already read as "mine vs
+theirs," rather than inventing a new one. The conversation list reuses the
+unread-dot + relative-timestamp pattern from property cards instead of a
+new badge system. `SubscriptionGateDialog` reuses the plain `Dialog`
+primitive — the subscription upsell gets no special chrome, keeping it
+visually consistent with every other modal in the product.
+
 ## Required but not yet built
 
 Verification badges beyond the plain `Badge` primitive, and the admin

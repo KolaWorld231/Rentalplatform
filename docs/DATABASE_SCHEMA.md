@@ -178,5 +178,52 @@ Idempotent: calling it again for an already-`confirmed` transaction
 returns the existing subscription unchanged rather than re-activating or
 extending the expiry.
 
-Tables from later milestones (messaging, verification, admin) are
-documented here as their migrations land.
+## Milestone 5 — direct messaging
+
+### `conversations`
+`unique(property_id, renter_id, owner_id)` prevents duplicate
+conversations for the same relationship. **The subscription gate lives
+entirely in RLS**: the `conversations_insert_renter` policy's `WITH CHECK`
+requires `renter_id = auth.uid() AND public.has_active_subscription(auth.uid())`
+— no separate RPC needed, Postgres evaluates this exactly like any other
+policy. `owner_id` is never trusted from the client: the
+`enforce_conversation_owner` BEFORE INSERT trigger overwrites it with the
+property's actual `owner_id` (and rejects messaging your own listing)
+regardless of what was submitted.
+
+**Recorded architectural decision**: once a conversation exists, the
+renter may keep replying in it even after their subscription expires —
+only *starting a new* conversation requires an active pass. This is
+enforced structurally: the gate is on `conversations` INSERT, not on
+`messages` INSERT, so there's no code path that needs to "remember" to
+apply it after creation. Verified end-to-end in
+`supabase/local-shim/test_m5_rls.sql` (a subscriber who later expires can
+still read and reply in an existing conversation, but is rejected when
+attempting to start a conversation about a different property).
+
+### `messages`
+`messages_insert_participant` requires `sender_id = auth.uid()` and that
+the conversation is `active` and the sender is one of its two
+participants — this is what lets an owner reply for free unconditionally,
+since there's no subscription check here at all. A trigger
+(`touch_conversation_on_message`) keeps `conversations.updated_at` current
+for "most recent" sorting in the conversation list.
+
+### `message_reports`
+Same pattern as `property_reports`: any conversation participant may file
+one; only the reporter and `admin`/`moderator` roles may read it.
+
+### Realtime
+`20260104000200_messaging_realtime.sql` adds `public.messages` to the
+`supabase_realtime` publication so `RealtimeMessageListener`
+(`components/messaging/RealtimeMessageListener.tsx`) can subscribe to new
+messages. This migration references `supabase_realtime`, which only
+exists in a real Supabase project — like the Storage bucket migration in
+Milestone 3, it has **not** been applied against the plain-Postgres shim
+used elsewhere in this repo's testing; it needs `supabase db reset`
+against a real Supabase instance. RLS still gates Realtime the same as any
+other read, so a client only receives change events for conversations it
+can actually see.
+
+Tables from later milestones (verification, admin) are documented here as
+their migrations land.

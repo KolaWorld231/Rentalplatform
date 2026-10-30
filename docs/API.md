@@ -56,5 +56,13 @@ Component that validates `searchParams` with `searchParamsSchema` and calls
 | `simulatePaymentAction` | `app/checkout/mock/actions.ts` | Dev-only; posts to the webhook endpoint with the shared dev secret to simulate a provider callback. Inert/unreachable in production (the mock provider can't be constructed there). |
 | `POST /api/payments/webhook` | `app/api/payments/webhook/route.ts` | The only path that activates a subscription. Verifies the event via the configured provider, enforces idempotency via a DB unique constraint, rejects amount/currency mismatches, and calls the `confirm_payment_and_activate_subscription` Postgres function through `service_role`. See `docs/PAYMENTS.md`. |
 
-Later milestones add: messaging, verification submission/review, admin
-moderation.
+## Milestone 5 — Messaging
+
+| Action | File | Behavior |
+|---|---|---|
+| `startConversationAction` | `app/messages/actions.ts` | Finds-or-creates a conversation and sends the first message (`services/messaging.ts#startOrContinueConversation`). The subscription gate itself is RLS, not application code — this action's job is translating a `42501` (RLS denial) into `{ gateReason: "subscription_required" }` so the UI can show the `SubscriptionGateDialog` instead of a raw error. |
+| `sendMessageAction(conversationId, …)` | same | Reply in an existing conversation (bound via `.bind(null, conversationId)`). Rate-limited: rejects if the sender has sent 10+ messages in the last 60 seconds (`services/messaging.ts#checkRateLimit`) — application-level for now; see `docs/SECURITY.md` for stronger-limit plans. |
+| `markConversationReadAction` | same | Updates the caller's own `renter_last_read_at`/`owner_last_read_at`. |
+| `reportMessageAction(messageId, conversationId, …)` | same | Files a `message_reports` row; RLS requires the reporter to be a participant. |
+
+Later milestones add: verification submission/review, admin moderation.

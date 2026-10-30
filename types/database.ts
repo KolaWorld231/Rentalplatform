@@ -233,6 +233,39 @@ export type PaymentTransaction = {
   updated_at: string;
 };
 
+export type ConversationStatus = "active" | "archived" | "blocked";
+
+export type Conversation = {
+  id: string;
+  property_id: string;
+  renter_id: string;
+  owner_id: string;
+  status: ConversationStatus;
+  renter_last_read_at: string | null;
+  owner_last_read_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Message = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  sent_at: string;
+};
+
+export type MessageReport = {
+  id: string;
+  message_id: string;
+  conversation_id: string;
+  reporter_id: string;
+  reason: ReportReason;
+  details: string | null;
+  status: ReportStatus;
+  created_at: string;
+};
+
 export type PaymentWebhookEvent = {
   id: string;
   provider: string;
@@ -292,6 +325,15 @@ export type Database = {
         PaymentWebhookEvent,
         Partial<PaymentWebhookEvent> & Pick<PaymentWebhookEvent, "provider" | "event_id" | "payload">
       >;
+      conversations: TableDef<
+        Conversation,
+        Partial<Conversation> & Pick<Conversation, "property_id" | "renter_id" | "owner_id">
+      >;
+      messages: TableDef<Message, Partial<Message> & Pick<Message, "conversation_id" | "sender_id" | "body">>;
+      message_reports: TableDef<
+        MessageReport,
+        Partial<MessageReport> & Pick<MessageReport, "message_id" | "conversation_id" | "reporter_id" | "reason">
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -318,6 +360,7 @@ export type Database = {
       subscription_status: SubscriptionStatus;
       payment_status: PaymentStatus;
       webhook_processing_status: WebhookProcessingStatus;
+      conversation_status: ConversationStatus;
     };
     CompositeTypes: Record<string, never>;
   };
