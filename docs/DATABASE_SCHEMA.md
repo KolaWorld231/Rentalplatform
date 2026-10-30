@@ -66,5 +66,75 @@ including an explicit role-escalation attempt. See
 `docs/DEPLOYMENT.md` for running the real `supabase` CLI stack once Docker
 is available.
 
-Tables from later milestones (properties, subscriptions, messaging,
-verification, admin) are documented here as their migrations land.
+## Milestone 3 — property marketplace
+
+### `properties`
+The core listing table. Enums (`liberia_county` — the real 15 Liberian
+counties, `property_category`, `property_usage`, `rental_frequency`,
+`listing_status`, `availability_status`) constrain the data instead of
+free-text, while `city`/`community`/`landmark` stay free text so owners
+aren't blocked by an incomplete taxonomy — `docs/PRODUCT_SPECIFICATION.md`
+notes the location hierarchy is designed to grow without a schema change.
+Money columns are `numeric(12,2)`, never float. `listing_status` (the
+publication lifecycle: draft → pending_review → published → …) is kept
+separate from `availability_status` (available/pending_rental/rented/
+temporarily_unavailable) because a published listing can cycle through
+availability states without ever leaving "published". `published_at` and
+`last_availability_confirmed_at` are stamped automatically by the
+`sync_property_status_timestamps` trigger, not set by the client. Indexes:
+a composite `(listing_status, county, category, rent_amount)` index for the
+common search filter combination, a `city` index, and a GIN full-text index
+over `title || description` for keyword search (`services/properties.ts`
+uses `textSearch`).
+
+RLS: anyone can read `published` listings; the owner/manager can always see
+and edit their own regardless of status; moderators/admins see everything.
+A listing's `owner_id` is enforced equal to `auth.uid()` on INSERT — see
+`supabase/local-shim/test_m3_rls.sql` for a reproducible proof that a user
+cannot create a listing claiming another user as the owner.
+
+### `property_images`
+References `properties`. A partial unique index enforces at most one
+`is_cover = true` row per property. Visible wherever the parent property is
+visible (public once published); writable only by that property's owner/
+manager. The actual image bytes live in Supabase Storage's
+`property-images` bucket (see `20260102000200_property_images_storage.sql`)
+— this table only stores the storage path.
+
+### `property_favourites`
+`(user_id, property_id)` composite primary key — a user can favourite a
+property at most once. Strictly private: RLS scopes every operation to
+`user_id = auth.uid()`.
+
+### `property_views`
+An append-only log, written by anyone (including `anon`) viewing a
+published listing, but only readable by the property's own owner/manager
+or moderation roles — the aggregate `properties.view_count` (kept current
+by the `sync_view_count` trigger) is what the public UI shows. Same-day
+per-viewer deduplication happens in `services/properties.ts`, not as a DB
+constraint — Postgres won't accept a timezone-aware "same calendar day"
+expression in a plain unique index without an extra immutable wrapper
+function, and the dedup requirement doesn't need stronger-than-application
+guarantees (worst case: double-counting one view if two requests race).
+
+### `property_reports`
+Any authenticated user may file one (`reporter_id = auth.uid()` enforced);
+only the reporter and `admin`/`moderator` roles may read it. There is no
+`authenticated` UPDATE policy — only `service_role` (moderation tooling,
+built in Milestone 7) can change `status`/`resolution_notes`.
+
+### Storage: `property-images` bucket
+Public-read (listing photos are meant to be public), 8MB file size limit,
+`image/jpeg|png|webp` only. Write/update/delete policies key off the first
+path segment matching a `properties.id` the caller owns/manages
+(`{property_id}/{filename}` convention) — see
+`20260102000200_property_images_storage.sql`. This migration references
+`storage.buckets`/`storage.objects`, which only exist in a real Supabase
+project, so — unlike the other M3 tables — it has **not** been exercised
+against the plain-Postgres shim; it's been reviewed but not run. It needs
+`supabase db reset` against a real Supabase instance to verify. Verification
+documents (Milestone 6) get a **separate, private** bucket — never reuse
+this public one for anything sensitive.
+
+Tables from later milestones (subscriptions, messaging, verification,
+admin) are documented here as their migrations land.

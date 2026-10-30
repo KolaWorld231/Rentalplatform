@@ -31,6 +31,22 @@ document tracks what exists; extended per milestone.
 |---|---|---|
 | `updateProfileAction` | `updateProfileSchema` | Updates `display_name`/`phone` on the caller's own `profiles` row. Authorization is enforced by RLS (`profiles_update_self`), not just by filtering on `user.id` in the query. |
 
-Later milestones add: property CRUD, search, favourites, subscription
-checkout + webhook handling, messaging, verification submission/review,
-admin moderation.
+## Milestone 3 — Properties
+
+| Action | File | Behavior |
+|---|---|---|
+| `createPropertyAction` | `app/dashboard/properties/actions.ts` | Validates with `propertyFormSchema`, inserts with `owner_id` set from the session (never trusted from the form), redirects to the edit page. RLS still enforces `owner_id = auth.uid()` and `has_role('owner')` as the real backstop. |
+| `updatePropertyAction(propertyId, …)` | same | Bound with the property id via `.bind(null, id)`; RLS (`properties_update_owner`) is what actually prevents editing someone else's listing. |
+| `setListingStatusAction` / `setAvailabilityAction` | same | Simple status transitions (publish/unpublish/archive, available/rented) called from inline server actions on the edit page. |
+| `deletePropertyImageAction` / `setCoverImageAction` | same | Image management; storage object removal + `property_images` row deletion happen together. |
+| `toggleFavouriteAction` | `app/favourites/actions.ts` | Add/remove the caller's own favourite; returns `{error}` (not a thrown redirect) for an anonymous caller so the client can route to `/login` itself. |
+| `reportPropertyAction(propertyId, …)` | `app/properties/actions.ts` | Validates reason/details, inserts with `reporter_id` from the session. |
+
+Search itself isn't a Server Action — `app/search/page.tsx` is a Server
+Component that validates `searchParams` with `searchParamsSchema` and calls
+`services/properties.ts#searchProperties`, which builds the PostgREST query
+(filters map directly to the indexed columns in
+`properties_search_idx`/`properties_city_idx`/`properties_fts_idx`).
+
+Later milestones add: subscription checkout + webhook handling, messaging,
+verification submission/review, admin moderation.

@@ -105,9 +105,22 @@ into the `Drawer` bottom sheet below `sm:`. No horizontal overflow is
 permitted — if a component threatens it, make it wrap or scroll
 intentionally (`overflow-x-auto` with explicit affordance), not by accident.
 
+## Property-card system (Milestone 3)
+
+`components/properties/PropertyCard.tsx`: 4:3 cover image, category badge
+(top-left) and availability badge (top-right) over the image, a floating
+`FavouriteButton`, then price (display font, most prominent), title
+(1-line clamp), location with a map-pin icon, and bed/bath counts — in that
+priority order, matching the brief's "price must be visually prominent, no
+competing CTAs" rule. `PropertyCardSkeleton` (`components/ui/Skeleton.tsx`)
+mirrors the same layout for loading states. Search filters
+(`components/properties/SearchFilters.tsx`) reuse the `Drawer` primitive on
+mobile and a plain inline panel on `lg:`+ rather than inventing a second
+pattern.
+
 ## Required but not yet built
 
-Property-card system, badge usage for verification states, empty/loading/
-error states beyond the homepage, and the owner/renter dashboard layouts land
-in Milestones 3, 6, and 7 respectively and will be documented here as they're
-built — this file is updated alongside the components, not after the fact.
+Verification badges beyond the plain `Badge` primitive, and the admin
+dashboard layout, land in Milestones 6 and 7 respectively and will be
+documented here as they're built — this file is updated alongside the
+components, not after the fact.

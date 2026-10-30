@@ -1,9 +1,12 @@
 import { Home as HomeIcon, MessageCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { PropertyCard } from "@/components/properties/PropertyCard";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { brand, subscriptionPlan } from "@/lib/config/brand";
+import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils/cn";
+import type { PropertyWithCover } from "@/services/properties";
 
 const howItWorks = [
   {
@@ -23,7 +26,16 @@ const howItWorks = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("properties")
+    .select("*, property_images(id, storage_path, is_cover)")
+    .eq("listing_status", "published")
+    .order("published_at", { ascending: false })
+    .limit(8);
+  const recentProperties = (data ?? []) as PropertyWithCover[];
+
   return (
     <div>
       <section className="relative overflow-hidden bg-brand-800 px-4 py-16 text-ivory-50 sm:px-6 lg:px-8">
@@ -83,17 +95,25 @@ export default function HomePage() {
             View all
           </Link>
         </div>
-        <Card className="mt-6 flex flex-col items-center gap-3 p-12 text-center">
-          <HomeIcon className="h-10 w-10 text-charcoal-400" aria-hidden="true" />
-          <p className="font-medium text-charcoal-700">Your next place hasn&apos;t appeared yet.</p>
-          <p className="max-w-md text-sm text-charcoal-500">
-            No properties are listed yet. Are you a property owner? Listing is free and takes a
-            few minutes.
-          </p>
-          <Link href="/register?intent=owner" className={cn(buttonVariants({ variant: "primary" }))}>
-            List Your Property — Free
-          </Link>
-        </Card>
+        {recentProperties.length === 0 ? (
+          <Card className="mt-6 flex flex-col items-center gap-3 p-12 text-center">
+            <HomeIcon className="h-10 w-10 text-charcoal-400" aria-hidden="true" />
+            <p className="font-medium text-charcoal-700">Your next place hasn&apos;t appeared yet.</p>
+            <p className="max-w-md text-sm text-charcoal-500">
+              No properties are listed yet. Are you a property owner? Listing is free and takes a
+              few minutes.
+            </p>
+            <Link href="/register?intent=owner" className={cn(buttonVariants({ variant: "primary" }))}>
+              List Your Property — Free
+            </Link>
+          </Card>
+        ) : (
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {recentProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -59,7 +59,50 @@ listed as done unless it was built, run, and (where applicable) tested.
   Docker works, or once a hosted Supabase project is connected — see
   `docs/DEPLOYMENT.md`.
 
-## Milestone 3 — Property marketplace: ⏳ Not started
+## Milestone 3 — Property marketplace: ✅ Done (same documented sandbox limitation)
+
+- Migrations: `properties`, `property_images`, `property_favourites`,
+  `property_views`, `property_reports` + RLS + triggers
+  (`20260102000100_properties.sql`); `property-images` public Storage
+  bucket + path-scoped write policies (`20260102000200_...storage.sql`).
+- Owner CRUD: list/create/edit/publish/unpublish/archive, availability
+  toggle, image upload (drag-free click-to-upload, cover selection,
+  delete) via the browser Supabase client straight to Storage, owner
+  dashboard (overview stats + property list), listing-completeness
+  indicator.
+- Search: real Postgres-backed search (`services/properties.ts`) —
+  keyword (full-text), county, city, category, price range, bedrooms,
+  furnished — with pagination, 3 sort modes, URL-persisted filters, a
+  desktop inline filter bar and a mobile filter `Drawer`, empty state with
+  a "clear filters" recovery path.
+- Property detail page: gallery, price, disclosed upfront-cost
+  breakdown (rent + advance + deposit + other fees, each labeled "not
+  provided" when absent rather than guessed), amenities, owner name,
+  favourite + report-listing actions, similar-properties section, safety
+  disclaimer. Contact-owner is an honest "not live yet" state (real
+  messaging is Milestone 5, gated by the Milestone 4 subscription) rather
+  than a non-functional button pretending to work.
+- Favourites page (renter) wired to real data with a proper empty state.
+- Homepage's "recently listed" section now shows real published listings
+  with a graceful empty state when none exist yet (no fabricated demo
+  listings).
+- Verified:
+  - `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean (15
+    routes compiled, including the new dynamic property/search/dashboard
+    routes).
+  - `supabase/local-shim/test_m3_rls.sql` against the same local-Postgres
+    shim: 9/9 assertions pass (owner can create own listing; cannot spoof
+    another user as `owner_id`; a draft listing is invisible to other
+    users; a non-owner cannot update another owner's listing; a published
+    listing becomes visible to `anon`; `published_at` is stamped
+    automatically; `favourite_count` increments via trigger; favourites
+    are private; a property owner cannot read a report filed against their
+    own listing).
+- **Not independently verified in this sandbox**: the `property-images`
+  Storage bucket/policies migration (needs live Supabase Storage, which
+  this container's broken Docker daemon can't provide — see M2's note and
+  `docs/DEPLOYMENT.md`), and no live end-to-end UI test of search/listing
+  pages against real data (same root cause). Reviewed carefully, not run.
 
 ## Milestone 4 — Subscriptions & payments: ⏳ Not started
 
