@@ -136,5 +136,47 @@ against the plain-Postgres shim; it's been reviewed but not run. It needs
 documents (Milestone 6) get a **separate, private** bucket — never reuse
 this public one for anything sensitive.
 
-Tables from later milestones (subscriptions, messaging, verification,
-admin) are documented here as their migrations land.
+## Milestone 4 — subscriptions & payments
+
+See `docs/PAYMENTS.md` for the full flow; this section covers the schema.
+
+### `subscription_plans`
+Seeded with one row: "Direct Access Pass", `price_usd = 5.00`,
+`duration_days = 30`. Public read (`is_active` ones); write is
+`service_role`-only, so changing the price/duration is an explicit admin
+action, not something a migration hardcodes into application logic.
+
+### `subscriptions`
+`status` is one of `pending_payment | active | expired | cancelled |
+payment_failed | refunded | suspended`. **No `authenticated` INSERT/UPDATE
+policy exists at all** — a subscription is created and activated
+exclusively by `service_role` code (`lib/subscriptions/service.ts` for
+creation, the `confirm_payment_and_activate_subscription` function for
+activation). `expires_at` is always computed server-side as `now() +
+plan.duration_days` at the moment of confirmed payment — never accepted
+from a client. `has_active_subscription(user_id)` is the helper
+Milestone 5's messaging RLS uses.
+
+### `payment_transactions`
+A user may INSERT their own row, but the RLS `WITH CHECK` clause pins
+`status = 'initiated'` — they cannot self-insert a `confirmed` payment.
+Every later state transition is `service_role`-only. `unique(provider,
+provider_transaction_id)` and a separate `unique(internal_reference)`
+together let the webhook handler look up the right transaction
+unambiguously and prevent two of our transactions from ever claiming the
+same provider transaction id.
+
+### `payment_webhook_events`
+`unique(provider, event_id)` is the actual idempotency mechanism — see
+`docs/PAYMENTS.md`. No RLS policy is granted to `anon`/`authenticated` at
+all, so this table is invisible to the client entirely.
+
+### `confirm_payment_and_activate_subscription(transaction_id, event_ref)`
+`SECURITY DEFINER`, revoked from `PUBLIC`, granted only to `service_role`.
+The single function that ever transitions a subscription to `active`.
+Idempotent: calling it again for an already-`confirmed` transaction
+returns the existing subscription unchanged rather than re-activating or
+extending the expiry.
+
+Tables from later milestones (messaging, verification, admin) are
+documented here as their migrations land.

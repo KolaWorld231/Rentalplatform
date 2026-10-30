@@ -34,7 +34,7 @@ export default async function HomePage() {
     .eq("listing_status", "published")
     .order("published_at", { ascending: false })
     .limit(8);
-  const recentProperties = (data ?? []) as PropertyWithCover[];
+  const recentProperties = (data ?? []) as unknown as PropertyWithCover[];
 
   return (
     <div>

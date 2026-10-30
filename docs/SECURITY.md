@@ -45,14 +45,38 @@ threat model, not a one-time checklist.
 - `.env.local` is gitignored; `.env.example` documents every variable name
   with no real values.
 
+## Payments (Milestone 4)
+
+- Subscription activation is reachable only through
+  `confirm_payment_and_activate_subscription`, a `SECURITY DEFINER`
+  Postgres function revoked from `PUBLIC` and granted only to
+  `service_role`. `subscriptions` has no client-writable INSERT/UPDATE
+  policy at all — verified in `supabase/local-shim/test_m4_rls.sql`,
+  including an explicit attempt by `authenticated` to call the activation
+  function directly, which is rejected.
+- The webhook route (`app/api/payments/webhook/route.ts`) independently
+  verifies every event through the configured provider before acting on
+  it (`provider.verifyWebhook`), rejects amount/currency mismatches
+  against our own transaction record, and enforces idempotency with a DB
+  unique constraint (`payment_webhook_events(provider, event_id)`) rather
+  than an application-level check — a race between two concurrent
+  deliveries of the same event is resolved by the database, not by
+  "check-then-act" logic that could lose the race.
+- `PAYMENTS_WEBHOOK_SECRET` gates the mock provider's "webhook" exactly
+  like a real provider's signature would; the mock provider itself refuses
+  to construct in production (`lib/payments/index.ts`).
+
 ## Known gaps / not yet implemented
 
 - Rate limiting on auth endpoints and messaging (planned for M5).
-- CSRF: Server Actions get Next.js's built-in action-token protection;
-  Route Handlers added in later milestones will need explicit review.
+- CSRF: Server Actions get Next.js's built-in action-token protection; the
+  payments Route Handler is a plain POST endpoint secured by the
+  provider's own webhook-authenticity check (signature/secret), not CSRF
+  tokens — that's the correct model for a server-to-server webhook, but
+  worth re-confirming once a real provider's verification scheme is
+  integrated.
 - Content Security Policy headers — not yet configured; tracked for M8.
 - Verification-document access controls and signed URLs — M6.
-- Payment webhook signature verification and idempotency — M4.
 - Audit logging for privileged actions — M7.
 - This container's Docker daemon doesn't run, so RLS/auth have only been
   verified against a plain-Postgres shim and static page rendering, not

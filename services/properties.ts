@@ -69,7 +69,7 @@ export async function searchProperties(
   if (error) throw error;
 
   return {
-    properties: (data ?? []) as PropertyWithCover[],
+    properties: (data ?? []) as unknown as PropertyWithCover[],
     total: count ?? 0,
     page: params.page,
     pageSize: PAGE_SIZE,
@@ -90,7 +90,7 @@ export async function getSimilarProperties(
     .neq("id", property.id)
     .limit(limit);
 
-  return (data ?? []) as PropertyWithCover[];
+  return (data ?? []) as unknown as PropertyWithCover[];
 }
 
 export function slugify(title: string, county: string): string {

@@ -104,7 +104,45 @@ listed as done unless it was built, run, and (where applicable) tested.
   `docs/DEPLOYMENT.md`), and no live end-to-end UI test of search/listing
   pages against real data (same root cause). Reviewed carefully, not run.
 
-## Milestone 4 — Subscriptions & payments: ⏳ Not started
+## Milestone 4 — Subscriptions & payments: ✅ Done (same documented sandbox limitation)
+
+- Migration: `subscription_plans` (seeded with the real $5/30-day Direct
+  Access Pass), `subscriptions`, `payment_transactions`,
+  `payment_webhook_events` + RLS + the `confirm_payment_and_activate_
+  subscription` SECURITY DEFINER activation function + the
+  `has_active_subscription()` helper for Milestone 5.
+- Provider-agnostic payment architecture (`lib/payments/`): `PaymentProvider`
+  interface, a dev-only `MockPaymentProvider` that exercises the exact same
+  verification/idempotency/activation code path a real provider would, and
+  a factory that **refuses to construct the mock provider in production**.
+- Checkout flow (`lib/subscriptions/service.ts`, `app/checkout/`), webhook
+  handler (`app/api/payments/webhook/route.ts`) implemented as a Next.js
+  Route Handler rather than a Supabase Edge Function (documented reason +
+  port-over instructions: `supabase/functions/payments-webhook/README.md`).
+- Pricing page with live subscription status, account page subscription
+  status + payment history.
+- Verified:
+  - `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean (18
+    routes, including the new checkout/pricing/webhook routes).
+  - `npm run test` (Vitest): 6/6 unit tests pass for
+    `MockPaymentProvider.verifyWebhook` (rejects missing/wrong secret,
+    malformed JSON, missing fields, unrecognized status; accepts a
+    well-formed authenticated event) — this is the first automated test
+    suite in the project, run for real, not just described.
+  - `supabase/local-shim/test_m4_rls.sql` against the same local-Postgres
+    shim: 12/12 assertions pass, including the ones that matter most for
+    this milestone's non-negotiable rules — a client cannot self-activate
+    a subscription or self-insert a confirmed payment; the activation
+    function is not callable by `authenticated`; a confirmed payment
+    activates a subscription with a server-computed ~30-day expiry; a
+    duplicate webhook event is rejected by a unique constraint; re-running
+    activation for an already-confirmed transaction does not extend the
+    expiry; a failed payment never activates anything.
+- **Not independently verified in this sandbox**: no live end-to-end run
+  of checkout → mock payment page → webhook → activated subscription
+  through the actual Next.js app (needs live Supabase Auth/PostgREST,
+  unavailable here — same root cause as M2/M3). The business logic those
+  routes call has been verified directly at the database layer instead.
 
 ## Milestone 5 — Direct messaging: ⏳ Not started
 

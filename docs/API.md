@@ -48,5 +48,13 @@ Component that validates `searchParams` with `searchParamsSchema` and calls
 (filters map directly to the indexed columns in
 `properties_search_idx`/`properties_city_idx`/`properties_fts_idx`).
 
-Later milestones add: subscription checkout + webhook handling, messaging,
-verification submission/review, admin moderation.
+## Milestone 4 — Subscriptions & payments
+
+| Endpoint / Action | File | Behavior |
+|---|---|---|
+| `startCheckoutAction` | `app/checkout/actions.ts` | Server Action; requires auth, calls `startCheckout` (creates `pending_payment` subscription + `initiated` transaction via `service_role`, asks the configured provider for a checkout URL), redirects there. |
+| `simulatePaymentAction` | `app/checkout/mock/actions.ts` | Dev-only; posts to the webhook endpoint with the shared dev secret to simulate a provider callback. Inert/unreachable in production (the mock provider can't be constructed there). |
+| `POST /api/payments/webhook` | `app/api/payments/webhook/route.ts` | The only path that activates a subscription. Verifies the event via the configured provider, enforces idempotency via a DB unique constraint, rejects amount/currency mismatches, and calls the `confirm_payment_and_activate_subscription` Postgres function through `service_role`. See `docs/PAYMENTS.md`. |
+
+Later milestones add: messaging, verification submission/review, admin
+moderation.

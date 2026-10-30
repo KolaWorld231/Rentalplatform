@@ -184,6 +184,67 @@ export type PropertyReport = {
   resolved_at: string | null;
 };
 
+export type SubscriptionStatus =
+  | "pending_payment"
+  | "active"
+  | "expired"
+  | "cancelled"
+  | "payment_failed"
+  | "refunded"
+  | "suspended";
+
+export type PaymentStatus = "initiated" | "pending" | "confirmed" | "failed" | "reversed" | "refunded";
+export type WebhookProcessingStatus = "received" | "processed" | "failed" | "duplicate";
+
+export type SubscriptionPlan = {
+  id: string;
+  name: string;
+  price_usd: number;
+  duration_days: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type Subscription = {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  activated_at: string | null;
+  expires_at: string | null;
+  payment_transaction_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PaymentTransaction = {
+  id: string;
+  user_id: string;
+  subscription_id: string | null;
+  provider: string;
+  provider_transaction_id: string | null;
+  internal_reference: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  provider_event_ref: string | null;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PaymentWebhookEvent = {
+  id: string;
+  provider: string;
+  event_id: string;
+  payload: Record<string, unknown>;
+  processing_status: WebhookProcessingStatus;
+  related_transaction_id: string | null;
+  error_message: string | null;
+  created_at: string;
+  processed_at: string | null;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -221,9 +282,28 @@ export type Database = {
         PropertyReport,
         Partial<PropertyReport> & Pick<PropertyReport, "property_id" | "reporter_id" | "reason">
       >;
+      subscription_plans: TableDef<SubscriptionPlan, Partial<SubscriptionPlan> & Pick<SubscriptionPlan, "name" | "price_usd" | "duration_days">>;
+      subscriptions: TableDef<Subscription, Partial<Subscription> & Pick<Subscription, "user_id" | "plan_id">>;
+      payment_transactions: TableDef<
+        PaymentTransaction,
+        Partial<PaymentTransaction> & Pick<PaymentTransaction, "user_id" | "provider" | "amount">
+      >;
+      payment_webhook_events: TableDef<
+        PaymentWebhookEvent,
+        Partial<PaymentWebhookEvent> & Pick<PaymentWebhookEvent, "provider" | "event_id" | "payload">
+      >;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      has_active_subscription: {
+        Args: { target_user: string };
+        Returns: boolean;
+      };
+      confirm_payment_and_activate_subscription: {
+        Args: { p_transaction_id: string; p_provider_event_ref: string };
+        Returns: Subscription;
+      };
+    };
     Enums: {
       account_status: AccountStatus;
       app_role: AppRole;
@@ -235,6 +315,9 @@ export type Database = {
       availability_status: AvailabilityStatus;
       report_status: ReportStatus;
       report_reason: ReportReason;
+      subscription_status: SubscriptionStatus;
+      payment_status: PaymentStatus;
+      webhook_processing_status: WebhookProcessingStatus;
     };
     CompositeTypes: Record<string, never>;
   };
