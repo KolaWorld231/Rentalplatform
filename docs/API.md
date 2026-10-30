@@ -65,4 +65,14 @@ Component that validates `searchParams` with `searchParamsSchema` and calls
 | `markConversationReadAction` | same | Updates the caller's own `renter_last_read_at`/`owner_last_read_at`. |
 | `reportMessageAction(messageId, conversationId, …)` | same | Files a `message_reports` row; RLS requires the reporter to be a participant. |
 
-Later milestones add: verification submission/review, admin moderation.
+## Milestone 6 — Verification
+
+| Action | File | Behavior |
+|---|---|---|
+| `submitIdentityVerificationAction` | `app/dashboard/verification/actions.ts` | Creates an `identity_verification_requests` row if none is currently pending (`submitted`/`under_review`/`needs_more_info`). |
+| `submitPropertyVerificationAction(propertyId)` | same | Same pattern for a specific property; RLS independently requires the applicant to actually own/manage it. |
+| `getSignedDocumentUrlAction(documentId)` | same | The only way to view a private verification document — see `docs/SECURITY.md` for the authorization model. |
+| `confirmAvailabilityAction(propertyId)` | same | Bumps `last_availability_confirmed_at`; used by the owner dashboard's "Reconfirm now" prompt on listings stale 14+ days. |
+
+Later milestones add: admin moderation/review actions for the requests
+above, notifications, audit log.

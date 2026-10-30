@@ -266,6 +266,45 @@ export type MessageReport = {
   created_at: string;
 };
 
+export type VerificationStatus = "submitted" | "under_review" | "verified" | "rejected" | "needs_more_info" | "expired";
+
+export type IdentityVerificationRequest = {
+  id: string;
+  user_id: string;
+  status: VerificationStatus;
+  submitted_at: string;
+  reviewed_at: string | null;
+  reviewer_id: string | null;
+  reviewer_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PropertyVerificationRequest = {
+  id: string;
+  property_id: string;
+  applicant_id: string;
+  status: VerificationStatus;
+  submitted_at: string;
+  reviewed_at: string | null;
+  reviewer_id: string | null;
+  reviewer_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PrivateVerificationDocument = {
+  id: string;
+  identity_request_id: string | null;
+  property_request_id: string | null;
+  storage_path: string;
+  original_filename: string | null;
+  content_type: string;
+  file_size_bytes: number;
+  uploaded_by: string;
+  created_at: string;
+};
+
 export type PaymentWebhookEvent = {
   id: string;
   provider: string;
@@ -334,6 +373,19 @@ export type Database = {
         MessageReport,
         Partial<MessageReport> & Pick<MessageReport, "message_id" | "conversation_id" | "reporter_id" | "reason">
       >;
+      identity_verification_requests: TableDef<
+        IdentityVerificationRequest,
+        Partial<IdentityVerificationRequest> & Pick<IdentityVerificationRequest, "user_id">
+      >;
+      property_verification_requests: TableDef<
+        PropertyVerificationRequest,
+        Partial<PropertyVerificationRequest> & Pick<PropertyVerificationRequest, "property_id" | "applicant_id">
+      >;
+      private_verification_documents: TableDef<
+        PrivateVerificationDocument,
+        Partial<PrivateVerificationDocument> &
+          Pick<PrivateVerificationDocument, "storage_path" | "content_type" | "file_size_bytes" | "uploaded_by">
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -345,6 +397,8 @@ export type Database = {
         Args: { p_transaction_id: string; p_provider_event_ref: string };
         Returns: Subscription;
       };
+      is_identity_verified: { Args: { target_user: string }; Returns: boolean };
+      is_property_verified: { Args: { target_property: string }; Returns: boolean };
     };
     Enums: {
       account_status: AccountStatus;
@@ -361,6 +415,7 @@ export type Database = {
       payment_status: PaymentStatus;
       webhook_processing_status: WebhookProcessingStatus;
       conversation_status: ConversationStatus;
+      verification_status: VerificationStatus;
     };
     CompositeTypes: Record<string, never>;
   };

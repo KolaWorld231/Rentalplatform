@@ -28,6 +28,11 @@ export function formatCategory(category: string): string {
     .join(" ");
 }
 
+export function daysSince(iso: string | null): number | null {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
+
 export function formatRelativeDate(iso: string): string {
   const date = new Date(iso);
   const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));

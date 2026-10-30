@@ -7,6 +7,7 @@ import { FavouriteButton } from "@/components/properties/FavouriteButton";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyGallery } from "@/components/properties/PropertyGallery";
 import { ReportListingButton } from "@/components/properties/ReportListingButton";
+import { VerificationBadge } from "@/components/verification/VerificationBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -82,6 +83,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const totalUpfront = upfrontItems.reduce((sum, i) => sum + (i.value ?? 0), 0) + property.rent_amount;
 
   const ownerName = property.profiles?.display_name ?? "Property owner";
+
+  const [{ data: identityVerified }, { data: propertyVerified }] = await Promise.all([
+    supabase.rpc("is_identity_verified", { target_user: property.owner_id }),
+    supabase.rpc("is_property_verified", { target_property: property.id }),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -186,6 +192,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
             <div className="mt-4 border-t border-border pt-4 text-sm text-charcoal-500">
               <p>Listed by {ownerName}</p>
+              {(identityVerified || propertyVerified) && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {identityVerified && <VerificationBadge kind="identity" />}
+                  {propertyVerified && <VerificationBadge kind="property" />}
+                </div>
+              )}
               {property.last_availability_confirmed_at && (
                 <p className="mt-1 text-xs">
                   Availability confirmed {formatRelativeDate(property.last_availability_confirmed_at)}

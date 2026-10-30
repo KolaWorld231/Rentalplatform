@@ -179,7 +179,50 @@ listed as done unless it was built, run, and (where applicable) tested.
   the M3 Storage migration) and no live end-to-end UI run of the
   messaging pages against real Supabase Auth/PostgREST.
 
-## Milestone 6 — Verification & trust: ⏳ Not started
+## Milestone 6 — Verification & trust: ✅ Done (same documented sandbox limitation)
+
+- Migration: `identity_verification_requests`,
+  `property_verification_requests`, `private_verification_documents` + RLS
+  (`20260105000100_verification.sql`); private `verification-documents`
+  Storage bucket + path/owner-scoped policies
+  (`20260105000200_...storage.sql` — Supabase-only, same caveat as M3's
+  bucket migration).
+- Neither verification request table has a client-writable UPDATE policy
+  — only `service_role` (Milestone 7's moderation review) can mark
+  something `verified`/`rejected`. Public badge functions
+  (`is_identity_verified`/`is_property_verified`) return only a boolean,
+  never the underlying request/document data.
+- Verification center (owner dashboard): identity verification submission
+  + document upload, per-property verification submission + document
+  upload, status display with reviewer notes. Documents are only ever
+  viewed via a 60-second signed URL generated after an independent
+  authorization check.
+- `VerificationBadge` wired into the property detail page — only renders
+  when `is_identity_verified`/`is_property_verified` return true for the
+  real owner/property, never as a static/decorative element.
+- Availability reconfirmation: owner dashboard flags a published listing
+  stale after 14 days with no confirmation, with a one-click "Reconfirm
+  now" action. (Automated reminder *notifications* and any search-ranking
+  deprioritization of stale listings are left to Milestone 7's
+  notification system and are not yet implemented — this milestone covers
+  the self-service reconfirmation mechanism only; see the note below.)
+- Verified:
+  - `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean (20
+    routes, including `/dashboard/verification`).
+  - `supabase/local-shim/test_m6_rls.sql`: 9/9 assertions pass, including
+    the core guarantees — an applicant can submit and attach documents to
+    their own request but cannot self-verify it (RLS rejects the attempt
+    outright), a stranger cannot read the request or its documents, a
+    moderator can read a pending request for review, and
+    `is_identity_verified()` correctly flips from false to true only after
+    a `service_role` approval.
+  - Full regression: re-ran M2–M6's SQL suites together against one fresh
+    database (50/50 assertions pass) plus the M4 Vitest suite (6/6).
+- **Not independently verified in this sandbox**: the verification
+  documents Storage bucket migration (needs a live Supabase project, same
+  root cause as M3/M5's Storage/Realtime migrations) and no live
+  end-to-end UI run of the verification center against real Supabase
+  Auth/Storage.
 
 ## Milestone 7 — Admin & notifications: ⏳ Not started
 

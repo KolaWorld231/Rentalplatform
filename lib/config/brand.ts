@@ -22,6 +22,11 @@ export const brand = {
   officeAddress: "[OFFICE ADDRESS — PENDING]",
 } as const;
 
+export const verificationBadges = {
+  identity: "Identity Verified",
+  property: "Property Documents Reviewed",
+} as const;
+
 export const subscriptionPlan = {
   name: "Direct Access Pass",
   priceUsd: 5,

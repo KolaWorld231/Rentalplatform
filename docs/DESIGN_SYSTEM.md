@@ -129,6 +129,15 @@ new badge system. `SubscriptionGateDialog` reuses the plain `Dialog`
 primitive — the subscription upsell gets no special chrome, keeping it
 visually consistent with every other modal in the product.
 
+## Verification patterns (Milestone 6)
+
+`VerificationBadge` reuses the plain `Badge` primitive (`variant="info"`)
+with a shield icon — it never gets a special "trust" visual treatment that
+would imply more certainty than the underlying review actually provides.
+The verification center (`app/dashboard/verification/page.tsx`) reuses
+the same status-badge-plus-icon convention as the subscription/payment
+history in `/account`, rather than inventing a new status vocabulary.
+
 ## Required but not yet built
 
 Verification badges beyond the plain `Badge` primitive, and the admin
