@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { notifyUser } from "@/lib/admin/audit";
 import { getPaymentProvider } from "@/lib/payments";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
@@ -94,6 +95,14 @@ export async function POST(request: Request) {
     if (activationError) {
       return NextResponse.json({ error: "activation failed" }, { status: 500 });
     }
+
+    await notifyUser({
+      userId: transaction.user_id,
+      type: "subscription_activated",
+      title: "Your Direct Access Pass is active",
+      body: "You can now message property owners for the next 30 days.",
+      link: "/pricing",
+    });
   } else {
     // failed / reversed / refunded: record the outcome, never activate.
     await supabase.from("payment_transactions").update({ status: event.status }).eq("id", transaction.id);
@@ -108,6 +117,16 @@ export async function POST(request: Request) {
       .update({ processing_status: "processed", processed_at: new Date().toISOString() })
       .eq("provider", provider.name)
       .eq("event_id", event.eventId);
+
+    if (event.status === "failed") {
+      await notifyUser({
+        userId: transaction.user_id,
+        type: "payment_failed",
+        title: "Your payment wasn't confirmed",
+        body: "No charge was applied. You can try subscribing again anytime.",
+        link: "/pricing",
+      });
+    }
   }
 
   return NextResponse.json({ status: "ok" });

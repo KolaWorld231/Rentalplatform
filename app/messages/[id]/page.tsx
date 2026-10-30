@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Conversation, Message } from "@/types/database";
 import { markConversationReadAction } from "../actions";
 
+export const metadata = { title: "Conversation", robots: { index: false, follow: false } };
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

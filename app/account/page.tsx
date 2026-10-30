@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils/cn";
 import { ProfileForm } from "./ProfileForm";
 
+export const metadata = { title: "Account Settings", robots: { index: false, follow: false } };
+
 const STATUS_VARIANT: Record<string, "success" | "warning" | "error" | "neutral"> = {
   active: "success",
   pending_payment: "warning",

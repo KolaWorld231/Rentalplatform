@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { PropertyWithCover } from "@/services/properties";
 import { cn } from "@/lib/utils/cn";
 
-export const metadata = { title: "Saved Properties" };
+export const metadata = { title: "Saved Properties", robots: { index: false, follow: false } };
 
 export default async function FavouritesPage() {
   const user = await requireUser("/favourites");

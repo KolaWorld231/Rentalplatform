@@ -268,5 +268,44 @@ plain-Postgres shim.
 the underlying verification request or its documents through the public
 API.
 
-Tables from Milestone 7 (admin/moderation, notifications, audit log) are
-documented here as their migrations land.
+## Milestone 7 — admin, moderation, audit log, notifications
+
+### `admin_audit_logs`
+Records every sensitive administrative action (suspensions, listing
+moderation, verification decisions, report resolutions). Readable **only
+by `admin`** — not even `moderator` — a deliberate narrowing beyond "any
+staff role," verified in `supabase/local-shim/test_m7_rls.sql`. Writable
+only by `service_role`: even an admin's own `authenticated` session cannot
+insert a row directly, which forces every write through
+`lib/admin/audit.ts#recordAdminAction` and therefore through the Server
+Action that called it (no code path writes to this table without also
+performing the actual moderation action). `metadata` is a small JSON blob
+for context (e.g. `{ decision: "verified" }`) — never a sensitive document
+or unnecessary personal data.
+
+### `notifications` / `notification_preferences`
+Notifications are system-generated only — `authenticated` has no INSERT
+policy, verified by an explicit self-insert attempt in the test suite. A
+user may read and mark their own as read (`notifications_update_self`).
+`notification_preferences` is a plain per-user settings row the user owns
+outright (read/insert/update their own), since it carries no privileged
+information.
+
+### Who writes what
+Every admin/moderation write in `app/admin/actions.ts` goes through
+`service_role` (the underlying tables have no `authenticated` UPDATE
+policy for moderation fields — see `properties`, the verification request
+tables, and the report tables from earlier milestones) and is paired with
+a `recordAdminAction` call and, where relevant, a `notifyUser` call. This
+pairing is enforced by convention (every action in that file follows the
+same four-step shape documented in its header comment) rather than by a
+database trigger — a Milestone 8 hardening candidate would be to make the
+audit-log write transactionally inseparable from the moderation write
+itself (e.g. via a single `SECURITY DEFINER` function per action, as
+Milestone 4 did for payment confirmation).
+
+This completes the tables described in the original build brief's data
+model (profiles/roles, properties, subscriptions/payments, messaging,
+verification, admin/notifications). Any further schema changes from here
+are tracked as migrations with their own dated filename, not appended to
+this historical record.

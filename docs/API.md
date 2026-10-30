@@ -74,5 +74,22 @@ Component that validates `searchParams` with `searchParamsSchema` and calls
 | `getSignedDocumentUrlAction(documentId)` | same | The only way to view a private verification document — see `docs/SECURITY.md` for the authorization model. |
 | `confirmAvailabilityAction(propertyId)` | same | Bumps `last_availability_confirmed_at`; used by the owner dashboard's "Reconfirm now" prompt on listings stale 14+ days. |
 
-Later milestones add: admin moderation/review actions for the requests
-above, notifications, audit log.
+## Milestone 7 — Admin, moderation, notifications
+
+All of `app/admin/actions.ts` follows the same shape: re-check role →
+write via `service_role` → `recordAdminAction` (audit log) →
+`notifyUser` where relevant. See `docs/SECURITY.md`.
+
+| Action | Role required | Behavior |
+|---|---|---|
+| `reviewIdentityVerificationAction(id, decision, notes)` | admin or moderator | Sets status, notifies the applicant. |
+| `reviewPropertyVerificationAction(id, decision, notes)` | admin or moderator | Same, for a property's verification request. |
+| `moderatePropertyAction(id, newStatus, reason)` | admin or moderator | Approve/reject/suspend a listing; notifies the owner. |
+| `resolvePropertyReportAction(id, status, notes)` / `resolveMessageReportAction(id, status)` | admin or moderator | Resolves a filed report. |
+| `suspendUserAction(userId, reason)` / `restoreUserAction(userId)` | **admin only** | Sets `profiles.account_status`; notifies the user. |
+
+| Page | File | Notes |
+|---|---|---|
+| `/admin` | `app/admin/page.tsx` | Live aggregate counts; confirmed-payment revenue total is admin-only, hidden from moderators. |
+| `/admin/listings`, `/admin/verifications`, `/admin/reports`, `/admin/users` | `app/admin/*` | Moderation queues reading via `service_role` (RLS would otherwise require per-request checks that don't fit a queue view). |
+| `/notifications` | `app/notifications/page.tsx` + `actions.ts` | In-app notification center + preferences; `markNotificationReadAction`, `markAllNotificationsReadAction`, `updateNotificationPreferencesAction`. |

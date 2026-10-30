@@ -114,6 +114,29 @@ threat model, not a one-time checklist.
   through the public API, and the badge copy itself (see
   `lib/config/brand.ts`) never claims verification proves legal ownership.
 
+## Administration & audit logging (Milestone 7)
+
+- Every privileged admin/moderation action
+  (`app/admin/actions.ts`) re-checks the caller's role server-side via
+  `requireAnyRole`/`requireRole` before doing anything — never relies on a
+  page having hidden a button. `/admin/users` (suspend/restore) is
+  additionally gated to `admin` only, separately from the shared
+  `/admin` layout's `admin`-or-`moderator` gate — least privilege, not
+  "anyone who reached the admin area."
+- `admin_audit_logs` is readable only by `admin` (moderators are
+  excluded) and writable only by `service_role` — not even an admin's own
+  authenticated session can insert a row directly, which is what forces
+  every write through the real moderation action rather than a
+  standalone log entry. Verified in `supabase/local-shim/test_m7_rls.sql`.
+- Notifications are system-generated only; a user can read and mark their
+  own as read but cannot create one for themselves (prevents using the
+  notification system to deliver attacker-controlled content as if it
+  came from the platform).
+- Dashboard aggregates (`/admin`) use `service_role` to run `COUNT`
+  queries across all rows — this is a read-only aggregate, not a
+  per-record bypass, and is appropriate because RLS-scoped counts would
+  undercount or require N queries per admin page load.
+
 ## Known gaps / not yet implemented
 
 - Rate limiting on auth endpoints (messaging has a basic application-level

@@ -39,3 +39,12 @@ export async function requireRole(role: AppRole, nextPath?: string) {
   }
   return user;
 }
+
+export async function requireAnyRole(allowed: AppRole[], nextPath?: string) {
+  const user = await requireUser(nextPath);
+  const roles = await getCurrentUserRoles();
+  if (!roles.some((r) => allowed.includes(r))) {
+    redirect("/");
+  }
+  return { user, roles };
+}

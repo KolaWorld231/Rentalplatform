@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/session";
 
+export const metadata = { robots: { index: false, follow: false } };
+
 const links = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/properties", label: "My Properties" },
+  { href: "/dashboard/verification", label: "Verification" },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {

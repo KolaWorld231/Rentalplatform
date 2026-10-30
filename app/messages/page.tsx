@@ -8,7 +8,7 @@ import { formatRelativeDate } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { Conversation } from "@/types/database";
 
-export const metadata = { title: "Messages" };
+export const metadata = { title: "Messages", robots: { index: false, follow: false } };
 
 type ConversationRow = Conversation & {
   properties: { title: string; slug: string } | null;

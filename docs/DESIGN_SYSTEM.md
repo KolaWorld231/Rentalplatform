@@ -138,6 +138,15 @@ The verification center (`app/dashboard/verification/page.tsx`) reuses
 the same status-badge-plus-icon convention as the subscription/payment
 history in `/account`, rather than inventing a new status vocabulary.
 
+## Admin & notification patterns (Milestone 7)
+
+The admin console deliberately reuses the owner dashboard's layout
+conventions (top nav bar, `Card`-based stat tiles, same badge variants for
+status) rather than adopting a separate "admin theme" — it's still
+DomiLink, just with a different nav. Moderation queues use the same
+empty-state and card-list patterns as the owner's property list.
+Notifications reuse the unread-dot convention from the messages list.
+
 ## Required but not yet built
 
 Verification badges beyond the plain `Badge` primitive, and the admin

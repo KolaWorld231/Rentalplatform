@@ -224,7 +224,58 @@ listed as done unless it was built, run, and (where applicable) tested.
   end-to-end UI run of the verification center against real Supabase
   Auth/Storage.
 
-## Milestone 7 — Admin & notifications: ⏳ Not started
+## Milestone 7 — Admin & notifications: ✅ Done (same documented sandbox limitation)
+
+- Migration: `notifications`, `notification_preferences`, `admin_audit_logs`
+  + RLS (`20260106000100_admin_notifications.sql`). Audit log readable
+  only by `admin` (not `moderator`) and writable only by `service_role` —
+  not even an admin's own authenticated session can insert a row
+  directly. Notifications are system-generated only.
+- Admin console: real-aggregate overview (`/admin`, admin-only revenue
+  total hidden from moderators), listings moderation queue
+  (`/admin/listings`), identity/property verification review queue
+  (`/admin/verifications`, with document preview reusing Milestone 6's
+  `DocumentLink`), combined property/message report queue
+  (`/admin/reports`), and admin-only user suspend/restore
+  (`/admin/users`).
+- `app/admin/actions.ts`: every privileged action re-checks role
+  server-side, writes via `service_role`, records an `admin_audit_logs`
+  entry, and notifies the affected user where relevant — a consistent
+  four-step shape documented in the file's header comment.
+- In-app notification center (`/notifications`) with mark-read/mark-all-
+  read and a preferences form; the payment webhook now notifies on
+  subscription activation and payment failure (`subscription_activated`,
+  `payment_failed`).
+- Added `robots: { index: false, follow: false }` to every private page
+  (account, dashboard, admin, messages, notifications, favourites) — not
+  originally scoped to this milestone, but cheap and directly matches the
+  brief's SEO requirement that private pages never be indexed; full SEO
+  pass (sitemap, OG metadata, structured data) remains Milestone 8.
+- Verified:
+  - `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean (26
+    routes, including the `/admin/*` and `/notifications` trees).
+  - `supabase/local-shim/test_m7_rls.sql`: 8/8 assertions pass, including
+    the two that matter most — the audit log is unreadable by moderators
+    and un-writable by anyone but `service_role` (even an admin's own
+    session), and notifications cannot be self-inserted by a user.
+  - Full regression: re-ran M2–M7's SQL suites together against one fresh
+    database (58/58 assertions pass) plus the M4 Vitest suite (6/6).
+- **Not independently verified in this sandbox**: no live end-to-end run
+  of the admin console or notification center against real Supabase
+  Auth/PostgREST (same root cause as every prior milestone's UI layer).
+
+## Scope note: what Milestone 7 does NOT include
+
+Per the build brief's own emphasis on honest status reporting: this
+milestone implements moderation/admin *actions* and *notifications*, but
+does not implement a cron-driven reminder scheduler (e.g. an automated
+"your listing needs reconfirmation" push after 14 days — Milestone 6 built
+the self-service reconfirmation UI, not a background job that emails or
+notifies the owner unprompted), nor SMS delivery, nor a real email
+provider integration (notification *records* are created; actual email
+sending is gated on `EMAIL_PROVIDER` being configured, which it isn't —
+see `.env.example`). These are reasonable Milestone 8+/production-wiring
+items, not silently-dropped requirements.
 
 ## Milestone 8 — Hardening & production readiness: ⏳ Not started
 

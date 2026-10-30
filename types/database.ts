@@ -305,6 +305,46 @@ export type PrivateVerificationDocument = {
   created_at: string;
 };
 
+export type NotificationType =
+  | "new_message"
+  | "subscription_activated"
+  | "subscription_expiring"
+  | "payment_failed"
+  | "listing_approved"
+  | "listing_rejected"
+  | "verification_update"
+  | "account_notice"
+  | "support_update";
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type NotificationPreferences = {
+  user_id: string;
+  email_enabled: boolean;
+  in_app_enabled: boolean;
+  updated_at: string;
+};
+
+export type AdminAuditLog = {
+  id: string;
+  actor_id: string;
+  action: string;
+  target_table: string;
+  target_id: string;
+  reason: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
 export type PaymentWebhookEvent = {
   id: string;
   provider: string;
@@ -386,6 +426,15 @@ export type Database = {
         Partial<PrivateVerificationDocument> &
           Pick<PrivateVerificationDocument, "storage_path" | "content_type" | "file_size_bytes" | "uploaded_by">
       >;
+      notifications: TableDef<Notification, Partial<Notification> & Pick<Notification, "user_id" | "type" | "title">>;
+      notification_preferences: TableDef<
+        NotificationPreferences,
+        Partial<NotificationPreferences> & Pick<NotificationPreferences, "user_id">
+      >;
+      admin_audit_logs: TableDef<
+        AdminAuditLog,
+        Partial<AdminAuditLog> & Pick<AdminAuditLog, "actor_id" | "action" | "target_table" | "target_id">
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -416,6 +465,7 @@ export type Database = {
       webhook_processing_status: WebhookProcessingStatus;
       conversation_status: ConversationStatus;
       verification_status: VerificationStatus;
+      notification_type: NotificationType;
     };
     CompositeTypes: Record<string, never>;
   };
