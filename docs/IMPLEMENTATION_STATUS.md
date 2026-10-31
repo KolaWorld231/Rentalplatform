@@ -574,6 +574,54 @@ currently has zero published listings (cleaned up after the earlier
 live-testing pass) — the empty states on `/` and `/search` were
 confirmed to render correctly instead.
 
+## Conversion-focused redesign, wave 2 (post-Milestone-8)
+
+Second bold presentation-layer wave, targeting the two most conventional
+pieces left: the property detail page and the subscription paywall popup
+— the exact decision moment and the exact paywall moment in the funnel.
+Again no RLS/Server Action/payment-path changes.
+
+- **`PropertyGallery.tsx`**: the static thumbnail-strip gallery now opens
+  a full-screen lightbox on click, with keyboard arrow-key navigation and
+  a photo counter. Verified live against a real seeded two-photo listing:
+  opened the lightbox, confirmed the "1 / 2" counter, pressed the right
+  arrow key, confirmed it advanced to "2 / 2".
+- **Property detail page** (`app/properties/[slug]/page.tsx`): the price
+  sidebar card now uses the stronger `--shadow-clay-raised` elevation
+  (matching wave 1's pricing-page treatment) and surfaces verification
+  and "New" badges (reusing wave 1's `isRecentlyPublished` helper from
+  `lib/utils/format.ts`) at the top of the card instead of buried below
+  the cost breakdown; "Availability reconfirmed" is promoted next to the
+  price.
+- **The paywall moment** (`SubscriptionGateDialog.tsx`): replaced the
+  generic icon-and-price popup with a personalized one — "Message {owner
+  name} about "{property title}"" — plus a compact $5-vs-$30–40 framing
+  and a benefit list, all driven by data the detail page already fetches
+  (no new queries). Verified live: triggered the gate as a non-subscribed
+  renter and confirmed the dialog rendered the real seeded property title
+  and owner name.
+- **Real bug found and fixed during this wave's own live verification**:
+  the "Not now — keep my message" promise was false. The contact
+  textarea was uncontrolled, and the `useActionState` re-render after a
+  gated submission silently cleared it — caught because the live
+  Playwright check asserted the textarea's value after dismissing the
+  dialog and got `""` instead of the typed draft. Fixed by making the
+  textarea controlled (`ContactOwnerForm.tsx`) and re-verified: the exact
+  same live check now confirms the typed message survives.
+- **Happy-path regression check**: with a real `active` subscription row
+  for the same test renter, sending a message still redirects to
+  `/messages/[id]` and the message renders there — the gated-path fix
+  didn't affect the ungated path.
+
+All live checks used real seeded data (a test owner, a test renter, one
+published property with two uploaded photos, inserted via the service
+role) against the live Supabase project, then fully deleted afterward
+(conversations, messages, the subscription row, storage objects, the
+property, and both auth users) — no test data left behind this time.
+Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm run build`
+succeeds, `npm run test` (33/33) passes, zero console/page errors during
+the live pass.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

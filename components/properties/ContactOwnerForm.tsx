@@ -10,10 +10,24 @@ import { cn } from "@/lib/utils/cn";
 
 const initialState: StartConversationState = {};
 
-export function ContactOwnerForm({ propertyId, isOwnListing }: { propertyId: string; isOwnListing: boolean }) {
+export function ContactOwnerForm({
+  propertyId,
+  isOwnListing,
+  propertyTitle,
+  ownerName,
+}: {
+  propertyId: string;
+  isOwnListing: boolean;
+  propertyTitle: string;
+  ownerName: string;
+}) {
   const [state, formAction, pending] = useActionState(startConversationAction, initialState);
   const [dismissed, setDismissed] = useState(false);
   const [lastGateReason, setLastGateReason] = useState(state.gateReason);
+  // Controlled, not uncontrolled: a Server Action re-render can remount the
+  // form, which would otherwise silently wipe whatever the renter typed —
+  // caught live, where the gated flow cleared a drafted message on "Not now".
+  const [draft, setDraft] = useState("");
   if (state.gateReason !== lastGateReason) {
     setLastGateReason(state.gateReason);
     if (state.gateReason === "subscription_required") setDismissed(false);
@@ -35,11 +49,18 @@ export function ContactOwnerForm({ propertyId, isOwnListing }: { propertyId: str
           name="body"
           rows={3}
           required
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
           placeholder="Hi, I'm interested in this property. Is it still available?"
           className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface p-3 text-sm shadow-[var(--shadow-clay-inset)]"
         />
         {state.error && <p className="text-sm font-medium text-error-500">{state.error}</p>}
-        <Button type="submit" loading={pending} className="w-full">
+        <Button
+          type="submit"
+          variant="clay"
+          loading={pending}
+          className="w-full transition-transform active:translate-y-0.5"
+        >
           Send message
         </Button>
       </form>
@@ -47,7 +68,12 @@ export function ContactOwnerForm({ propertyId, isOwnListing }: { propertyId: str
         Unlimited owners, one $5 pass. No per-property fee.
       </p>
 
-      <SubscriptionGateDialog open={gateOpen} onClose={() => setDismissed(true)} />
+      <SubscriptionGateDialog
+        open={gateOpen}
+        onClose={() => setDismissed(true)}
+        propertyTitle={propertyTitle}
+        ownerName={ownerName}
+      />
     </div>
   );
 }

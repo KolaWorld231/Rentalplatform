@@ -1,4 +1,4 @@
-import { BedDouble, Bath, Car, Droplets, MapPin, Ruler, ShieldCheck, Snowflake, Zap } from "lucide-react";
+import { BedDouble, Bath, Car, Droplets, MapPin, Ruler, ShieldCheck, Snowflake, Sparkles, Zap } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,8 +12,16 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { formatCategory, formatRelativeDate, formatRentalFrequency, formatUsd } from "@/lib/utils/format";
+import {
+  formatCategory,
+  formatRelativeDate,
+  formatRentalFrequency,
+  formatUsd,
+  isRecentlyPublished,
+} from "@/lib/utils/format";
 import { getSimilarProperties, recordPropertyView, type PropertyWithImages } from "@/services/properties";
+
+const NEW_LISTING_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -152,13 +160,31 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         </div>
 
         <div className="flex flex-col gap-5">
-          <Card className="p-5">
+          <Card className="p-5 shadow-[var(--shadow-clay-raised)]">
+            {(identityVerified || propertyVerified || isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS)) && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {identityVerified && <VerificationBadge kind="identity" />}
+                {propertyVerified && <VerificationBadge kind="property" />}
+                {isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS) && (
+                  <Badge variant="clay" className="gap-1">
+                    <Sparkles className="h-3 w-3" aria-hidden="true" />
+                    New
+                  </Badge>
+                )}
+              </div>
+            )}
+
             <p className="font-display text-3xl font-semibold text-brand-800">
               {formatUsd(property.rent_amount)}{" "}
               <span className="text-base font-normal text-charcoal-400">
                 {formatRentalFrequency(property.rental_frequency)}
               </span>
             </p>
+            {property.last_availability_confirmed_at && (
+              <p className="mt-1 text-xs font-medium text-success-500">
+                Availability reconfirmed {formatRelativeDate(property.last_availability_confirmed_at)}
+              </p>
+            )}
 
             {upfrontItems.length > 0 && (
               <div className="mt-4 border-t border-border pt-4 text-sm">
@@ -192,22 +218,16 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
             <div className="mt-4 border-t border-border pt-4 text-sm text-charcoal-500">
               <p>Listed by {ownerName}</p>
-              {(identityVerified || propertyVerified) && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {identityVerified && <VerificationBadge kind="identity" />}
-                  {propertyVerified && <VerificationBadge kind="property" />}
-                </div>
-              )}
-              {property.last_availability_confirmed_at && (
-                <p className="mt-1 text-xs">
-                  Availability confirmed {formatRelativeDate(property.last_availability_confirmed_at)}
-                </p>
-              )}
             </div>
           </Card>
 
           {user ? (
-            <ContactOwnerForm propertyId={property.id} isOwnListing={property.owner_id === user.id} />
+            <ContactOwnerForm
+              propertyId={property.id}
+              isOwnListing={property.owner_id === user.id}
+              propertyTitle={property.title}
+              ownerName={ownerName}
+            />
           ) : (
             <ContactOwnerGuestPrompt />
           )}
