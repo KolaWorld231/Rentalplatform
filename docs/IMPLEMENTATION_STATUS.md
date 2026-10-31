@@ -521,6 +521,59 @@ All fixes in this pass were typechecked, linted, verified against the
 full local SQL shim suite (64/64 assertions) before being pushed, and
 re-verified live via the same headless-browser method as part 1.
 
+## Conversion-focused redesign (post-Milestone-8)
+
+Bold presentation-layer upgrade to the three places that most shape first
+impression and conversion — no RLS, Server Action, or payment-path changes.
+
+- **Homepage hero** (`app/page.tsx`, new `HeroSearch.tsx`): replaced the
+  static banner + "link to /search" CTA with a functional inline search
+  (city + bedrooms, client component, submits to `/search` with real
+  query params — verified live, submitting "Sinkor" + "2+ bedrooms"
+  correctly navigates to `/search?city=Sinkor&bedrooms=2`). Added a live
+  stats strip (published listing count, distinct owners, counties
+  covered) computed from real `properties` rows — hidden entirely when
+  there's no real data behind it (currently hidden against the live
+  project, which has zero listings after the earlier test-data cleanup).
+  Decorative blurred background photos use real published cover images
+  when any exist. "How it works" and "Recently listed" now scroll-reveal
+  via a new shared `components/ui/Reveal.tsx` (IntersectionObserver +
+  CSS transition, no library), which renders immediately for
+  `prefers-reduced-motion` or no-`IntersectionObserver` visitors — the
+  first version of this had a real hydration mismatch under reduced
+  motion (caught live via a Playwright pass with `reducedMotion: 'reduce'`,
+  which surfaced a React hydration-mismatch console error); fixed by
+  keeping the initial render state identical on server and client and
+  deferring the immediate-reveal to a post-mount `requestAnimationFrame`.
+- **`PropertyCard`** (used on the homepage and `/search`): hover/focus
+  now cross-fades through a property's other photos
+  (`PropertyCardMedia.tsx`, no carousel library); a "Verified" badge
+  renders when `is_identity_verified`/`is_property_verified` is true
+  (computed server-side via the existing RPCs, batched with
+  `Promise.all` per results page — the same authorization-proven RPCs
+  the property detail page already uses, not a new trust claim) and a
+  "New" badge when `published_at` is within 72 hours; the card now has a
+  tactile clay-press hover/active treatment using existing shadow
+  tokens, and `FavouriteButton`'s fill now has a scale/color transition.
+- **`/pricing`**: replaced the static benefit list with a side-by-side
+  "paying an agent" vs. "Direct Access Pass" comparison, and a new
+  interactive `SavingsCalculator.tsx` (slider → live $-saved figure —
+  verified live, dragging to 7 properties correctly shows "$245" vs.
+  "$5"). The checkout form, `startCheckoutAction`, active-subscription
+  state, and payment banners are unchanged.
+
+No new runtime dependencies were added; everything reuses the existing
+Claymorphism tokens in `app/globals.css` (CLAUDE.md rule #10: one visual
+language). Verified: `npx tsc --noEmit` clean, `npm run lint` clean,
+`npm run build` succeeds, `npm run test` (33/33) passes, and a live
+Playwright pass against the real Supabase project confirmed no console/
+hydration errors on `/`, `/pricing`, `/search` in both normal and
+reduced-motion modes. Not independently re-verified: the photo-cycling
+and verified/new badges on `PropertyCard` itself, since the live project
+currently has zero published listings (cleaned up after the earlier
+live-testing pass) — the empty states on `/` and `/search` were
+confirmed to render correctly instead.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

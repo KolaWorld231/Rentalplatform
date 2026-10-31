@@ -1,10 +1,13 @@
 import { Home as HomeIcon, MessageCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { HeroSearch } from "@/components/properties/HeroSearch";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Reveal } from "@/components/ui/Reveal";
 import { brand, subscriptionPlan } from "@/lib/config/brand";
 import { createClient } from "@/lib/supabase/server";
+import { propertyImageUrl } from "@/lib/supabase/storage";
 import { cn } from "@/lib/utils/cn";
 import type { PropertyWithCover } from "@/services/properties";
 
@@ -28,73 +31,130 @@ const howItWorks = [
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("properties")
-    .select("*, property_images(id, storage_path, is_cover)")
-    .eq("listing_status", "published")
-    .order("published_at", { ascending: false })
-    .limit(8);
+  const [{ data }, { data: coverageRows }, { count: publishedCount }] = await Promise.all([
+    supabase
+      .from("properties")
+      .select("*, property_images(id, storage_path, is_cover)")
+      .eq("listing_status", "published")
+      .order("published_at", { ascending: false })
+      .limit(8),
+    supabase.from("properties").select("county, owner_id").eq("listing_status", "published"),
+    supabase.from("properties").select("id", { count: "exact", head: true }).eq("listing_status", "published"),
+  ]);
   const recentProperties = (data ?? []) as unknown as PropertyWithCover[];
+
+  const verifiedFlags = await Promise.all(
+    recentProperties.map(async (property) => {
+      const [{ data: ownerVerified }, { data: propertyVerified }] = await Promise.all([
+        supabase.rpc("is_identity_verified", { target_user: property.owner_id }),
+        supabase.rpc("is_property_verified", { target_property: property.id }),
+      ]);
+      return Boolean(ownerVerified || propertyVerified);
+    }),
+  );
+
+  // Real, database-derived stats only — never fabricated (CLAUDE.md rule #9).
+  // A stat with nothing behind it yet is hidden rather than shown as zero.
+  const countiesCovered = new Set((coverageRows ?? []).map((r) => r.county)).size;
+  const ownersListing = new Set((coverageRows ?? []).map((r) => r.owner_id)).size;
+  const stats = [
+    { value: publishedCount ?? 0, label: "Active listings" },
+    { value: ownersListing, label: "Property owners" },
+    { value: countiesCovered, label: "Counties covered" },
+  ].filter((s) => s.value > 0);
+
+  const heroPhotos = recentProperties
+    .map((p) => p.property_images.find((img) => img.is_cover) ?? p.property_images[0])
+    .filter((img): img is NonNullable<typeof img> => !!img)
+    .slice(0, 3);
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-brand-800 px-4 py-16 text-ivory-50 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-2 lg:items-center">
-          <div>
-            <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
-              {brand.heroHeading}
-            </h1>
-            <p className="mt-4 max-w-xl text-lg text-sage-100">{brand.heroSupportingCopy}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/search" className={cn(buttonVariants({ variant: "clay", size: "lg" }))}>
-                {brand.primaryCta}
-              </Link>
-              <Link
-                href="/register?intent=owner"
-                className={cn(
-                  buttonVariants({ variant: "secondary", size: "lg" }),
-                  "bg-ivory-50/10 text-ivory-50 hover:bg-ivory-50/20",
-                )}
-              >
-                {brand.secondaryCta}
-              </Link>
-            </div>
+      <section className="relative overflow-hidden bg-brand-800 px-4 py-16 text-ivory-50 sm:px-6 lg:px-8 lg:py-24">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          {heroPhotos.map((img, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={img.id}
+              src={propertyImageUrl(img.storage_path)}
+              alt=""
+              className={cn(
+                "absolute hidden object-cover opacity-20 blur-md saturate-50 lg:block",
+                i === 0 && "right-[-4rem] top-[-2rem] h-72 w-96 rotate-6 rounded-[var(--radius-2xl)]",
+                i === 1 && "right-24 top-56 h-56 w-72 -rotate-3 rounded-[var(--radius-2xl)]",
+                i === 2 && "right-[28rem] top-8 h-48 w-64 rotate-2 rounded-[var(--radius-2xl)]",
+              )}
+            />
+          ))}
+        </div>
+
+        <div className="relative mx-auto max-w-4xl text-center">
+          <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
+            {brand.heroHeading}
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-sage-100">{brand.heroSupportingCopy}</p>
+
+          <div className="mx-auto mt-8 max-w-2xl">
+            <HeroSearch />
           </div>
-          <Card className="rounded-[var(--radius-2xl)] bg-ivory-50 p-6 text-charcoal-700">
-            <p className="text-sm font-medium text-charcoal-400">No payment per property inquiry</p>
-            <p className="mt-2 font-display text-3xl font-semibold text-brand-800">
-              ${subscriptionPlan.priceUsd} / {subscriptionPlan.durationDays} days
+
+          <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/register?intent=owner"
+              className={cn(
+                buttonVariants({ variant: "secondary", size: "md" }),
+                "bg-ivory-50/10 text-ivory-50 hover:bg-ivory-50/20",
+              )}
+            >
+              {brand.secondaryCta}
+            </Link>
+            <p className="text-sm text-sage-200">
+              Renters pay just ${subscriptionPlan.priceUsd} for {subscriptionPlan.durationDays} days of
+              unlimited direct messaging.
             </p>
-            <p className="mt-2 text-sm text-charcoal-500">
-              One {subscriptionPlan.name.toLowerCase()} lets you contact every owner you want —
-              listing and browsing stay free.
-            </p>
-          </Card>
+          </div>
+
+          {stats.length > 0 && (
+            <div className="mx-auto mt-10 flex max-w-xl flex-wrap items-center justify-center gap-x-10 gap-y-4 border-t border-ivory-50/15 pt-6">
+              {stats.map((stat) => (
+                <div key={stat.label}>
+                  <p className="font-display text-2xl font-semibold">{stat.value.toLocaleString()}+</p>
+                  <p className="text-xs text-sage-200">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <h2 className="font-display text-2xl font-semibold text-charcoal-700">How it works</h2>
+        <Reveal>
+          <h2 className="font-display text-2xl font-semibold text-charcoal-700">How it works</h2>
+        </Reveal>
         <div className="mt-6 grid gap-5 sm:grid-cols-3">
-          {howItWorks.map((step) => (
-            <Card key={step.title} className="p-6">
-              <step.icon className="h-8 w-8 text-brand-600" aria-hidden="true" />
-              <h3 className="mt-4 font-semibold text-charcoal-700">{step.title}</h3>
-              <p className="mt-2 text-sm text-charcoal-500">{step.body}</p>
-            </Card>
+          {howItWorks.map((step, i) => (
+            <Reveal key={step.title} delayMs={i * 100}>
+              <Card className="h-full p-6 transition-transform duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] motion-reduce:hover:translate-y-0">
+                <step.icon className="h-8 w-8 text-brand-600" aria-hidden="true" />
+                <h3 className="mt-4 font-semibold text-charcoal-700">{step.title}</h3>
+                <p className="mt-2 text-sm text-charcoal-500">{step.body}</p>
+              </Card>
+            </Reveal>
           ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl font-semibold text-charcoal-700">
-            Recently listed
-          </h2>
-          <Link href="/search" className="text-sm font-medium text-brand-700">
-            View all
-          </Link>
-        </div>
+        <Reveal>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-2xl font-semibold text-charcoal-700">
+              Recently listed
+            </h2>
+            <Link href="/search" className="text-sm font-medium text-brand-700">
+              View all
+            </Link>
+          </div>
+        </Reveal>
         {recentProperties.length === 0 ? (
           <Card className="mt-6 flex flex-col items-center gap-3 p-12 text-center">
             <HomeIcon className="h-10 w-10 text-charcoal-400" aria-hidden="true" />
@@ -109,8 +169,10 @@ export default async function HomePage() {
           </Card>
         ) : (
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {recentProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
+            {recentProperties.map((property, i) => (
+              <Reveal key={property.id} delayMs={(i % 4) * 75}>
+                <PropertyCard property={property} isVerified={verifiedFlags[i]} />
+              </Reveal>
             ))}
           </div>
         )}

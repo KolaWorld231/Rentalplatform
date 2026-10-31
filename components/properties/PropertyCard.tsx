@@ -1,11 +1,10 @@
-import { BedDouble, Bath, MapPin } from "lucide-react";
-import Image from "next/image";
+import { BedDouble, Bath, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
-import { propertyImageUrl } from "@/lib/supabase/storage";
-import { formatCategory, formatRentalFrequency, formatUsd } from "@/lib/utils/format";
+import { formatCategory, formatRentalFrequency, formatUsd, isRecentlyPublished } from "@/lib/utils/format";
 import type { PropertyWithCover } from "@/services/properties";
 import { FavouriteButton } from "./FavouriteButton";
+import { PropertyCardMedia } from "./PropertyCardMedia";
 
 const AVAILABILITY_LABEL: Record<string, { label: string; variant: "success" | "warning" | "error" }> = {
   available: { label: "Available", variant: "success" },
@@ -14,45 +13,54 @@ const AVAILABILITY_LABEL: Record<string, { label: string; variant: "success" | "
   temporarily_unavailable: { label: "Unavailable", variant: "warning" },
 };
 
+const NEW_LISTING_WINDOW_MS = 72 * 60 * 60 * 1000;
+
 export function PropertyCard({
   property,
   isFavourited = false,
+  isVerified = false,
 }: {
   property: PropertyWithCover;
   isFavourited?: boolean;
+  /** True when the owner's identity or this property's documents are verified (real DB-backed signal only). */
+  isVerified?: boolean;
 }) {
   const cover = property.property_images.find((img) => img.is_cover) ?? property.property_images[0];
+  const orderedPaths = cover
+    ? [cover, ...property.property_images.filter((img) => img.id !== cover.id)].map((img) => img.storage_path)
+    : property.property_images.map((img) => img.storage_path);
   const availability = AVAILABILITY_LABEL[property.availability_status];
+  const isNew = isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-raised)] transition-shadow hover:shadow-[var(--shadow-floating)]">
+    <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-raised)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] active:translate-y-0 active:shadow-[var(--shadow-clay-inset)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <Link href={`/properties/${property.slug}`} className="focus-ring block">
         <div className="relative aspect-[4/3] w-full bg-sage-200">
-          {cover ? (
-            <Image
-              src={propertyImageUrl(cover.storage_path)}
-              alt={property.title}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-charcoal-400">
-              No photo yet
-            </div>
-          )}
-          <div className="absolute left-3 top-3 flex gap-2">
+          <PropertyCardMedia storagePaths={orderedPaths} alt={property.title} />
+          <div className="absolute left-3 top-3 flex flex-wrap gap-2">
             <Badge variant="neutral" className="bg-surface/90">
               {formatCategory(property.category)}
             </Badge>
+            {isNew && (
+              <Badge variant="clay" className="gap-1 bg-clay-500/90 text-ivory-50">
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+                New
+              </Badge>
+            )}
           </div>
-          {availability && (
-            <div className="absolute right-3 top-3">
+          <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+            {availability && (
               <Badge variant={availability.variant} className="bg-surface/90">
                 {availability.label}
               </Badge>
-            </div>
-          )}
+            )}
+            {isVerified && (
+              <Badge variant="info" className="gap-1 bg-surface/90">
+                <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                Verified
+              </Badge>
+            )}
+          </div>
         </div>
       </Link>
 

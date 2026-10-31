@@ -62,6 +62,16 @@ async function SearchResults({
     favouritedIds = new Set((data ?? []).map((r) => r.property_id));
   }
 
+  const verifiedFlags = await Promise.all(
+    properties.map(async (property) => {
+      const [{ data: ownerVerified }, { data: propertyVerified }] = await Promise.all([
+        supabase.rpc("is_identity_verified", { target_user: property.owner_id }),
+        supabase.rpc("is_property_verified", { target_property: property.id }),
+      ]);
+      return Boolean(ownerVerified || propertyVerified);
+    }),
+  );
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -91,11 +101,12 @@ async function SearchResults({
           ) : (
             <>
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {properties.map((property) => (
+                {properties.map((property, i) => (
                   <PropertyCard
                     key={property.id}
                     property={property}
                     isFavourited={favouritedIds.has(property.id)}
+                    isVerified={verifiedFlags[i]}
                   />
                 ))}
               </div>

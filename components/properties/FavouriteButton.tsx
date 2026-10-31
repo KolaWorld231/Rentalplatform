@@ -35,10 +35,13 @@ export function FavouriteButton({
           setFavourited(result.favourited);
         });
       }}
-      className="focus-ring flex h-10 w-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-raised)] transition-transform active:scale-95 disabled:opacity-60"
+      className="focus-ring flex h-10 w-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-raised)] transition-transform duration-150 hover:scale-110 active:scale-90 disabled:opacity-60"
     >
       <Heart
-        className={cn("h-5 w-5", favourited ? "fill-clay-500 text-clay-500" : "text-charcoal-500")}
+        className={cn(
+          "h-5 w-5 transition-all duration-300 motion-reduce:transition-none",
+          favourited ? "scale-110 fill-clay-500 text-clay-500" : "scale-100 text-charcoal-500",
+        )}
         aria-hidden="true"
       />
     </button>

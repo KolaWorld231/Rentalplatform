@@ -28,6 +28,11 @@ export function formatCategory(category: string): string {
     .join(" ");
 }
 
+export function isRecentlyPublished(iso: string | null, withinMs: number): boolean {
+  if (!iso) return false;
+  return Date.now() - new Date(iso).getTime() < withinMs;
+}
+
 export function daysSince(iso: string | null): number | null {
   if (!iso) return null;
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
