@@ -1,5 +1,6 @@
 import { Home as HomeIcon, MessageCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { ProcessSteps } from "@/components/marketing/ProcessSteps";
 import { HeroSearch } from "@/components/properties/HeroSearch";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { buttonVariants } from "@/components/ui/Button";
@@ -127,21 +128,11 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
         <Reveal>
           <h2 className="font-display text-2xl font-semibold text-charcoal-700">How it works</h2>
         </Reveal>
-        <div className="mt-6 grid gap-5 sm:grid-cols-3">
-          {howItWorks.map((step, i) => (
-            <Reveal key={step.title} delayMs={i * 100}>
-              <Card className="h-full p-6 transition-transform duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] motion-reduce:hover:translate-y-0">
-                <step.icon className="h-8 w-8 text-brand-600" aria-hidden="true" />
-                <h3 className="mt-4 font-semibold text-charcoal-700">{step.title}</h3>
-                <p className="mt-2 text-sm text-charcoal-500">{step.body}</p>
-              </Card>
-            </Reveal>
-          ))}
-        </div>
+        <ProcessSteps steps={howItWorks} />
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">

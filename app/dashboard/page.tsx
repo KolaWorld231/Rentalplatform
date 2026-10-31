@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { formatRelativeDate, isAvailabilityStale } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/cn";
 import type { Conversation } from "@/types/database";
 
 export const metadata = { title: "Owner Dashboard" };
@@ -68,18 +69,24 @@ export default async function DashboardOverviewPage() {
         </Card>
       )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <Card className="mt-6 grid grid-cols-1 divide-y divide-border sm:grid-cols-5 sm:divide-x sm:divide-y-0">
         {stats.map((s) => (
-          <Card
-            key={s.label}
-            className={s.lead ? "p-4 shadow-[var(--shadow-clay-raised)]" : "p-4"}
-          >
-            <s.icon className={s.lead ? "h-5 w-5 text-brand-700" : "h-5 w-5 text-brand-600"} aria-hidden="true" />
-            <p className="mt-2 font-display text-2xl font-semibold text-charcoal-700">{s.value}</p>
-            <p className="text-xs text-charcoal-400">{s.label}</p>
-          </Card>
+          <div key={s.label} className="flex items-center gap-3 p-4">
+            <s.icon className={s.lead ? "h-5 w-5 shrink-0 text-brand-700" : "h-5 w-5 shrink-0 text-brand-600"} aria-hidden="true" />
+            <div>
+              <p
+                className={cn(
+                  "font-display text-2xl font-semibold",
+                  s.lead ? "text-brand-800" : "text-charcoal-700",
+                )}
+              >
+                {s.value}
+              </p>
+              <p className="text-xs text-charcoal-400">{s.label}</p>
+            </div>
+          </div>
         ))}
-      </div>
+      </Card>
 
       <Card className="mt-6 p-6">
         <div className="flex items-center justify-between">

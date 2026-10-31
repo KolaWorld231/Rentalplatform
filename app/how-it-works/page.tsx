@@ -1,7 +1,7 @@
 import { CheckCircle2, Home, MessageCircle, Search, ShieldCheck, Upload } from "lucide-react";
 import Link from "next/link";
+import { ProcessSteps } from "@/components/marketing/ProcessSteps";
 import { buttonVariants } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { subscriptionPlan } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
 
@@ -21,47 +21,32 @@ const ownerSteps = [
 
 export default function HowItWorksPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
-      <h1 className="text-center font-display text-3xl font-semibold text-charcoal-700">
+    <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+      <h1 className="max-w-2xl font-display text-3xl font-semibold text-charcoal-700">
         How DomiLink works
       </h1>
+      <p className="mt-2 max-w-lg text-sm text-charcoal-500">
+        One marketplace, two sides — free for renters to browse and free for owners to list.
+      </p>
 
-      <section className="mt-12">
-        <h2 className="font-display text-xl font-semibold text-charcoal-700">For renters</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {renterSteps.map((s) => (
-            <Card key={s.title} className="p-6">
-              <s.icon className="h-7 w-7 text-brand-600" aria-hidden="true" />
-              <h3 className="mt-3 font-semibold text-charcoal-700">{s.title}</h3>
-              <p className="mt-1 text-sm text-charcoal-500">{s.body}</p>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-6 text-center">
-          <Link href="/search" className={cn(buttonVariants({ variant: "primary" }))}>
+      <div className="mt-12 grid gap-12 lg:grid-cols-2 lg:gap-16">
+        <section>
+          <h2 className="font-display text-xl font-semibold text-charcoal-700">For renters</h2>
+          <ProcessSteps steps={renterSteps} accent="brand" alternate={false} />
+          <Link href="/search" className={cn(buttonVariants({ variant: "primary" }), "mt-2")}>
             Browse properties
           </Link>
-        </div>
-      </section>
+        </section>
 
-      <section id="owners" className="mt-14">
-        <h2 className="font-display text-xl font-semibold text-charcoal-700">For property owners</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {ownerSteps.map((s) => (
-            <Card key={s.title} className="p-6">
-              <s.icon className="h-7 w-7 text-brand-600" aria-hidden="true" />
-              <h3 className="mt-3 font-semibold text-charcoal-700">{s.title}</h3>
-              <p className="mt-1 text-sm text-charcoal-500">{s.body}</p>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-6 text-center">
-          <Link href="/register?intent=owner" className={cn(buttonVariants({ variant: "clay" }))}>
+        <section id="owners" className="lg:border-l lg:border-border lg:pl-16">
+          <h2 className="font-display text-xl font-semibold text-charcoal-700">For property owners</h2>
+          <ProcessSteps steps={ownerSteps} accent="clay" alternate={false} />
+          <Link href="/register?intent=owner" className={cn(buttonVariants({ variant: "clay" }), "mt-2")}>
             <Home className="h-4 w-4" />
             List your property — free
           </Link>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

@@ -670,6 +670,67 @@ $5 for) and the owner's dashboard home base. Presentation-layer only.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
   (33/33) all clean.
 
+## Conversion-focused redesign, wave 4 (post-Milestone-8)
+
+Fourth wave, invoked with the `anthropic-skills:design-taste-frontend-v1`
+skill. That skill's own typography/dependency defaults (Geist/Satoshi,
+framer-motion, bento grids) conflict with `CLAUDE.md` rule #10 (one
+established Claymorphism visual language) and waves 1–3's "no new
+dependencies" precedent — confirmed with the user to apply the skill's
+*critique rules* only, keeping existing fonts/palette/tokens.
+
+That critique surfaced a real, repeated pattern the skill flags as an AI
+design tell: the identical "3 equal cards in a row" layout appeared in
+**four** places — `app/page.tsx`'s "How it works", `app/how-it-works/page.tsx`
+(the same grid twice, for renters and owners), `app/pricing/page.tsx`'s
+bottom trust-icon row, and `app/dashboard/page.tsx`'s 5-card stat grid.
+Confirmed with the user to fix all four.
+
+- **New `components/marketing/ProcessSteps.tsx`**: a connected numbered
+  sequence (spine + markers) replacing N equal cards, with an `alternate`
+  prop for a zig-zag swing on wide single-column contexts (used on the
+  homepage) vs. a straight list in narrower columns (used on the
+  two-track `/how-it-works` page). Reuses the existing `Reveal` component
+  for staggered entry — no new dependency.
+- **`app/page.tsx`**: "How it works" now renders `ProcessSteps` instead
+  of the 3-card grid.
+- **`app/how-it-works/page.tsx`**: restructured from two stacked,
+  centered 3-card sections into an asymmetric two-track layout — "For
+  renters" and "For owners" side by side on `lg:` (left-aligned
+  headings, not centered), each its own `ProcessSteps` sequence with a
+  distinct accent (`brand` for renters, `clay` for owners).
+- **`app/pricing/page.tsx`**: the bottom 3-icon trust row was actually
+  redundant — it restated points already in the pass-column bullet list
+  above it. Deleted it outright and folded its one new idea ("manual
+  renewal, no surprise auto-billing") into the existing bullet list as a
+  5th item. Net: less repeated content, no 3-card row, nothing lost.
+- **`app/dashboard/page.tsx`**: replaced the `grid-cols-5` row of
+  individually-boxed stat cards with a single `Card` wrapper using
+  `divide-x`/`divide-y`, each metric separated by a hairline instead of
+  its own shadow — consistent with the skill's dashboard "Anti-Card-
+  Overuse" rule for dense data.
+- Live-verified against the real Supabase project with freshly seeded
+  data (one owner, one published listing with real view/favourite
+  counts and a deliberately stale `last_availability_confirmed_at`),
+  fully deleted afterward, at both 1440px and 375px viewports for `/`,
+  `/how-it-works`, `/pricing`, and `/dashboard`: confirmed no 3-equal-
+  card rows remain anywhere, the alternating/split layouts render
+  correctly, and all four pages collapse cleanly to a single column on
+  mobile with no console/page errors.
+- One false alarm caught and resolved during this pass: a first
+  `fullPage: true` screenshot of the homepage appeared to show the third
+  "How it works" step missing with a large empty gap. Investigated
+  before concluding anything — a manual-scroll check confirmed the step
+  renders correctly and is fully visible/opaque; the apparent bug was
+  specific to how Playwright's `fullPage` screenshot resizes the
+  viewport instead of actually scrolling, which doesn't reliably trigger
+  the existing `Reveal` component's `IntersectionObserver` from wave 1.
+  Not a product bug — re-verified with `reducedMotion: 'reduce'`
+  emulation (which makes `Reveal` show content immediately), confirming
+  correct rendering.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

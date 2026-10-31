@@ -1,4 +1,4 @@
-import { CheckCircle2, MessageCircle, Repeat, ShieldCheck, X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -24,6 +24,7 @@ const passColumn = [
   "Message as many owners as you like — no extra fee",
   "Payments verified server-side before activation",
   "Conversations stay visible even after it expires",
+  "Manual renewal — no surprise auto-billing",
 ];
 
 export default async function PricingPage({
@@ -127,21 +128,6 @@ export default async function PricingPage({
           One-time charge, not a recurring subscription. Renew manually anytime.
         </p>
       </Card>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <MessageCircle className="h-6 w-6 text-brand-600" aria-hidden="true" />
-          <p className="text-sm text-charcoal-600">Direct owner messaging, no per-inquiry fee</p>
-        </div>
-        <div className="flex flex-col items-center gap-2 text-center">
-          <ShieldCheck className="h-6 w-6 text-brand-600" aria-hidden="true" />
-          <p className="text-sm text-charcoal-600">Payments verified server-side before activation</p>
-        </div>
-        <div className="flex flex-col items-center gap-2 text-center">
-          <Repeat className="h-6 w-6 text-brand-600" aria-hidden="true" />
-          <p className="text-sm text-charcoal-600">Manual renewal — no surprise auto-billing</p>
-        </div>
-      </div>
 
       <p className="mt-10 text-center text-xs text-charcoal-400">
         Questions about payment? Visit{" "}
