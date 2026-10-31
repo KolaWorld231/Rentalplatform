@@ -354,6 +354,110 @@ items, not silently-dropped requirements.
   RLS assertions, unit tests, static rendering, HTTP-level checks) or
   explicitly flagged as unproven.
 
+## Live project verification (post-Milestone-8)
+
+The project was connected to a real, hosted Supabase project
+(`ccuelnrmvtmtgukqyvrb`) for the first time, closing the single biggest
+gap repeated throughout this document: every milestone above was
+previously verified only against a plain-Postgres RLS shim and never
+against live Supabase Auth/PostgREST/Storage/Realtime.
+
+**How the migrations were applied**: this sandboxed container allows only
+outbound HTTPS (confirmed via its proxy status endpoint), not raw Postgres
+TCP (port 5432/6543) — so `supabase db push` and direct `psql` both hang/
+fail on DNS or connection, regardless of credentials. All 10 migrations
+were instead applied via Supabase's HTTPS **Management API**
+(`POST https://api.supabase.com/v1/projects/{ref}/database/query`, authed
+with a personal access token), which worked cleanly for every file,
+including the two that reference `storage.buckets`/`storage.objects`
+(Milestone 3, 6) and the `supabase_realtime` publication (Milestone 5) —
+none of which could ever be applied or verified against the local shim.
+Verified directly afterward: both Storage buckets exist with correct
+public/private flags and size limits, the seeded Direct Access Pass plan
+is present, and `messages` is in the Realtime publication.
+
+**What was actually exercised end-to-end**, via a real headless browser
+(Playwright) driving the running app against live Supabase, not simulated:
+- Owner signup (real Supabase Auth created the user; required email
+  confirmation, confirmed via the Auth Admin API since this sandbox can't
+  receive real email) → the `handle_new_user` trigger created the profile
+  + default `renter` role → the `intent=owner` registration path granted
+  the `owner` role via `service_role` — all three steps, live.
+- Login, dashboard access (`requireRole('owner')` passing for real),
+  property creation (RLS `owner_id = auth.uid()` + `has_role('owner')`
+  check), publish (the `sync_property_status_timestamps` trigger stamping
+  `published_at`), and photo upload (real Supabase Storage).
+- Guest (no session) search finding the newly published listing — proving
+  `properties_select_published` RLS and the search service both work live.
+- A second renter subscribing via the mock payment provider's full
+  checkout → webhook → `confirm_payment_and_activate_subscription` path,
+  live — the subscription's `expires_at` came back genuinely ~30 days out.
+- That subscribed renter being gated by `SubscriptionGateDialog` before
+  subscribing, then successfully starting a conversation after
+  subscribing (RLS `conversations_insert_renter`'s `has_active_
+  subscription()` check, live) — and the owner reading and replying for
+  free in the same conversation, with zero subscription check, exactly as
+  designed.
+
+**Four real bugs were found this way — none of them were catchable by the
+SQL/RLS shim or static analysis, because each needed either a live
+PostgREST schema cache, a live browser bundle, or a live clock comparison
+to surface:**
+
+1. **Header never reflected auth state** (`components/layout/Header.tsx`)
+   — built in Milestone 1 before auth existed, never revisited once
+   Milestone 2 landed. Fixed: `app/layout.tsx` now resolves the session
+   server-side and passes `isAuthenticated` down; logged-in users see an
+   account icon instead of Log in/Get started.
+2. **PostgREST couldn't resolve `profiles:owner_id(...)`-style embeds**
+   — see `docs/DATABASE_SCHEMA.md`'s "Post-launch fixes" section
+   (`20260108000100_postgrest_profile_relationships.sql`). Broke the
+   property detail page and the messages pages entirely for any
+   `*_profile:` embed.
+3. **Guests saw "Property owner" instead of the real name** — same
+   section, `20260109000100_public_profile_display_name.sql`. A genuine
+   feature gap (not a security issue) against the brief's stated Guest
+   capabilities.
+4. **A freshly-activated 30-day subscription displayed as expiring
+   "Today"** — `formatRelativeDate` (built for *elapsed* time: message
+   timestamps, "listed 3 days ago") was being reused on a *future* expiry
+   date, where it always collapses to "Today" for anything up to 30 days
+   out. Fixed with a new `formatExpiryDate` function
+   (`lib/utils/format.ts`), with a regression test
+   (`tests/unit/format.test.ts`) that specifically encodes "a 30-day-out
+   subscription must not display as expiring today."
+5. **The browser Supabase client was broken everywhere it was used**
+   (`lib/supabase/client.ts`, affecting image upload, verification
+   document upload, and the Realtime message listener) — `lib/supabase/
+   env.ts`'s `requireEnv(name)` read `process.env[name]` with a dynamic
+   key, which defeats Next.js's build-time static inlining of
+   `NEXT_PUBLIC_*` vars into the client bundle (it only recognizes a
+   literal `process.env.NEXT_PUBLIC_X` reference). Every browser-side
+   feature that called `createClient()` from that file threw "Missing
+   required environment variable" in the browser console — invisibly,
+   since server-side rendering always has the full `process.env` and
+   never hit this path. Fixed by rewriting each getter to use a literal,
+   statically-analyzable reference; the file now carries an explicit
+   comment warning against reintroducing the dynamic-key pattern. Image
+   upload and the Realtime listener were both re-verified live after the
+   fix, error-free.
+
+All five fixes were typechecked, linted, and (where a Vitest test made
+sense) covered by a new regression test before being considered done; the
+two schema fixes were also re-verified against the full M2–M8 local shim
+suite (63/63 assertions, up from 61 — the 2 new ones cover the anon
+column-privacy restriction) before being pushed to the live project.
+
+**Honest leftovers from this verification pass**: the owner-facing
+dashboard property list/edit screens, the admin console, the verification
+center, and notification preferences were *not* individually re-walked
+live (only their underlying service-role writes and RLS were exercised
+indirectly through the flows above and through earlier Milestone 7
+testing against the shim) — they're lower-risk since they already don't
+depend on the client-bundle env pattern that broke the three features
+above. A follow-up session connected to this same project could walk
+those remaining screens live in a few more minutes if desired.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
@@ -366,14 +470,26 @@ server-side check, and most have a reproducible, passing SQL or unit test
 proving it (90 total automated assertions: 61 SQL + 29 Vitest, all
 passing as of this milestone).
 
+**Update**: item 1 below is now resolved for development/staging purposes
+— see "Live project verification" above. This project
+(`ccuelnrmvtmtgukqyvrb`) is a real Supabase instance with all 10
+migrations applied and genuinely exercised end-to-end. Whether it becomes
+*the* production project, or a separate one is created for production
+specifically, is the project owner's call — either way the "verified
+against a plain-Postgres shim only" caveat no longer applies.
+
 **What stands between this and a real production launch** (see
 `docs/DEPLOYMENT.md` for the full list):
-1. A hosted Supabase project (or a Docker-capable machine to run
-   `supabase start`) — this is the one gap underlying every "not
-   independently verified in this sandbox" note across all 8 milestones.
+1. ~~A hosted Supabase project~~ — done; see above. Remaining: decide
+   whether `ccuelnrmvtmtgukqyvrb` is the production project or a fresh one
+   should be created for production specifically, and clean up the
+   end-to-end test data (test accounts, one test listing, one test
+   conversation/subscription) this verification pass created — flagged
+   for the project owner rather than silently deleted.
 2. A real, Liberia-capable payment provider — no production payment
-   credentials exist; the architecture is ready, the provider isn't
-   chosen (see `docs/PAYMENTS.md`'s research notes).
+   credentials exist; the architecture is ready and now verified live
+   with the mock provider, but the provider itself isn't chosen (see
+   `docs/PAYMENTS.md`'s research notes).
 3. Legal review of the `/legal/*` pages and real business registration
    details to replace the placeholders in `lib/config/brand.ts`.
 4. An email provider, if transactional email (password reset beyond
@@ -386,14 +502,13 @@ credentials or input, not more engineering time against this codebase.
 
 ## Known production blockers (require the project owner)
 
-- **Hosted Supabase project**: development is intended to run against a
-  local Supabase stack (Docker), but this sandboxed build container's
-  Docker daemon doesn't start, so local development here falls back to a
-  plain-Postgres RLS shim (see `docs/ARCHITECTURE.md`). No environment so
-  far has exercised live Supabase Auth/PostgREST/Storage. Production needs
-  a real project URL + anon key + service-role key supplied via `.env`, and
-  a full `supabase start` run (on Docker-capable hardware) or a hosted
-  project is strongly recommended before launch to close this gap.
+- ~~**Hosted Supabase project**~~ — **resolved**: this repo is now
+  connected to a real, hosted Supabase project (all 10 migrations applied
+  via the Management API, genuinely exercised end-to-end — see "Live
+  project verification" above). Remaining decision for the project owner:
+  whether to use this same project for production or provision a separate
+  one specifically for production, and whether to clean up or keep the
+  test accounts/listing/conversation this verification pass created there.
 - **Real payment provider**: no Orange Money Liberia / MTN MoMo / card
   processor credentials exist. The payment architecture is provider-agnostic
   with a dev-only mock provider; a real integration needs merchant

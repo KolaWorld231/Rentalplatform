@@ -6,7 +6,7 @@ import { brand, subscriptionPlan } from "@/lib/config/brand";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveSubscription } from "@/lib/subscriptions/service";
-import { formatRelativeDate } from "@/lib/utils/format";
+import { formatExpiryDate } from "@/lib/utils/format";
 import { startCheckoutAction } from "../checkout/actions";
 
 export const metadata = { title: "Pricing" };
@@ -76,7 +76,7 @@ export default async function PricingPage({
             <div>
               <Badge variant="success">Active</Badge>
               <p className="mt-2 text-sm text-charcoal-500">
-                Your pass is active until {active.expires_at && formatRelativeDate(active.expires_at)}.
+                Your pass is active until {active.expires_at && formatExpiryDate(active.expires_at)}.
               </p>
             </div>
           ) : (

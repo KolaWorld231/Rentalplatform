@@ -3,7 +3,7 @@ import { logoutAction } from "@/lib/auth/actions";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscriptionHistory } from "@/lib/subscriptions/service";
-import { formatRelativeDate, formatUsd } from "@/lib/utils/format";
+import { formatExpiryDate, formatRelativeDate, formatUsd } from "@/lib/utils/format";
 import { Badge } from "@/components/ui/Badge";
 import { buttonVariants, Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -54,7 +54,7 @@ export default async function AccountPage() {
               </Badge>
               {isActive && current.expires_at && (
                 <p className="mt-1 text-sm text-charcoal-500">
-                  Expires {formatRelativeDate(current.expires_at)}
+                  Expires {formatExpiryDate(current.expires_at)}
                 </p>
               )}
             </div>

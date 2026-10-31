@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Home, Menu, MessageCircle, Search, X } from "lucide-react";
+import { Heart, Home, Menu, MessageCircle, Search, User, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { buttonVariants } from "@/components/ui/Button";
@@ -14,7 +14,7 @@ const navLinks = [
   { href: "/safety", label: "Safety" },
 ];
 
-export function Header() {
+export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -44,12 +44,24 @@ export function Header() {
           <Link href="/favourites" aria-label="Saved properties" className="focus-ring rounded-full p-2 hover:bg-sage-100">
             <Heart className="h-5 w-5 text-charcoal-500" />
           </Link>
-          <Link href="/login" className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
-            Log in
-          </Link>
-          <Link href="/register" className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
-            Get started
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              href="/account"
+              aria-label="Account"
+              className="focus-ring rounded-full p-2 hover:bg-sage-100"
+            >
+              <User className="h-5 w-5 text-charcoal-500" />
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
+                Log in
+              </Link>
+              <Link href="/register" className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
+                Get started
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -73,12 +85,24 @@ export function Header() {
               </li>
             ))}
             <li className="flex gap-2 pt-2">
-              <Link href="/login" className={cn(buttonVariants({ variant: "secondary" }), "flex-1")}>
-                Log in
-              </Link>
-              <Link href="/register" className={cn(buttonVariants({ variant: "primary" }), "flex-1")}>
-                Get started
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className={cn(buttonVariants({ variant: "secondary" }), "flex-1")}
+                >
+                  Account
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setOpen(false)} className={cn(buttonVariants({ variant: "secondary" }), "flex-1")}>
+                    Log in
+                  </Link>
+                  <Link href="/register" onClick={() => setOpen(false)} className={cn(buttonVariants({ variant: "primary" }), "flex-1")}>
+                    Get started
+                  </Link>
+                </>
+              )}
             </li>
           </ul>
         </nav>

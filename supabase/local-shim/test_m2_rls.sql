@@ -102,3 +102,24 @@ end
 $$;
 
 reset role;
+
+-- Milestone 8 regression: guests (anon) must see a profile's public
+-- display_name/avatar_path but never phone or account_status, even via a
+-- direct query (not just via the app's own column selection).
+set role anon;
+select case when display_name = 'Alice Renamed' then 'PASS: anon can read a profile''s display_name'
+            else 'FAIL: anon can read a profile''s display_name' end
+from public.profiles where id = '11111111-1111-1111-1111-111111111111';
+
+do $$
+begin
+  begin
+    perform phone from public.profiles where id = '11111111-1111-1111-1111-111111111111';
+    raise exception 'FAIL: anon was able to read the phone column';
+  exception
+    when insufficient_privilege then
+      raise notice 'PASS: anon cannot read the phone column (column-level grant)';
+  end;
+end
+$$;
+reset role;

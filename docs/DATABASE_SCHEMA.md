@@ -319,3 +319,49 @@ model (profiles/roles, properties, subscriptions/payments, messaging,
 verification, admin/notifications, support). Any further schema changes
 from here are tracked as migrations with their own dated filename, not
 appended to this historical record.
+
+## Post-launch fixes — found connecting to a real Supabase project
+
+The project was connected to a live, hosted Supabase instance for the
+first time after Milestone 8 (see `docs/IMPLEMENTATION_STATUS.md`'s "Live
+project verification" section for the full account). Two schema-level
+bugs surfaced that the plain-Postgres shim used throughout development
+could never have caught, because it has no PostgREST:
+
+### `20260108000100_postgrest_profile_relationships.sql`
+Embedded selects like `profiles:owner_id(display_name)` failed with
+PostgREST error `PGRST200` ("Could not find a relationship between
+'properties' and 'owner_id'"). `properties.owner_id` correctly references
+`auth.users(id)` for data integrity, but PostgREST resolves `alias:column
+(...)` embeds by looking for a foreign key *from* the queried table's
+column *to* the aliased table, within the `public` schema — it won't
+chain through `auth.users` to reach `public.profiles`, even though
+`profiles.id` always equals `auth.users.id` (profiles are created 1:1 by
+`handle_new_user()`). Fix: add an **additional** FK from each such column
+(`properties.owner_id`, `conversations.renter_id`, `conversations.
+owner_id`, `identity_verification_requests.user_id`) to
+`public.profiles(id)`, alongside the existing `auth.users(id)` FK — both
+are always satisfiable for a real row, so this adds no new constraint
+violations, only a second resolvable path for PostgREST.
+
+### `20260109000100_public_profile_display_name.sql`
+Guests (anon) saw "Property owner" instead of the owner's real name on a
+published listing, because `profiles_select_authenticated` (Milestone 2)
+was scoped to `authenticated` only — despite its own comment saying
+display names need to be visible "on a listing," and despite the brief
+listing "View publicly available owner-profile information" as a Guest
+capability. Fix: a new `anon`-scoped RLS policy, combined with
+**column-level** grants (`grant select (id, display_name, avatar_path) on
+public.profiles to anon`) so an anonymous request — even a raw direct
+query, not just the app's own column selection — can never retrieve
+`phone`, `phone_verified_at`, or `account_status`. (`id` had to be
+included even though it's never displayed: Postgres checks column-level
+privileges against every column a query *references*, including ones used
+only in a join/WHERE condition — omitting it reproduced the exact same
+"permission denied" failure, caught by re-running the Milestone 2 SQL
+test suite before this was pushed live.)
+
+Both fixes were applied to the live project via Supabase's Management API
+(`https://api.supabase.com/v1/projects/{ref}/database/query`) — see
+`docs/DEPLOYMENT.md` for why that path was used instead of `supabase db
+push` in this sandboxed environment.

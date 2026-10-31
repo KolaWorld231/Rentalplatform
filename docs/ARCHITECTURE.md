@@ -74,10 +74,19 @@ This sandboxed build environment cannot run the Docker-backed Supabase CLI
 stack (the daemon won't start under its restricted container). Development
 here validates migrations/RLS against a plain Postgres 16 instance with a
 minimal Supabase-compatible `auth` schema shim
-(`supabase/local-shim/`, dev-only, not part of `supabase/migrations/`), and
-exercises the Next.js app's rendering/redirect behavior with placeholder
-Supabase env values (no live Auth/PostgREST backend). On a machine where
-Docker works, `supabase start` + `supabase db reset` gives the full stack
-(real GoTrue, real PostgREST, real Storage) for true end-to-end testing —
-see `docs/DEPLOYMENT.md`. Production always points at a hosted Supabase
-project.
+(`supabase/local-shim/`, dev-only, not part of `supabase/migrations/`).
+This container's outbound network also only allows HTTPS (confirmed via
+its proxy status endpoint), not raw Postgres TCP, so neither `supabase db
+push` nor direct `psql` could reach a remote database either — not just
+`supabase start`'s local Docker stack. Despite that, this project *has*
+since been connected to a real, hosted Supabase project and genuinely
+exercised end-to-end: Supabase's HTTPS Management API
+(`api.supabase.com/v1/projects/{ref}/database/query`) was used to apply
+every migration, and a headless browser drove the running app against
+that live project for real signup/login/listing/search/subscription/
+messaging flows. See `docs/IMPLEMENTATION_STATUS.md`'s "Live project
+verification" section for the full account, including real bugs that
+surfaced only once PostgREST/a real browser bundle/a live clock were in
+the loop. On a machine where Docker or direct Postgres access works,
+`supabase start` + `supabase db reset` remains the standard local-dev
+path. Production always points at a hosted Supabase project.

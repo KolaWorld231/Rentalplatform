@@ -4,6 +4,7 @@ import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Header, MobileTabBar } from "@/components/layout/Header";
 import { brand } from "@/lib/config/brand";
+import { getCurrentUser } from "@/lib/auth/session";
 
 const interfaceFont = Manrope({
   variable: "--font-interface",
@@ -25,7 +26,9 @@ export const metadata: Metadata = {
   description: brand.heroSupportingCopy,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
+
   return (
     <html
       lang="en"
@@ -38,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <Header />
+        <Header isAuthenticated={!!user} />
         <main id="main-content" className="flex-1 pb-16 md:pb-0">
           {children}
         </main>
