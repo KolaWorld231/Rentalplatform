@@ -7,17 +7,11 @@ import { Card } from "@/components/ui/Card";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { propertyImageUrl } from "@/lib/supabase/storage";
-import { daysSince, formatUsd } from "@/lib/utils/format";
+import { formatUsd, isAvailabilityStale } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { PropertyWithCover } from "@/services/properties";
 
 export const metadata = { title: "My Properties" };
-
-const STALE_AFTER_DAYS = 14;
-function isStale(lastConfirmed: string | null) {
-  const days = daysSince(lastConfirmed);
-  return days === null || days >= STALE_AFTER_DAYS;
-}
 
 export default async function OwnerPropertiesPage() {
   const user = await requireUser("/dashboard/properties");
@@ -73,7 +67,7 @@ export default async function OwnerPropertiesPage() {
                 <Badge variant={p.listing_status === "published" ? "success" : "neutral"}>
                   {p.listing_status.replace("_", " ")}
                 </Badge>
-                {p.listing_status === "published" && isStale(p.last_availability_confirmed_at) && (
+                {p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at) && (
                   <Badge variant="warning">needs reconfirmation</Badge>
                 )}
               </Link>

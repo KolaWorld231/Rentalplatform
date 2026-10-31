@@ -34,7 +34,13 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
           placeholder="Write a reply…"
           className="focus-ring flex-1 rounded-[var(--radius-md)] border border-border bg-surface p-3 text-sm shadow-[var(--shadow-clay-inset)]"
         />
-        <Button type="submit" loading={pending} aria-label="Send message">
+        <Button
+          type="submit"
+          variant="clay"
+          loading={pending}
+          aria-label="Send message"
+          className="transition-transform active:translate-y-0.5"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </div>

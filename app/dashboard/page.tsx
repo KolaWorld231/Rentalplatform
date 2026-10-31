@@ -1,9 +1,10 @@
-import { Eye, Heart, Home, MessageCircle } from "lucide-react";
+import { AlertTriangle, Eye, Heart, Home, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { formatRelativeDate } from "@/lib/utils/format";
+import { formatRelativeDate, isAvailabilityStale } from "@/lib/utils/format";
 import type { Conversation } from "@/types/database";
 
 export const metadata = { title: "Owner Dashboard" };
@@ -19,7 +20,7 @@ export default async function DashboardOverviewPage() {
 
   const { data: properties } = await supabase
     .from("properties")
-    .select("listing_status, view_count, favourite_count")
+    .select("listing_status, view_count, favourite_count, last_availability_confirmed_at")
     .eq("owner_id", user.id);
 
   const { data: inquiries } = (await supabase
@@ -34,10 +35,13 @@ export default async function DashboardOverviewPage() {
   const drafts = properties?.filter((p) => p.listing_status === "draft").length ?? 0;
   const totalViews = properties?.reduce((sum, p) => sum + p.view_count, 0) ?? 0;
   const totalFavourites = properties?.reduce((sum, p) => sum + p.favourite_count, 0) ?? 0;
+  const staleCount =
+    properties?.filter((p) => p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at))
+      .length ?? 0;
 
   const stats = [
+    { label: "Published", value: published, icon: Home, lead: true },
     { label: "Total properties", value: total, icon: Home },
-    { label: "Published", value: published, icon: Home },
     { label: "Draft", value: drafts, icon: Home },
     { label: "Total views", value: totalViews, icon: Eye },
     { label: "Total favourites", value: totalFavourites, icon: Heart },
@@ -47,10 +51,30 @@ export default async function DashboardOverviewPage() {
     <div>
       <h1 className="font-display text-2xl font-semibold text-charcoal-700">Dashboard</h1>
 
+      {staleCount > 0 && (
+        <Card className="mt-6 flex items-center gap-3 border-l-4 border-warning-500 bg-warning-100 p-4">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-warning-500" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-charcoal-700">
+              {staleCount} {staleCount === 1 ? "listing needs" : "listings need"} availability reconfirmed
+            </p>
+            <p className="text-xs text-charcoal-500">
+              Renters trust listings more when availability was recently confirmed.
+            </p>
+          </div>
+          <Link href="/dashboard/properties" className="shrink-0 text-sm font-medium text-brand-700">
+            Review →
+          </Link>
+        </Card>
+      )}
+
       <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((s) => (
-          <Card key={s.label} className="p-4">
-            <s.icon className="h-5 w-5 text-brand-600" aria-hidden="true" />
+          <Card
+            key={s.label}
+            className={s.lead ? "p-4 shadow-[var(--shadow-clay-raised)]" : "p-4"}
+          >
+            <s.icon className={s.lead ? "h-5 w-5 text-brand-700" : "h-5 w-5 text-brand-600"} aria-hidden="true" />
             <p className="mt-2 font-display text-2xl font-semibold text-charcoal-700">{s.value}</p>
             <p className="text-xs text-charcoal-400">{s.label}</p>
           </Card>
@@ -82,9 +106,10 @@ export default async function DashboardOverviewPage() {
                 <li key={c.id}>
                   <Link
                     href={`/messages/${c.id}`}
-                    className="focus-ring flex items-center justify-between gap-3 py-3 hover:bg-sage-100"
+                    className="focus-ring flex items-center gap-3 py-3 hover:bg-sage-100"
                   >
-                    <div className="min-w-0">
+                    <Avatar name={c.renter_profile?.display_name} size="sm" />
+                    <div className="min-w-0 flex-1">
                       <p className={`truncate text-sm ${unread ? "font-semibold text-charcoal-700" : "font-medium text-charcoal-600"}`}>
                         {c.renter_profile?.display_name ?? "Renter"}
                       </p>

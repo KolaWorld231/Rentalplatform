@@ -622,6 +622,54 @@ Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm run build`
 succeeds, `npm run test` (33/33) passes, zero console/page errors during
 the live pass.
 
+## Conversion-focused redesign, wave 3 (post-Milestone-8)
+
+Third bold wave, targeting the two most conventional surfaces left, both
+post-conversion: the messaging experience (what a renter actually pays
+$5 for) and the owner's dashboard home base. Presentation-layer only.
+
+- **New `components/ui/Avatar.tsx`**: circular initials avatar, color
+  deterministically picked from the existing palette via a name hash — no
+  new tokens, no new dependency. Reused in the inbox, the thread header,
+  message bubbles, and the dashboard's recent-inquiries list.
+- **Messaging** (`app/messages/page.tsx`, `app/messages/[id]/page.tsx`):
+  extracted the conversation-list query/rendering into a shared
+  `components/messaging/ConversationList.tsx` so both routes can show a
+  real two-pane desktop layout (list + thread side by side, `lg:` grid)
+  instead of a single column that could only ever show one or the other.
+  List rows now show the property's cover photo and an avatar.
+  `MessageThread.tsx` groups consecutive messages from the same sender,
+  adds the counterpart's avatar next to their bubbles, and gives the
+  empty state an icon instead of bare text. `MessageComposer.tsx` picked
+  up the clay send-button treatment used elsewhere in this redesign.
+- **Owner dashboard** (`app/dashboard/page.tsx`): the lead "Published"
+  stat card now uses the clay-raised elevation to anchor the page; a new
+  actionable prompt surfaces "N listings need availability reconfirmed"
+  — built by reusing the exact staleness logic that already existed on
+  `/dashboard/properties` (now extracted to a shared
+  `isAvailabilityStale`/`AVAILABILITY_STALE_AFTER_DAYS` export in
+  `lib/utils/format.ts` instead of living only as a local function, so
+  both pages share one definition) — and is hidden entirely when nothing
+  is actually stale, never shown as a fabricated zero-state.
+- Live-verified against the real Supabase project with freshly seeded
+  data (one owner, one subscribed renter, two listings — one deliberately
+  stale, one fresh — two conversations with real messages), fully deleted
+  afterward: confirmed the desktop split view renders (list + "Select a
+  conversation" empty state on `/messages`, list + open thread on
+  `/messages/[id]` with the open conversation highlighted), confirmed a
+  reply sends and renders in the thread, and confirmed the dashboard's
+  stale-listing prompt shows the correct count ("1 listing needs
+  availability reconfirmed") only for the owner whose listing was
+  actually stale. Not independently re-verified live: the prompt
+  disappearing after clicking "Reconfirm now" — a Playwright navigation
+  flake on the unrelated `/dashboard/properties` list-row link (pre-
+  existing page, untouched by this wave) blocked that one sub-check; the
+  underlying logic is the same already-proven `isAvailabilityStale`
+  helper now shared between both pages, so this is a test-harness gap,
+  not a known product issue.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
