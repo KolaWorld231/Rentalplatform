@@ -136,6 +136,20 @@ threat model, not a one-time checklist.
   queries across all rows — this is a read-only aggregate, not a
   per-record bypass, and is appropriate because RLS-scoped counts would
   undercount or require N queries per admin page load.
+- **Account suspension is now actually enforced** (found live: an admin
+  could suspend a user — `account_status` flipped correctly, an audit log
+  entry and notification were created — but nothing checked that status
+  anywhere, so the suspended user could still log in and use every
+  protected page normally; only the admin UI's badge color had changed).
+  Fixed in two places, matching the project's existing defense-in-depth
+  pattern: `lib/supabase/middleware.ts` checks it on every protected
+  route and signs the user out + redirects to `/suspended` if suspended,
+  and `lib/auth/session.ts#requireUser()` repeats the same check
+  independently so no protected Server Action can be reached by a
+  suspended session even if a middleware matcher gap existed. Verified
+  live: a suspended test user was redirected to `/suspended` and signed
+  out on the next request; restoring the account via `/admin/users`
+  (`restoreUserAction`) let them log in normally again.
 
 ## Response headers (Milestone 8)
 
@@ -170,6 +184,25 @@ not a regression introduced here.
   works and is RLS-correct, but there's no moderation queue page for it
   (unlike listings/verifications/reports, which all got one in Milestone
   7). A straightforward addition following the same pattern.
+- `account_status = 'deleted'` (distinct from `'suspended'`) is not
+  enforced anywhere yet — only `'suspended'` is checked by
+  `requireUser()`/the middleware. No code path currently sets a profile to
+  `'deleted'` outside of manual intervention, so this hasn't caused a real
+  issue, but it should be closed (either enforce it the same way as
+  suspended, or implement it as part of a real account-deletion flow)
+  before relying on it.
+- An `admin_audit_logs` entry permanently pins its `actor_id` to
+  `auth.users` with no cascade (by design — the audit trail must survive
+  the actor's account being removed). This means an admin account that
+  has ever performed a logged action **cannot be hard-deleted** via the
+  Supabase Auth Admin API — confirmed live, where deleting a test admin
+  account failed with a foreign-key violation until the audit-log
+  reference was accounted for. There is currently no supported "remove an
+  admin for good" path in the app itself (only suspend); full account
+  deletion for a user with audit history needs either an archival process
+  or a deliberate decision to nullify `actor_id` (losing attribution) —
+  not implemented, since it wasn't in scope for any milestone's business
+  rules.
 - This container's Docker daemon doesn't run, so RLS/auth have only been
   verified against a plain-Postgres shim and static page rendering, not
   against live Supabase Auth/PostgREST/Storage/Realtime. That gap is

@@ -112,3 +112,20 @@ select case when count(*) = 0 then 'PASS: stranger cannot read another user''s n
 from public.notifications where user_id = 'a0000000-0000-0000-0000-000000000003';
 
 reset role; reset request.jwt.claim.sub; reset request.jwt.claim.role;
+
+-- Milestone 8 regression: account_status must be readable by the
+-- suspended user's own session (requireUser() needs this to enforce the
+-- suspension — found live, where nothing actually checked it).
+set role service_role;
+update public.profiles set account_status = 'suspended' where id = 'a0000000-0000-0000-0000-000000000003';
+reset role;
+
+set role authenticated;
+set request.jwt.claim.sub = 'a0000000-0000-0000-0000-000000000003';
+set request.jwt.claim.role = 'authenticated';
+
+select case when account_status = 'suspended' then 'PASS: suspended user can read their own account_status (enforcement check)'
+            else 'FAIL: suspended user can read their own account_status (enforcement check)' end
+from public.profiles where id = 'a0000000-0000-0000-0000-000000000003';
+
+reset role; reset request.jwt.claim.sub; reset request.jwt.claim.role;

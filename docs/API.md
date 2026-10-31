@@ -86,7 +86,7 @@ write via `service_role` → `recordAdminAction` (audit log) →
 | `reviewPropertyVerificationAction(id, decision, notes)` | admin or moderator | Same, for a property's verification request. |
 | `moderatePropertyAction(id, newStatus, reason)` | admin or moderator | Approve/reject/suspend a listing; notifies the owner. |
 | `resolvePropertyReportAction(id, status, notes)` / `resolveMessageReportAction(id, status)` | admin or moderator | Resolves a filed report. |
-| `suspendUserAction(userId, reason)` / `restoreUserAction(userId)` | **admin only** | Sets `profiles.account_status`; notifies the user. |
+| `suspendUserAction(userId, reason)` / `restoreUserAction(userId)` | **admin only** | Sets `profiles.account_status`; notifies the user. The suspension is actually enforced — see `docs/SECURITY.md` — not just a status flip the UI reads. |
 
 | Page | File | Notes |
 |---|---|---|

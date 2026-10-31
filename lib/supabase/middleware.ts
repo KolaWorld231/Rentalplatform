@@ -34,5 +34,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // A suspended account must actually lose access, not just show a
+  // different badge in the admin UI — found live, where a suspended test
+  // user could still log in and use every protected page normally.
+  if (isProtected && user && !request.nextUrl.pathname.startsWith("/suspended")) {
+    const { data: profile } = await supabase.from("profiles").select("account_status").eq("id", user.id).single();
+    if (profile?.account_status === "suspended") {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL("/suspended", request.url));
+    }
+  }
+
   return response;
 }

@@ -11,12 +11,27 @@ export async function getCurrentUser() {
   return user;
 }
 
-/** Defense in depth: call at the top of any protected Server Component/Action, don't rely on middleware alone. */
+/**
+ * Defense in depth: call at the top of any protected Server
+ * Component/Action, don't rely on middleware alone (see
+ * lib/supabase/middleware.ts for the matching check there). Also enforces
+ * account suspension — found live, where a suspended account could still
+ * reach every protected page and action because nothing actually checked
+ * `account_status`, only the admin UI's badge color changed.
+ */
 export async function requireUser(nextPath?: string) {
   const user = await getCurrentUser();
   if (!user) {
     redirect(nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login");
   }
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase.from("profiles").select("account_status").eq("id", user.id).single();
+  if (profile?.account_status === "suspended") {
+    await supabase.auth.signOut();
+    redirect("/suspended");
+  }
+
   return user;
 }
 

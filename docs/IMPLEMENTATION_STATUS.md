@@ -458,6 +458,69 @@ depend on the client-bundle env pattern that broke the three features
 above. A follow-up session connected to this same project could walk
 those remaining screens live in a few more minutes if desired.
 
+## Live project verification, part 2 — owner dashboard & admin console
+
+A follow-up walkthrough (same live project) drove the remaining screens
+not individually re-walked in part 1: the owner dashboard overview, the
+verification center's full submit→upload→admin-review→approve→public-
+badge→notification loop, and the full admin console (listings queue,
+verifications queue, property/message reports queue, user suspend/
+restore) — all via a real headless browser against live Supabase, with
+fresh test accounts created and then cleaned up afterward.
+
+**Confirmed working end-to-end, live**: owner dashboard stats (property
+counts matching reality), identity verification submission + document
+upload (via `createClient()` in a Client Component — the same code path
+Milestone 8's env-inlining fix repaired) + the document's signed URL
+genuinely opening from the admin review queue + Approve flipping status +
+a notification landing in the owner's inbox + the "Identity Verified"
+badge then appearing on the public listing page for a guest; a renter
+filing a property report + it appearing in the admin queue + "Mark
+resolved" clearing it; admin aggregate counts matching real row counts
+after each action.
+
+**One more real bug found and fixed**: **account suspension did nothing**.
+`suspendUserAction` correctly flipped `profiles.account_status`, wrote an
+audit log entry, and sent a notification — but nothing anywhere actually
+*checked* `account_status`, so a suspended test user could still log in
+and reach every protected page normally; only the admin UI's badge color
+had changed. Confirmed live before and after the fix: pre-fix, a
+suspended user reached `/account` with full access; post-fix, the same
+account is redirected to a new `/suspended` page and signed out. Fixed in
+two places matching this project's established defense-in-depth pattern —
+`lib/supabase/middleware.ts` (every protected route) and
+`lib/auth/session.ts#requireUser()` (every protected Server Action/
+Component, independent of middleware) — plus a new SQL regression
+assertion (`test_m7_rls.sql`, now 9/9) confirming a suspended user's own
+session can still read their `account_status` (required for the checks
+above to work at all). Restoration was also verified live: `restoreUserAction`
+correctly let the account log in again afterward.
+
+**Also found and fixed**: a stale placeholder on the owner dashboard still
+read "Direct messaging lands in a later milestone of this build" —
+written honestly in Milestone 3 before messaging existed, but never
+updated once Milestone 5 actually shipped it. Replaced with a real
+"Recent inquiries" list (counterpart name, property, unread indicator,
+last-activity time, empty state) matching the pattern already used on
+`/messages`.
+
+**Housekeeping discovered while cleaning up test data**: several tables
+intentionally don't cascade-delete from `auth.users` (verification
+documents, report moderator assignments, view logs, and — by firm design —
+`admin_audit_logs`, so an admin's audit trail can't vanish by deleting
+their account). This is correct behavior, not a bug, but it means an admin
+account that has ever performed a logged action cannot currently be
+hard-deleted through the app or the Auth Admin API without a deliberate
+data-migration decision; see `docs/SECURITY.md`'s "Known gaps" for the
+one test admin account this left behind in the live project (soft-marked
+`account_status = 'deleted'` with its role revoked, since it couldn't be
+hard-deleted — harmless, but worth knowing about rather than discovering
+by surprise).
+
+All fixes in this pass were typechecked, linted, verified against the
+full local SQL shim suite (64/64 assertions) before being pushed, and
+re-verified live via the same headless-browser method as part 1.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
