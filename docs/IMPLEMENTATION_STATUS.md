@@ -1220,6 +1220,49 @@ reason — no schema migration.
   — once filled in. All four confirmed directly against the database, not
   just the UI's apparent success.
 
+## Dark-mode text contrast fix (post-Milestone-8)
+
+A real bug, reported by the user from a live preview deployment viewed in
+dark mode: text throughout the app (e.g. the homepage's "Recently
+listed" empty state) was nearly invisible — dark gray/near-black text on
+a now-dark `Card`/`background`.
+
+- **Root cause**: `app/globals.css`'s `@media (prefers-color-scheme:
+  dark)` block only overrode `--background`, `--foreground`,
+  `--color-surface`, and `--color-border`. The `charcoal-700/500/400`
+  tokens — used throughout the app as `text-charcoal-700/500/400` for
+  primary/secondary/muted text — kept their light-mode values (near-black
+  grays), which are illegible against the now-dark surfaces.
+- **Fix**: added dark-mode overrides for `--color-charcoal-700` (`#1a1a1a`
+  → `#f0f0f0`), `--color-charcoal-500` (`#4d4d4d` → `#a8a8a8`), and
+  `--color-charcoal-400` (`#737373` → `#8c8c8c`) inside the existing
+  media query, same mechanism already used for
+  `--background`/`--foreground`. `--color-charcoal-900` was deliberately
+  left unchanged — confirmed (via a full-codebase grep) it's only ever
+  used as `bg-charcoal-900/*` for dialog/lightbox overlay scrims, which
+  should stay black in both themes, not as text.
+  Confirmed via grep that charcoal-700/500/400 are used only as `text-*`
+  classes (no `bg-`/`border-`/`ring-`/`divide-` usage), so flipping them
+  is safe.
+- New values chosen for ≥4.5:1 contrast against both `--background`
+  (`#000000`) and `--color-surface` (`#1a1a1a`) in dark mode (computed:
+  ~17:1, ~7.3:1, ~5.2:1 respectively against `#1a1a1a`), matching or
+  exceeding the AA bar the original light-mode grays held against white.
+- No component, markup, or non-CSS file changed — purely a token-value
+  fix in `app/globals.css`.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (33/33) all clean.
+- Live Playwright pass with `colorScheme: "dark"` emulation across `/`,
+  `/pricing`, `/safety`, and `/login`: confirmed computed text color for
+  the previously-invisible homepage empty-state heading/paragraph
+  switched from `rgb(26, 26, 26)`/`rgb(77, 77, 77)` to
+  `rgb(240, 240, 240)`/`rgb(168, 168, 168)`, and visually confirmed all
+  four pages render fully legible text against their dark surfaces.
+  (One false start during verification: the dev server initially kept
+  serving a stale compiled CSS bundle after the edit — a `.next` cache
+  issue, not a product bug — resolved by clearing `.next` and
+  restarting.)
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

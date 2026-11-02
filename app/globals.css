@@ -130,6 +130,18 @@
     --foreground: var(--color-ivory-100);
     --color-surface: #1a1a1a;
     --color-border: #333333;
+
+    /*
+      charcoal-700/500/400 are used only as text-* colors (confirmed: no
+      bg-/border-/ring- usage anywhere in the codebase), so it's safe to
+      invert them here for legibility on the now-dark --background/
+      --color-surface. charcoal-900 is left alone — it's only ever used
+      as a dark overlay/backdrop (dialog scrims, gallery lightbox), which
+      should stay black in both themes.
+    */
+    --color-charcoal-700: #f0f0f0;
+    --color-charcoal-500: #a8a8a8;
+    --color-charcoal-400: #8c8c8c;
   }
 }
 
