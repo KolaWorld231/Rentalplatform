@@ -7,6 +7,8 @@ import { type ActionState, loginAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { PasskeyLoginButton } from "@/components/auth/PasskeyLoginButton";
+import { usePasskeySupport } from "@/lib/auth/use-passkey-support";
 
 const initialState: ActionState = {};
 
@@ -23,6 +25,7 @@ function LoginForm() {
   const next = searchParams.get("next") ?? "";
   const resetSuccess = searchParams.get("reset") === "success";
   const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const passkeySupported = usePasskeySupport();
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
@@ -37,6 +40,18 @@ function LoginForm() {
             Password updated. Log in with your new password.
           </p>
         )}
+
+        {passkeySupported && (
+          <>
+            <PasskeyLoginButton />
+            <div className="my-4 flex items-center gap-3 text-xs font-medium text-charcoal-400">
+              <span className="h-px flex-1 bg-border" />
+              or with your password
+              <span className="h-px flex-1 bg-border" />
+            </div>
+          </>
+        )}
+
         <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="next" value={next} />
           <Input label="Email" name="email" type="email" autoComplete="email" required />

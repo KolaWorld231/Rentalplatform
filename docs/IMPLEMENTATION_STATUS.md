@@ -1315,6 +1315,82 @@ preview-only database.
   Sinkor apartment's own detail page renders its title, price, and
   "DomiLink Listings Team" as the owner.
 
+## Passkey (biometric) sign-up/sign-in + low-email-market recommendations (post-Milestone-8)
+
+The user asked for biometric (WebAuthn passkey) sign-up/sign-in, plus
+suggestions for markets like Liberia with low active email usage.
+Confirmed scope with the user: build full passkey sign-up/sign-in
+(password+email stays as the fallback, not removed); for the low-email
+angle, write a recommendations doc rather than build phone/WhatsApp OTP
+now, since those are blocked on real SMS/WhatsApp Business API
+credentials the same way the payment provider is blocked in
+`docs/PAYMENTS.md`.
+
+- **Confirmed before building**: Supabase Auth has no native
+  passwordless-passkey *primary* sign-in — WebAuthn there is only an MFA
+  second factor on an already-authenticated session. A real passkey-only
+  sign-up/sign-in required a custom build: `@simplewebauthn/server` +
+  `@simplewebauthn/browser` (new deps) for the WebAuthn ceremonies, two
+  new tables (`webauthn_credentials`, `webauthn_challenges` — see
+  `docs/DATABASE_SCHEMA.md`), and a session-minting trick for turning a
+  verified ceremony into a real Supabase session: `admin.generateLink({
+  type: "magiclink", email })` (generates a token, sends no email) →
+  `verifyOtp({ type: "magiclink", token_hash })` on the request-scoped
+  cookie-writing client.
+- **`lib/auth/webauthn-actions.ts`** (new): `startPasskeyRegistrationAction`/
+  `verifyPasskeyRegistrationAction` (add a passkey to an existing
+  account), `startPasskeySignupAction`/`verifyPasskeySignupAction`
+  (brand-new account, no password ever set — the `auth.users` row is only
+  created *after* the WebAuthn ceremony verifies, so an abandoned
+  ceremony never leaves an orphaned account), `startPasskeyLoginAction`/
+  `verifyPasskeyLoginAction` (discoverable-credential sign-in, no email
+  typed), `listPasskeysAction`/`deletePasskeyAction` (account
+  management). A lightweight application-level rate limit (mirroring
+  `services/messaging.ts`'s existing pattern) caps ceremony starts, since
+  Supabase's own built-in auth rate limiting — the project's documented
+  protection for auth endpoints, `docs/SECURITY.md` — doesn't cover these
+  new custom Server Actions.
+- **UI**: `app/(auth)/login/page.tsx` gets a "Sign in with a passkey"
+  button above the existing password form; `app/(auth)/register/page.tsx`
+  gets a passkey/password toggle sharing the same name/email fields and
+  renter/owner intent cards; `app/account/page.tsx` gets a new "Passkeys"
+  card (`components/auth/PasskeyManager.tsx`) to add/revoke passkeys on
+  an existing account. Every passkey UI element is gated by
+  `lib/auth/use-passkey-support.ts` (wraps `browserSupportsWebAuthn()`)
+  and degrades to simply not rendering on unsupported browsers/devices —
+  a real concern given device diversity in Liberia — never a broken
+  button.
+- **`supabase/migrations/20261103000100_webauthn.sql`**: RLS enabled on
+  both new tables; `webauthn_credentials` grants `select`/`delete` to
+  `authenticated` scoped to the caller's own rows, no client
+  `insert`/`update` at all; `webauthn_challenges` has no `anon`/
+  `authenticated` grant whatsoever, `service_role`-only.
+  **Not yet applied to the live Supabase project** — the Management-API
+  personal access token used to apply every other migration this session
+  (see "How the migrations were applied" above) wasn't available in this
+  session; flagged to the user to add `SUPABASE_ACCESS_TOKEN` to the
+  environment's secrets so it can be applied.
+- **`docs/AUTH_ALTERNATIVES.md`** (new): phone/SMS OTP (Supabase-native,
+  blocked on a real SMS provider with confirmed Liberia coverage —
+  Twilio/Infobip/MessageBird named as candidates, same "needs the project
+  owner's provider choice and credentials" framing as `docs/PAYMENTS.md`),
+  WhatsApp OTP (not Supabase-native — needs a custom Edge Function + Meta
+  WhatsApp Business Cloud API with template approval, reusing this
+  change's session-minting pattern), long-lived "remember this device"
+  sessions, USSD (partnership-dependent, out of reach for a web app
+  alone), and operational mitigations (agent-assisted onboarding,
+  data-light design).
+- No change to `registerAction`/`loginAction`/the password flow —
+  additive only. No change to `profiles.phone`/`phone_verified_at`
+  (confirmed unrelated/unused before this change, left alone).
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (36/36 — 3 new `passkeySignupSchema` cases added) all clean.
+- **Live verification not yet performed** — blocked on the same missing
+  database credential as the migration above; this needs a live Supabase
+  Auth session to actually exercise (Chromium's WebAuthn virtual
+  authenticator via Playwright, per the plan), not just a compiled build.
+  To be completed once the migration is applied.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
@@ -1377,3 +1453,15 @@ credentials or input, not more engineering time against this codebase.
 - **Email/SMS providers**: unconfigured; in-app notifications work without
   them, transactional email/SMS is documented but inactive until credentials
   are supplied.
+- **Supabase Management API access token**: the `webauthn_credentials`/
+  `webauthn_challenges` migration (above) hasn't been applied to the live
+  project yet — this session didn't have the personal access token used
+  to apply every earlier migration. Add `SUPABASE_ACCESS_TOKEN` to the
+  environment's secrets (a Supabase personal access token from
+  https://supabase.com/dashboard/account/tokens) so a session can apply
+  it and complete live verification of the passkey feature.
+- **SMS/WhatsApp provider for low-email-market auth**: see
+  `docs/AUTH_ALTERNATIVES.md` — phone/SMS OTP and WhatsApp OTP are
+  researched and ready to build, blocked on choosing and contracting a
+  provider with confirmed Liberia coverage (same shape of decision as the
+  payment provider above).

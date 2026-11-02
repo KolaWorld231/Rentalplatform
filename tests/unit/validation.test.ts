@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { registerSchema } from "@/lib/validation/auth";
+import { passkeySignupSchema, registerSchema } from "@/lib/validation/auth";
 import { propertyFormSchema, searchParamsSchema } from "@/lib/validation/property";
 
 describe("registerSchema", () => {
@@ -38,6 +38,35 @@ describe("registerSchema", () => {
       displayName: "Jane Doe",
       email: "jane@example.com",
       password: "supersecret",
+      intent: "admin",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("passkeySignupSchema", () => {
+  it("accepts a valid passkey sign-up (no password field)", () => {
+    const result = passkeySignupSchema.safeParse({
+      displayName: "Jane Doe",
+      email: "jane@example.com",
+      intent: "owner",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid email", () => {
+    const result = passkeySignupSchema.safeParse({
+      displayName: "Jane Doe",
+      email: "not-an-email",
+      intent: "renter",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid intent", () => {
+    const result = passkeySignupSchema.safeParse({
+      displayName: "Jane Doe",
+      email: "jane@example.com",
       intent: "admin",
     });
     expect(result.success).toBe(false);

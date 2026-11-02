@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { logoutAction } from "@/lib/auth/actions";
 import { requireUser } from "@/lib/auth/session";
+import { listPasskeysAction } from "@/lib/auth/webauthn-actions";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscriptionHistory } from "@/lib/subscriptions/service";
 import { formatExpiryDate, formatRelativeDate, formatUsd } from "@/lib/utils/format";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { buttonVariants, Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils/cn";
+import { PasskeyManager } from "@/components/auth/PasskeyManager";
 import { ProfileForm } from "./ProfileForm";
 
 export const metadata = { title: "Account Settings", robots: { index: false, follow: false } };
@@ -32,6 +34,7 @@ export default async function AccountPage() {
     .single();
 
   const history = await getSubscriptionHistory(supabase, user.id);
+  const passkeys = await listPasskeysAction();
   const current = history[0];
   const isActive = current?.status === "active" && current.expires_at && new Date(current.expires_at) > new Date();
 
@@ -45,6 +48,16 @@ export default async function AccountPage() {
 
       <Card className="mt-6 p-6">
         <ProfileForm displayName={profile?.display_name ?? ""} phone={profile?.phone ?? null} />
+      </Card>
+
+      <Card className="mt-6 p-6">
+        <h2 className="font-display text-lg font-semibold text-charcoal-700">Passkeys</h2>
+        <p className="mt-1 text-sm text-charcoal-500">
+          Sign in with your fingerprint, face, or screen lock instead of typing your password.
+        </p>
+        <div className="mt-3">
+          <PasskeyManager initialPasskeys={passkeys} />
+        </div>
       </Card>
 
       <Card className="mt-6 p-6">

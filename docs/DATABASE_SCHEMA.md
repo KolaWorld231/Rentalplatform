@@ -320,6 +320,34 @@ verification, admin/notifications, support). Any further schema changes
 from here are tracked as migrations with their own dated filename, not
 appended to this historical record.
 
+## Passkey (WebAuthn) authentication — `20261103000100_webauthn.sql`
+
+Supabase Auth has no native passwordless-passkey *primary* sign-in
+(WebAuthn there is only an MFA second factor on an already-authenticated
+session) — see `docs/AUTH_ALTERNATIVES.md` and `lib/auth/
+webauthn-actions.ts` for the full mechanism, including how a verified
+ceremony is turned into a real Supabase session via the admin
+`generateLink`/`verifyOtp` pattern.
+
+### `webauthn_credentials`
+One row per registered passkey: `credential_id` (unique), `public_key`
+(base64-encoded, not `bytea` — avoids PostgREST's hex-string bytea
+encoding entirely), `counter` (replay-attack detection, bumped on every
+sign-in), `device_type`/`backed_up`/`transports` (as reported by the
+authenticator), `label`. RLS: a user can `select`/`delete` their own rows
+only — never `insert`/`update` directly; every write happens through
+`service_role` from `lib/auth/webauthn-actions.ts`, only after a server-
+side WebAuthn ceremony verification.
+
+### `webauthn_challenges`
+Short-lived (2-minute TTL), service-role-only pending-ceremony state — no
+`anon`/`authenticated` grant at all. `user_id` is null during sign-up and
+during the discoverable-credential sign-in flow, since no user is known
+yet at that point; a `metadata` jsonb column holds the provisional email/
+display_name/intent for a passkey sign-up specifically (nothing else
+reads or writes it). Rows are deleted the moment they're consumed
+(success or failure) or expire.
+
 ## Post-launch fixes — found connecting to a real Supabase project
 
 The project was connected to a live, hosted Supabase instance for the
