@@ -1,180 +1,95 @@
-# Goldfish Annotated Review Report
+# Goldfish Annotated Review Report (Stage 9, Round 1)
 
-**Status: resolved** — all PROPOSE FIX items (Issues 1-11, 13, 14, 16-18,
-20) auto-accepted and applied; 3 DECLINE items (Issues 12, 15, 19) left
-unchanged as accepted nits.
-
-**Target:** `docs/designs/homepage-liveliness-design.md` (lines 1–393)
+**Target:** `docs/designs/homepage-liveliness-design.md` (DetailedRange, lines 430–583, with two edits reaching into the FeatureRange to fix cross-referenced inconsistencies)
 
 ## Prioritized Findings & AI Suggestions
 
-### Issue 1 [`egm-design`] - Severity: High
-*   **Affected Scope:** Lines 91-99 (CUJ 2) vs. lines 236-249 (item 6)
-*   **Discrepancy Description:** CUJ 2 says clicking a county chip navigates directly to `/search?county=<county>`; the Technical Plan says chips set local state only, navigation happens on form submission.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Valid contradiction. The submit-based flow is correct and should stand: it matches `HeroSearch`'s existing one-button-submits-everything pattern and lets county be combined with city/bedrooms in one search, consistent with how `searchParamsSchema` treats all three as independently optional. CUJ 2 is the one that needs to change.
+### Issue 1 [`egm-implementation-readiness` / `egm-codebase-details`] - Severity: Critical
+*   **Affected Scope:** Lines 501-511 (item 6) and FeatureRange Technical Plan item 5 (lines 207-218)
+*   **Discrepancy Description:** The `ProcessSteps` spine fill-in is unimplementable as specified — `Reveal` exposes no mechanism for a sibling/child to react to its internal visibility state while forbidden from forking it, and per-gap segment positioning for variable-height step rows has no specified formula. The "Type / Scope" line also factually misstates that `ProcessSteps.tsx` has a `"use client"` directive.
+*   ***AI Suggestion:*** PROPOSE FIX (redesign)
+*   ***Justification:*** This requires an actual design change, not a wording patch. Resolution: abandon the per-segment `scale-y` "draw-in" effect and the multi-segment split entirely. Keep the spine as the single continuous element it is today (`absolute ... top-6 bottom-6 w-px bg-border`, sized by the existing container insets — no per-gap positioning math needed), and wrap that single element in one `<Reveal delayMs={(steps.length - 1) * 100}>` so the whole line fades and slides in using `Reveal`'s own, unmodified, already-exposed behavior (opacity + translate-y) — the same transition every other `Reveal` usage in the app already has, rather than inventing a new scale-y motion language for this one element. This is implementable with zero changes to `Reveal.tsx`, requires no segment geometry, and is consistent with `Reveal`'s actual API (it accepts `children` and an optional `className`, merged via `cn()`, and manages opacity/translate-y on its own wrapper — nothing more).
 *   ***Proposed Edit:***
-    *   Location: CUJ 2 "Then" clause (line 97-99)
-    *   Change: "clicking one navigates to `/search?county=<county>`, filtering results exactly the same way the full search filters sidebar already does" → "clicking one toggles it as the selected county (same active/inactive treatment as `SearchFilters.tsx`'s category chips); submitting the search (alongside any city/bedrooms already entered) navigates to `/search?county=<county>...`, filtering results exactly the same way the full search filters sidebar already does."
+    *   Location: FeatureRange Technical Plan item 5 (lines 198-218) — full rewrite.
+    *   Change: Replace the per-segment-scale-y description with: "`ProcessSteps.tsx` currently renders one continuous `absolute ... w-px bg-border` spine behind all steps, already fully positioned correctly by the existing container insets (`top-6`/`bottom-6`), fully drawn and static. Wrap that single spine element in one `<Reveal delayMs={(steps.length - 1) * 100}>` — delayed to roughly when the last step's own content reveal completes — so it fades and slides into place using `Reveal`'s existing, unmodified opacity/translate-y transition, the same motion every other `Reveal` usage in the app already has. No per-segment split, no new CSS, no change to `Reveal.tsx` itself, no new component."
+    *   Location: Detailed Implementation Plan item 6 (lines 499-511) — update to match, and correct the Type/Scope line.
+    *   Change: "Type / Scope: React client component (`"use client"`, already imports `Reveal`)" → "Type / Scope: React server-renderable component (no `"use client"` directive; already imports the client component `Reveal`, which composes fine as a child of a server component)." Replace "Proposed Changes" with: "Wrap the existing single spine `<div aria-hidden="true" className="absolute ... w-px bg-border lg:block" />` in `<Reveal delayMs={(steps.length - 1) * 100}>`, with no other change to the spine's existing classes/positioning."
 
-### Issue 2 [`egm-design`] - Severity: High
-*   **Affected Scope:** Lines 172-196 (item 4)
-*   **Discrepancy Description:** The `--hero-drift-base` CSS variable mechanism is asserted to preserve each tile's static rotation through the animation, but nothing specifies how the variable is populated, and as described the keyframe's `transform` would replace rather than merge with each tile's static transform.
+### Issue 2 [`egm-implementation-readiness`] - Severity: Medium
+*   **Affected Scope:** Lines 450-458 (item 2)
+*   **Discrepancy Description:** Names the hero-drift keyframe's property (`translate`) but not a concrete duration — "~30-45s" is a range.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Checkable against this repo's own prior finding (Wave 9's `Switch` component investigation confirmed Tailwind v4 applies `translate-x-*`/`rotate-*` via the native CSS `translate`/`rotate` properties, not the composite `transform` property). That means the static `rotate-6`/`-rotate-3`/`rotate-2` Tailwind classes already on each tile use the CSS `rotate` property, completely independent of `translate` — the drift only needs to animate `translate`, and the existing static rotation classes keep working untouched with zero custom property needed. This is a simpler and more correct fix than the `--hero-drift-base` approach.
+*   ***Justification:*** Trivial to pin down; the Technical Plan's keyframe code (lines 179-183) already has the exact 0%/50%/100% stops, just not a final duration.
 *   ***Proposed Edit:***
-    *   Location: `@keyframes hero-drift` definition and its surrounding prose (lines 174-196)
-    *   Change: Replace the `--hero-drift-base`-based keyframe with one that animates only the native `translate` property: `@keyframes hero-drift { 0%, 100% { translate: 0 0; } 50% { translate: 4px -4px; } }`. Remove all `--hero-drift-base` references. State explicitly that each tile's existing static `rotate-*` Tailwind class is untouched and composes independently, since Tailwind v4 applies `rotate` via the native CSS `rotate` property, separate from `translate` (cite the Wave 9 `Switch` precedent for this fact).
+    *   Location: Line 450-458
+    *   Change: "(duration ~30-45s, `ease-in-out`, `infinite`)" → "(`animation: hero-drift 38s ease-in-out infinite`)"
 
-### Issue 3 [`egm-design`] - Severity: High
-*   **Affected Scope:** Lines 198-214 (item 5), contradicting line 75's "Open Questions: None outstanding"
-*   **Discrepancy Description:** Two architecturally distinct approaches (extracting `Reveal`'s internal visibility logic vs. wrapping each segment in its own `<Reveal>`) are left as an "or" instead of committed to one.
+### Issue 3 [`egm-implementation-readiness`] - Severity: Medium
+*   **Affected Scope:** Lines 434-445 (item 1, `CountUp`)
+*   **Discrepancy Description:** "An ease-out curve" names no formula; unspecified whether the animating span applies `.toLocaleString()` during the count-up.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** The Detailed Implementation Plan (item 6) already commits to the simpler approach (wrapping each segment in its own `<Reveal delayMs={i * 100}>`). The Technical Plan should match it, not present a fork.
+*   ***Justification:*** Both are easy to pin down.
 *   ***Proposed Edit:***
-    *   Location: Lines 208-213
-    *   Change: Remove "driven by the same `visible` state logic `Reveal` already uses internally (or, simpler: ...)" and its parenthetical fork. Keep only: "each segment is wrapped in its own `<Reveal delayMs={i * 100}>` matching step N's marker, reusing `Reveal`'s existing component rather than duplicating its IntersectionObserver logic."
+    *   Location: Line 405-406 (and the matching line in item 1 of Detailed Implementation Plan)
+    *   Change: "using an ease-out curve computed in plain JS (no dependency)" → "using the cubic ease-out formula `1 - Math.pow(1 - t, 3)` (`t` = elapsed/duration, clamped to [0, 1]), computed in plain JS (no dependency). The animating `aria-hidden` span applies `.toLocaleString()` to its current tweened integer on every frame, matching the final `sr-only` value's formatting."
 
-### Issue 4 [`egm-design`] - Severity: High
-*   **Affected Scope:** Lines 236-249 and 374-376
-*   **Discrepancy Description:** County chips get a visually-toggled active state but no `aria-pressed` (or equivalent) is proposed to convey that state to assistive technology, despite the document explicitly reasoning about chip accessibility.
+### Issue 4 [`egm-implementation-readiness` / `egm-codebase-details`] - Severity: Medium
+*   **Affected Scope:** Line 521 (item 7) and FeatureRange Technical Plan item 6 (line ~255)
+*   **Discrepancy Description:** Three different, mutually undefined names are used across two sections for the same chip-selection comparison: `selectedChip`, `selectedCounty`, and the actual state variable `county`. Both are my own inconsistency, introduced in two separate prior remediation rounds.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Valid and checkable — confirmed no ARIA state attribute is mentioned anywhere in item 6's description.
+*   ***Justification:*** There's only one real state variable (`county`); the chip row is rendered via `counties.map(...)`, so the per-item loop variable needs its own name, distinct from `county`, compared against it.
 *   ***Proposed Edit:***
-    *   Location: Line 239-242 (chip description) and line 375-376 (NFR Accessibility bullet)
-    *   Change: Add "each chip carries `aria-pressed={county === selectedCounty}` so its toggle state is announced to assistive technology" to item 6's description, and add the same requirement to the Accessibility bullet in Non-Functional Requirements.
+    *   Location: FeatureRange Technical Plan item 6, chip description
+    *   Change: `aria-pressed={county === selectedCounty}` → `aria-pressed={c === county}` (where `c` is the `counties.map((c) => ...)` loop variable)
+    *   Location: Detailed Implementation Plan item 7
+    *   Change: `aria-pressed={county === selectedChip}` → `aria-pressed={c === county}`, with an explicit note: "rendered via `counties.map((c) => <button key={c} ... aria-pressed={c === county} onClick={() => setCounty(c === county ? "" : c)}>{c}</button>)`."
 
-### Issue 5 [`egm-design`] - Severity: High
-*   **Affected Scope:** Lines 227-249 (item 6)
-*   **Discrepancy Description:** No wrapping/scroll/cap strategy specified for the county chip row when there are many counties.
+### Issue 5 [`egm-implementation-readiness`] - Severity: Low
+*   **Affected Scope:** Lines 481-486 (item 4)
+*   **Discrepancy Description:** Doesn't repeat the new line's position relative to the existing price/title/location/bed-bath lines (specified in the FeatureRange but not here).
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** `lib/validation/property.ts`'s `LIBERIA_COUNTIES` enum confirms the real universe of counties is fixed at 15 (Liberia has 15 counties) — not unbounded "dozens" as the finding worried, but still more than fits in one row on narrow mobile widths. A simple `flex-wrap` handles this cleanly without needing truncation or a cap, since it's a bounded, short-label list, not an open-ended or long-text list.
+*   ***Justification:*** Trivial — close the cross-reference gap directly in this section.
 *   ***Proposed Edit:***
-    *   Location: Line 238-239
-    *   Change: "render a horizontal row of chip `<button type="button">` elements" → "render a `flex flex-wrap gap-2` row of chip `<button type="button">` elements (wrapping to multiple lines on narrow widths rather than scrolling or truncating — the real county list is bounded at 15, per `LIBERIA_COUNTIES` in `lib/validation/property.ts`, not an open-ended list)."
+    *   Location: Line 481-486
+    *   Change: Append: "Inserted immediately after the existing location `<p>`, before the bed/bath `<p>` — matching the price → title → location → \"Listed X ago\" → beds/baths order already specified in Technical Plan item 1."
 
-### Issue 6 [`egm-structural`] - Severity: Medium
-*   **Affected Scope:** Lines 1-393 (whole-document scope)
-*   **Discrepancy Description:** No dedicated "Risks & Mitigations" section, a required area per feature-spec-standard. Risk content is scattered across Non-Functional Requirements and implicit in Non-Goals/Alternatives.
+### Issue 6 [`egm-codebase-details`] - Severity: Low
+*   **Affected Scope:** Line 561 (Verification Plan)
+*   **Discrepancy Description:** Uses `npx tsc --noEmit` instead of the project's own `npm run typecheck` script.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Valid structural gap.
+*   ***Justification:*** Trivial, matches the rest of the same bullet's convention (`npm run lint`/`test`/`build`).
 *   ***Proposed Edit:***
-    *   Location: New section before "## Non-Functional Requirements"
-    *   Change: Add a "## Risks & Mitigations" section consolidating: (1) the bundling risk flagged in Stage 5 (seven independently-motivated items in one wave/rollback unit — mitigation: sequence commits so functional items (1, 6, 7) aren't entangled with purely decorative ones (2-5) even within one PR, so a partial revert is possible); (2) the hero-drift CSS correctness risk, now resolved per Issue 2's fix; (3) cross-reference to the Accessibility/Performance/Rollback bullets that remain in Non-Functional Requirements.
+    *   Location: Line 561
+    *   Change: "`npx tsc --noEmit`, `npm run build`" → "`npm run typecheck`, `npm run build`"
 
-### Issue 7 [`egm-design` / multi-reviewer] - Severity: Low
-*   **Affected Scope:** Lines 270, 359 (and structural/comprehension echoes)
-*   **Discrepancy Description:** "Comprehension-lens finding," "Zoom-Out-lens priority ranking" cited as established vocabulary, never defined — independently confirmed by four separate reviewer passes across two stages.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Same confirmed mistake as Wave 9's design doc — carried over from brainstorm-brief phrasing into this draft without being caught at draft time.
-*   ***Proposed Edit:***
-    *   Location: Line 270
-    *   Change: "per the brief's Comprehension-lens finding" → "per the brainstorm brief's accessibility analysis"
-    *   Location: Line 359
-    *   Change: "the brief's Zoom-Out-lens priority ranking rates" → "the brainstorm brief's mission-alignment priority ranking rates"
+### Issue 7 [`egm-implementation-readiness`] - Severity: Low
+*   **Affected Scope:** Line 509
+*   **Discrepancy Description:** `transform-origin: top` written as a raw CSS declaration instead of the Tailwind utility `origin-top`.
+*   ***AI Suggestion:*** PROPOSE FIX (superseded)
+*   ***Justification:*** This line is removed entirely by Issue 1's redesign (no `transform-origin`/`scale-y` needed once the spine goes back to a single `Reveal`-wrapped element). No separate edit needed.
+*   ***Proposed Edit:*** Covered by Issue 1.
 
-### Issue 8 [`egm-design`] - Severity: Low
-*   **Affected Scope:** Line 46 (Goals) vs. line 251 (Technical Plan item 7)
-*   **Discrepancy Description:** "Stat strip" used before it's described structurally.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Easy one-time gloss closes the gap.
-*   ***Proposed Edit:***
-    *   Location: Line 46 (first use, in Goals)
-    *   Change: "the stat-strip count-up" → "the homepage's stat-strip count-up (the three numbers — active listings, owners, counties — in the hero)"
+### Issue 8 [`egm-implementation-readiness`] - Severity: Low — CONTESTED
+*   **Affected Scope:** Line 480 (item 4b, badge `animate-pulse`)
+*   **Discrepancy Description:** Flagged as missing a `motion-reduce:` companion class, claimed to fail the Verification Plan's reduced-motion check.
+*   ***AI Suggestion:*** CONTEST
+*   ***Justification:*** Checked against `app/globals.css`'s actual global rule: `*, *::before, *::after { animation-duration: 0.01ms !important; ... }` — a universal selector zeroing `animation-duration` for every element, `Badge` included, with no explicit `motion-reduce:` class needed. This exactly matches the document's own stated reasoning for this same item in the FeatureRange Technical Plan ("the app's existing global `prefers-reduced-motion` CSS block already zeroes `animation-duration`... so this is reduced-motion-safe with zero additional code"). Not a gap — a checkable fact the reviewer got wrong.
+*   ***Proposed Edit:*** None — no change to the document.
 
-### Issue 9 [`egm-design`] - Severity: Low
-*   **Affected Scope:** Lines 63, 119
-*   **Discrepancy Description:** "RLS" unexpanded both times it appears.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial.
-*   ***Proposed Edit:***
-    *   Location: Line 63 (first use)
-    *   Change: "any RLS policy" → "any Row-Level Security (RLS) policy"
-
-### Issue 10 [`egm-design`] - Severity: Low
-*   **Affected Scope:** Line 69
-*   **Discrepancy Description:** "The brief" cited as an authority before the document states what it is.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Grounds the term at first use instead of only in Additional Resources.
-*   ***Proposed Edit:***
-    *   Location: Line 68-69
-    *   Change: "the brief rated it Medium effort" → "the brainstorm brief (`docs/designs/homepage-liveliness.md`) rated it Medium effort"
-
-### Issue 11 [`egm-design`] - Severity: Low
-*   **Affected Scope:** Line 243
-*   **Discrepancy Description:** "Wave 5" referenced with no definition.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial grounding.
-*   ***Proposed Edit:***
-    *   Location: Line 243-244
-    *   Change: "per Wave 5" → "per a prior design wave (see `docs/IMPLEMENTATION_STATUS.md`)"
-
-### Issue 12 [`egm-structural`] - Severity: Low
-*   **Affected Scope:** Lines 20, 111
-*   **Discrepancy Description:** Section heading names drift from the standard's canonical terms ("The Problem"/"Problem Statement"; "Technical Plan (Architecture)"/"Proposed Architecture").
-*   ***AI Suggestion:*** DECLINE
-*   ***Justification:*** Consistent with how this exact same Nit was handled in Wave 9's design doc review — the parenthetical already preserves traceability to the standard's term, and renaming now would create inconsistency with the already-shipped Wave 9 doc's heading conventions in this same repo.
-
-### Issue 13 [`egm-structural`] - Severity: Medium
-*   **Affected Scope:** Lines 122-280
-*   **Discrepancy Description:** An unnumbered "Deferred" subsection breaks the Technical Plan's numbered `### 1.`-`### 7.` sequence and restates content already in Non-Goals.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Valid — this is pure duplication with Non-Goals' existing cursor-tilt-parallax bullet (lines 67-71).
-*   ***Proposed Edit:***
-    *   Location: Lines 277-280
-    *   Change: Delete the "### Deferred (explicitly out of scope per Non-Goals)" subsection entirely — Non-Goals already covers this.
-
-### Issue 14 [`egm-structural`] - Severity: Low
-*   **Affected Scope:** Lines 178-183
-*   **Discrepancy Description:** The `@keyframes hero-drift` block is fenced as ` ```text ` despite being literal CSS.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial, correct syntax highlighting. Note: this code block is being rewritten per Issue 2's fix anyway.
-*   ***Proposed Edit:***
-    *   Location: Line 178
-    *   Change: ` ```text ` → ` ```css ` (applied to the rewritten keyframe block from Issue 2)
-
-### Issue 15 [`egm-structural`] - Severity: Low
-*   **Affected Scope:** Lines 386-392
-*   **Discrepancy Description:** Additional Resources uses inline code spans instead of markdown links for in-repo file paths.
-*   ***AI Suggestion:*** DECLINE
-*   ***Justification:*** These are local repo paths, not web URLs; Wave 9's design doc (already shipped in this repo) uses the identical inline-code convention for its own Additional Resources section without issue. Keeping consistency across both docs.
-
-### Issue 16 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Line 189
-*   **Discrepancy Description:** "Belt-and-suspenders" is a colloquial idiom inconsistent with the document's dry register.
-*   ***AI Suggestion:*** PROPOSE FIX (bundled with Issue 2's rewrite — the corrected hero-drift section no longer needs this phrase since the "double-guard" framing changes)
-*   ***Justification:*** Issue 2's fix removes the surrounding sentence structure; no separate edit needed beyond that rewrite.
-*   ***Proposed Edit:*** Covered by Issue 2's rewrite of lines 174-196.
-
-### Issue 17 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Lines 350-351
-*   **Discrepancy Description:** "a genuinely novel, eye-catching interaction" is an unmeasurable subjective judgment.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial wording fix to match the rest of Alternatives' neutral framing.
-*   ***Proposed Edit:***
-    *   Location: Line 350-351
-    *   Change: "a genuinely novel, eye-catching interaction not currently present anywhere in the app" → "an interaction pattern not currently implemented anywhere in the app"
-
-### Issue 18 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Lines 311-312
-*   **Discrepancy Description:** "a genuinely dynamic scroll-linked effect" is the same subjective-judgment issue as Issue 17.
+### Issue 9 [`egm-style`] - Severity: Low
+*   **Affected Scope:** Lines 551-554
+*   **Discrepancy Description:** "trivial" / "not worth a dedicated test on its own" are subjective judgments.
 *   ***AI Suggestion:*** PROPOSE FIX
 *   ***Justification:*** Trivial wording fix.
 *   ***Proposed Edit:***
-    *   Location: Line 311-312
-    *   Change: "would give the hero photo tiles a genuinely dynamic scroll-linked effect" → "would tie the hero photo tiles' motion to scroll position"
+    *   Location: Line 551-554
+    *   Change: "...the trivial one-line transformation of already-fetched data (the county-list `Set` dedup) not worth a dedicated test on its own" → "...the one-line transformation of already-fetched data (the county-list `Set` dedup), which has no independent branching logic to test"
 
-### Issue 19 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Lines 118-120 and throughout items 1-7
-*   **Discrepancy Description:** Heavy repetition of "already" across the Technical Plan.
-*   ***AI Suggestion:*** DECLINE
-*   ***Justification:*** Too diffuse to action with a precise edit across many lines; the repetition serves the document's real point (reuse existing infra) and isn't meaningless filler. Not worth the churn for a cosmetic nit with no single concrete replacement proposed.
-
-### Issue 20 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Lines 251, 264
-*   **Discrepancy Description:** "Tween" is animation-industry jargon never defined, though the mechanism is clear from context regardless.
+### Issue 10 [`egm-style`] - Severity: Low
+*   **Affected Scope:** Line 563
+*   **Discrepancy Description:** "stay green" is a CI-dashboard idiom.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial plain-language substitution.
+*   ***Justification:*** Trivial wording fix.
 *   ***Proposed Edit:***
-    *   Location: Line 251 (heading) and line 264 ("tweens a local")
-    *   Change: "Count-up tween on the stat strip" → "Count-up animation on the stat strip"; "tweens a local `displayValue` state from `0` to `value`" → "animates a local `displayValue` state from `0` to `value`"
+    *   Location: Line 563
+    *   Change: "existing suite must stay green" → "existing suite must continue passing"
