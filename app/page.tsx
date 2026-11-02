@@ -128,13 +128,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
-        <Reveal>
-          <h2 className="font-display text-2xl font-semibold text-charcoal-700">How it works</h2>
-        </Reveal>
-        <ProcessSteps steps={howItWorks} />
-      </section>
-
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <Reveal>
           <div className="flex items-center justify-between">
@@ -167,6 +160,13 @@ export default async function HomePage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
+        <Reveal>
+          <h2 className="font-display text-2xl font-semibold text-charcoal-700">How it works</h2>
+        </Reveal>
+        <ProcessSteps steps={howItWorks} />
       </section>
     </div>
   );
