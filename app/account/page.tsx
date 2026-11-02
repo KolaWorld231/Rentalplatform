@@ -37,8 +37,11 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <h1 className="font-display text-2xl font-semibold text-charcoal-700">Account settings</h1>
-      <p className="mt-1 text-sm text-charcoal-500">{user.email}</p>
+      <div className="mb-6">
+        <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Account</p>
+        <h1 className="font-display text-2xl font-semibold text-charcoal-700">Account settings</h1>
+        <p className="mt-1 text-sm text-charcoal-500">{user.email}</p>
+      </div>
 
       <Card className="mt-6 p-6">
         <ProfileForm displayName={profile?.display_name ?? ""} phone={profile?.phone ?? null} />

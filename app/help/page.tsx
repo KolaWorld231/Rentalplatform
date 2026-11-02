@@ -26,7 +26,10 @@ const faqs = [
 export default function HelpPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
-      <h1 className="font-display text-2xl font-semibold text-charcoal-700">Help &amp; Support</h1>
+      <div className="mb-6">
+        <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Help</p>
+        <h1 className="font-display text-2xl font-semibold text-charcoal-700">Help &amp; Support</h1>
+      </div>
 
       <div className="mt-6 flex flex-col gap-3">
         {faqs.map((f) => (

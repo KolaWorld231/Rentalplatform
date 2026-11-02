@@ -1005,6 +1005,81 @@ same plain CSS/Tailwind approach as every prior wave.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
   (33/33) all clean.
 
+## Conversion-focused redesign, wave 9 (post-Milestone-8)
+
+Ninth wave: a presentation-only polish pass on the five pages left out of
+waves 1–8 — `/about`, `/safety`, `/help`, `/notifications`, `/account` —
+drafted and reviewed through the full EGM (Elephant-Goldfish Model)
+pipeline: `/egm-brainstorm` → `docs/designs/wave-9-page-polish.md` (the
+concepts brief) → `/egm-draft` → `docs/designs/wave-9-page-polish-design.md`
+(the design doc) → `/egm-review` (five stages: Zoom Out, Comprehension,
+Critic, Intermediate Zoom Out, Implementation Readiness; two remediation
+rounds applied). No Server Action, Supabase query, or RLS policy touched
+on any of the five pages — markup and classes only.
+
+- **`components/ui/Switch.tsx`** (new): a styled native
+  `<input type="checkbox">` — not a custom div-based widget — using
+  `sr-only`/`peer` plus two `aria-hidden` track/thumb `<span>`s driven by
+  `peer-checked:`/`peer-focus-visible:` CSS, all existing tokens
+  (`--shadow-clay-inset`, `--shadow-subtle`, `bg-sage-200`, `bg-brand-600`,
+  `bg-ivory-50`). No internal state, no `"use client"` — a plain function
+  component usable from a Server Component tree. Props are the native
+  `InputHTMLAttributes<HTMLInputElement>` pass-through (so `name`,
+  `defaultChecked`, etc. all work unmodified) plus an optional `label`.
+  Documented in `docs/DESIGN_SYSTEM.md`'s component inventory.
+- **`app/notifications/page.tsx`**: replaced the two raw, unstyled
+  `<input type="checkbox" className="h-4 w-4">` preference toggles with
+  `<Switch>`, same `name`/`defaultChecked` props — `updateNotificationPreferencesAction`
+  is untouched and still reads `FormData` by the same field names. Added
+  the shared header block above the existing "Mark all read" row (no
+  `eyebrow`, since the page title needs no disambiguation).
+- **`app/about/page.tsx`**: added the shared header block (eyebrow
+  "About") and wrapped the four existing paragraphs in a `CardClay`
+  instead of a bare `<div>`. Copy unchanged. No stat strip — the only
+  real supporting number (`$5 / 30 days`) isn't enough to justify a
+  3-item value row without mostly restating the page's own copy, per the
+  design review.
+- **`app/safety/page.tsx`**: added the shared header block (eyebrow
+  "Safety"). The checklist `Card` is untouched; the warning block's
+  classes were corrected from `p-4 text-sm` to `p-3 text-xs` to actually
+  match the established warning-block pattern already used in
+  `components/layout/LegalPageShell.tsx` and `app/checkout/mock/page.tsx`
+  — the design doc's own drafting had incorrectly assumed these already
+  matched, caught during the EGM review's implementation-readiness stage.
+- **`app/help/page.tsx`**: added the shared header block (eyebrow
+  "Help"). FAQ cards, the contact card, and `SupportForm` are untouched.
+- **`app/account/page.tsx`**: added the shared header block (eyebrow
+  "Account"); the user's email line moved into the header's
+  supporting-line slot instead of its own separate paragraph.
+  `ProfileForm`, the subscription-status card, payment history, and the
+  logout form are untouched.
+- All five pages share one identical, literal header JSX block
+  (eyebrow/title/supporting-line), copy-pasted rather than extracted into
+  a new `PageHeader` component — the rule-of-three threshold isn't met by
+  five copies added in the same wave; deferred to a future wave if a
+  genuinely new, independently-motivated page needs the same shape.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+- Live Playwright pass against the real Supabase project (local dev
+  server + a seeded test account, fully deleted afterward): confirmed
+  `/about`, `/safety`, `/help` render the shared header at desktop and
+  mobile widths; confirmed `/about`'s body is wrapped in a `CardClay`
+  (visually and via computed styles); confirmed `/safety`'s warning block
+  renders the corrected `p-3 text-xs` classes; confirmed, signed in,
+  `/account` renders the header with the email in the supporting line and
+  `/notifications` renders with no eyebrow and two `Switch` controls;
+  confirmed keyboard operability (Tab moves focus onto a `Switch`, Space
+  toggles it); confirmed the toggle's visual state change (Tailwind v4
+  applies `translate-x-5` via the native CSS `translate` property, not
+  `transform` — an initial check against the wrong property produced a
+  false negative, resolved by checking the actual applied property rather
+  than assuming a real bug); confirmed a toggled preference persists
+  after reload and `updateNotificationPreferencesAction` still receives
+  the correct `FormData` field; confirmed "Mark read" still functions
+  (an earlier false negative here was traced to the seed script's own
+  insert silently failing a NOT NULL constraint on `notifications.type`,
+  not a product bug — fixed in the seed script, re-verified clean).
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

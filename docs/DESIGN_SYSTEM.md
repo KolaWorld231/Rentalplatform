@@ -85,6 +85,8 @@ it (e.g. dense list rows, dashboard tables).
   Escape-to-close; used for confirmations and the subscription gate.
 - `Drawer` — bottom-sheet on mobile, right-hand drawer on `sm:`+, used for
   search filters.
+- `Switch` — styled native checkbox toggle, CSS-only `peer-checked:`
+  styling, used for notification preferences.
 
 ## Navigation
 

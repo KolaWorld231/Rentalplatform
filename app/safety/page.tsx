@@ -15,11 +15,14 @@ const checklist = [
 export default function SafetyPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
-      <h1 className="font-display text-2xl font-semibold text-charcoal-700">Safety guidance</h1>
-      <p className="mt-2 text-sm text-charcoal-500">
-        DomiLink does not guarantee the outcome of a rental transaction. Use this checklist before
-        you commit to anything.
-      </p>
+      <div className="mb-6">
+        <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Safety</p>
+        <h1 className="font-display text-2xl font-semibold text-charcoal-700">Safety guidance</h1>
+        <p className="mt-1 text-sm text-charcoal-500">
+          DomiLink does not guarantee the outcome of a rental transaction. Use this checklist before
+          you commit to anything.
+        </p>
+      </div>
 
       <Card className="mt-6 p-6">
         <ul className="flex flex-col gap-3">
@@ -32,7 +35,7 @@ export default function SafetyPage() {
         </ul>
       </Card>
 
-      <div className="mt-6 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-100 p-4 text-sm text-warning-500">
+      <div className="mt-6 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-100 p-3 text-xs text-warning-500">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>
           If something feels wrong — a seller asking for payment before a viewing, a price that

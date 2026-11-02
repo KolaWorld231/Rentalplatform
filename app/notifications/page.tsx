@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Switch } from "@/components/ui/Switch";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { formatRelativeDate } from "@/lib/utils/format";
@@ -34,7 +35,7 @@ export default async function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <div className="flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold text-charcoal-700">Notifications</h1>
         {hasUnread && (
           <form action={markAllNotificationsReadAction}>
@@ -91,14 +92,16 @@ export default async function NotificationsPage() {
       <Card className="mt-8 p-6">
         <h2 className="font-display text-lg font-semibold text-charcoal-700">Preferences</h2>
         <form action={updateNotificationPreferencesAction} className="mt-3 flex flex-col gap-2">
-          <label className="flex items-center gap-2 text-sm text-charcoal-700">
-            <input type="checkbox" name="in_app_enabled" defaultChecked={prefs?.in_app_enabled ?? true} className="h-4 w-4" />
-            In-app notifications
-          </label>
-          <label className="flex items-center gap-2 text-sm text-charcoal-700">
-            <input type="checkbox" name="email_enabled" defaultChecked={prefs?.email_enabled ?? true} className="h-4 w-4" />
-            Email notifications (sent only if an email provider is configured — see docs/DEPLOYMENT.md)
-          </label>
+          <Switch
+            name="in_app_enabled"
+            defaultChecked={prefs?.in_app_enabled ?? true}
+            label="In-app notifications"
+          />
+          <Switch
+            name="email_enabled"
+            defaultChecked={prefs?.email_enabled ?? true}
+            label="Email notifications (sent only if an email provider is configured — see docs/DEPLOYMENT.md)"
+          />
           <Button type="submit" size="sm" className="mt-2 self-start">
             Save preferences
           </Button>
