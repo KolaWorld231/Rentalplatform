@@ -161,3 +161,91 @@ body {
   outline: 2px solid var(--color-forest-600);
   outline-offset: 2px;
 }
+
+/*
+  Native <dialog> open/close transitions. Applies globally to every
+  <dialog> in the app (components/ui/Dialog.tsx, Drawer.tsx, the
+  property gallery lightbox) with zero per-component wiring — the
+  reduced-motion block above already zeroes these durations out.
+*/
+dialog {
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    overlay 0.2s ease allow-discrete,
+    display 0.2s ease allow-discrete;
+}
+dialog[open] {
+  opacity: 1;
+}
+dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    overlay 0.2s ease allow-discrete,
+    display 0.2s ease allow-discrete;
+}
+dialog[open]::backdrop {
+  opacity: 1;
+}
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+  }
+  dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/* Centered dialogs (components/ui/Dialog.tsx, the gallery lightbox): fade + scale in. */
+dialog:not([data-drawer-side]) {
+  transform: scale(0.96);
+}
+dialog[open]:not([data-drawer-side]) {
+  transform: scale(1);
+}
+@starting-style {
+  dialog[open]:not([data-drawer-side]) {
+    transform: scale(0.96);
+  }
+}
+
+/* Drawer (components/ui/Drawer.tsx): slide in from the edge it's anchored to. */
+dialog[data-drawer-side="bottom"] {
+  transform: translateY(100%);
+}
+dialog[open][data-drawer-side="bottom"] {
+  transform: translateY(0);
+}
+@starting-style {
+  dialog[open][data-drawer-side="bottom"] {
+    transform: translateY(100%);
+  }
+}
+dialog[data-drawer-side="right"] {
+  transform: translateX(100%);
+}
+dialog[open][data-drawer-side="right"] {
+  transform: translateX(0);
+}
+@starting-style {
+  dialog[open][data-drawer-side="right"] {
+    transform: translateX(100%);
+  }
+}
+
+/* Entrance animation for conditionally-mounted dropdowns (e.g. the mobile nav menu). */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-dropdown-in {
+  animation: dropdown-in 0.15s ease-out;
+}

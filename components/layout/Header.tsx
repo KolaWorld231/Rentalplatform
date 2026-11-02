@@ -126,7 +126,10 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
       </div>
 
       {open && (
-        <nav className="border-t border-border bg-ivory-100 px-4 py-4 md:hidden" aria-label="Mobile">
+        <nav
+          className="animate-dropdown-in border-t border-border bg-ivory-100 px-4 py-4 md:hidden"
+          aria-label="Mobile"
+        >
           <ul className="flex flex-col gap-3">
             {navLinks.map((link) => {
               const active = isActivePath(pathname, link.href);

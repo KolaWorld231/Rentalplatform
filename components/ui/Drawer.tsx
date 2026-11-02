@@ -33,6 +33,7 @@ export function Drawer({ open, onClose, title, children, side = "bottom" }: Draw
       onClose={onClose}
       onCancel={onClose}
       aria-labelledby="drawer-title"
+      data-drawer-side={side}
       className={cn(
         "m-0 max-h-[85vh] w-full bg-surface p-0 shadow-[var(--shadow-modal)] backdrop:bg-charcoal-900/40",
         side === "bottom"

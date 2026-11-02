@@ -964,6 +964,47 @@ are variable-length action lists, not a generic card-grid pattern).
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
   (33/33) all clean.
 
+## Conversion-focused redesign, wave 8 (post-Milestone-8)
+
+Eighth wave: a motion/interactivity pass, prompted by the user asking for
+"more motion, like a pro UI/UX designer" — initially via a Remotion skill
+that doesn't apply here (Remotion is a video-rendering framework; DomiLink
+has no video output, so its markup conventions were set aside rather than
+forcing an unrelated dependency onto the project). Done instead with the
+same plain CSS/Tailwind approach as every prior wave.
+
+- **`app/globals.css`**: every native `<dialog>` in the app — `Dialog.tsx`,
+  `Drawer.tsx`, and the property gallery lightbox — previously popped
+  open/closed instantly with zero transition. Added a global open/close
+  transition using `@starting-style` (fade + scale for centered dialogs,
+  slide-from-edge for the drawer via a new `data-drawer-side` attribute)
+  — one CSS change, applies everywhere a `<dialog>` is used, no
+  per-component wiring, no new dependency. The existing
+  `prefers-reduced-motion` block already zeroes these out for visitors
+  who need that.
+- **`components/ui/Drawer.tsx`**: added the `data-drawer-side` attribute
+  so the global CSS can tell a bottom sheet from a right-hand drawer and
+  slide each in from its own edge instead of a generic fade.
+- **`components/ui/Input.tsx`**: added a focus-state border-color
+  transition (and a matching one for the error state) — previously the
+  border just snapped between colors with no transition at all. `Input`
+  is used on every form in the app (auth, property form, filters,
+  verification), so this is a single-file, broad-reach fix.
+- **`components/layout/Header.tsx`**: the mobile nav menu was
+  conditionally mounted with zero animation, appearing instantly. Added
+  a small fade+slide-in `@keyframes` entrance animation (`globals.css`'s
+  new `.animate-dropdown-in`).
+- Live-verified against the local dev server: confirmed the mobile
+  filters drawer slides in from the bottom and all fields render
+  correctly post-animation (screenshot-verified after an initial
+  Playwright locator ambiguity gave a false "not visible" reading —
+  confirmed via screenshot that it was a test-script issue, not a
+  product bug, the same class of false negative hit several times
+  earlier this session), confirmed the mobile nav menu opens and is
+  reachable, no console/page errors.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
