@@ -20,8 +20,9 @@ import type { ListingStatus, VerificationStatus } from "@/types/database";
 export async function reviewIdentityVerificationAction(
   requestId: string,
   decision: VerificationStatus,
-  notes: string,
+  formData: FormData,
 ) {
+  const notes = (formData.get("reason") as string | null)?.trim() ?? "";
   const { user } = await requireAnyRole(["admin", "moderator"], "/admin/verifications");
   const admin = createServiceRoleClient();
 
@@ -57,8 +58,9 @@ export async function reviewIdentityVerificationAction(
 export async function reviewPropertyVerificationAction(
   requestId: string,
   decision: VerificationStatus,
-  notes: string,
+  formData: FormData,
 ) {
+  const notes = (formData.get("reason") as string | null)?.trim() ?? "";
   const { user } = await requireAnyRole(["admin", "moderator"], "/admin/verifications");
   const admin = createServiceRoleClient();
 
@@ -91,7 +93,8 @@ export async function reviewPropertyVerificationAction(
   revalidatePath("/admin/verifications");
 }
 
-export async function moderatePropertyAction(propertyId: string, newStatus: ListingStatus, reason: string) {
+export async function moderatePropertyAction(propertyId: string, newStatus: ListingStatus, formData: FormData) {
+  const reason = (formData.get("reason") as string | null)?.trim() ?? "";
   const { user } = await requireAnyRole(["admin", "moderator"], "/admin/listings");
   const admin = createServiceRoleClient();
 
@@ -127,8 +130,9 @@ export async function moderatePropertyAction(propertyId: string, newStatus: List
 export async function resolvePropertyReportAction(
   reportId: string,
   status: "resolved" | "dismissed",
-  notes: string,
+  formData: FormData,
 ) {
+  const notes = (formData.get("reason") as string | null)?.trim() ?? "";
   const { user } = await requireAnyRole(["admin", "moderator"], "/admin/reports");
   const admin = createServiceRoleClient();
 
@@ -169,9 +173,10 @@ export async function resolveMessageReportAction(
   revalidatePath("/admin/reports");
 }
 
-export async function suspendUserAction(userId: string, reason: string) {
+export async function suspendUserAction(userId: string, formData: FormData) {
+  const reason = (formData.get("reason") as string | null)?.trim() ?? "";
   const { user } = await requireAnyRole(["admin"], "/admin/users");
-  if (!reason.trim()) throw new Error("A reason is required to suspend an account.");
+  if (!reason) throw new Error("A reason is required to suspend an account.");
   const admin = createServiceRoleClient();
 
   await admin.from("profiles").update({ account_status: "suspended" }).eq("id", userId);

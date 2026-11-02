@@ -92,36 +92,31 @@ function ReviewActions({
   reviewAction,
   requestId,
 }: {
-  reviewAction: (requestId: string, decision: "verified" | "rejected" | "needs_more_info", notes: string) => Promise<void>;
+  reviewAction: (requestId: string, decision: "verified" | "rejected" | "needs_more_info", formData: FormData) => Promise<void>;
   requestId: string;
 }) {
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      <form action={async () => { "use server"; await reviewAction(requestId, "verified", ""); }}>
-        <Button type="submit" size="sm" variant="primary">
+    <form className="mt-3 flex flex-col gap-2">
+      <label className="flex flex-col gap-1 text-xs font-medium text-charcoal-500">
+        Reason (shown to the applicant for reject/needs more info; optional for approve)
+        <textarea
+          name="reason"
+          rows={2}
+          className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-charcoal-700 shadow-[var(--shadow-clay-inset)]"
+          placeholder="e.g. The document photo is blurry"
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" size="sm" variant="primary" formAction={reviewAction.bind(null, requestId, "verified")}>
           Approve
         </Button>
-      </form>
-      <form
-        action={async () => {
-          "use server";
-          await reviewAction(requestId, "needs_more_info", "Please resubmit a clearer document.");
-        }}
-      >
-        <Button type="submit" size="sm" variant="secondary">
+        <Button type="submit" size="sm" variant="secondary" formAction={reviewAction.bind(null, requestId, "needs_more_info")}>
           Needs more info
         </Button>
-      </form>
-      <form
-        action={async () => {
-          "use server";
-          await reviewAction(requestId, "rejected", "Document could not be verified.");
-        }}
-      >
-        <Button type="submit" size="sm" variant="danger">
+        <Button type="submit" size="sm" variant="danger" formAction={reviewAction.bind(null, requestId, "rejected")}>
           Reject
         </Button>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }
