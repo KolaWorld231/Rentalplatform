@@ -1,6 +1,6 @@
 # Stage 8: Intermediate Zoom Out Review
 
-**Target**: `docs/designs/wave-9-page-polish-design.md` (full file, post-Stage-7 fixes)
+**Target**: `docs/designs/homepage-liveliness-design.md` (full file, post-Stage-7 fixes, 584 lines)
 **Reviewer**: egm-zoom-out (fresh-context Goldfish)
 **Scope**: Evaluating Stage 7's remediation edits for new scope creep,
 premature abstraction, or complexity — not re-litigating Stage 5/6
@@ -8,42 +8,60 @@ settled matters.
 
 ## Findings
 
-1.  **Severity: Nit** — Lines 184–188 vs. 281–286. The new NFR sentence
-    about the `Switch` component's `peer-focus-visible:` divergence from
-    `.focus-ring` duplicates reasoning already fully spelled out in the
-    Technical Plan's `Switch` notes. Minor instance of the exact
-    redundant-restatement problem the document itself calls out and
-    rejects elsewhere (the `/about` stat-strip rationale). One of the two
-    explanations could cross-reference the other instead of repeating it.
+1.  **Major** — "Risks & Mitigations," Bundling-risk bullet (lines
+    374–384) vs. NFR Rollback bullet. The new Bundling-risk mitigation
+    recommends sequencing commits so a cosmetic item "can be reverted
+    independently" — implying multiple, independently-revertible commits.
+    This contradicts the pre-existing NFR Rollback bullet a few lines
+    below ("Rollback is a single `git revert`"), which the new section
+    even cross-references. Two incompatible rollback claims now exist in
+    the same document.
 
-2.  **Severity: Nit** — Lines 283–286 vs. 416–420. The new NFR
-    verification requirement (a side-by-side visual check of `Switch`'s
-    focus ring against `.focus-ring` elsewhere) isn't mirrored as a line
-    item in the Verification Plan's accessibility spot-checks. Not scope
-    creep, but a bookkeeping gap — this specific check could silently get
-    skipped since it's stated once in NFR with no corresponding checklist
-    entry.
+2.  **Major** — "Bundling risk" bullet (lines 374–377) — arithmetic/
+    categorization error I introduced while writing the new section. The
+    bullet claims "five purely decorative... (badge pulse, hover scale,
+    hero drift, spine fill-in)" — only four items are actually named —
+    "and two functional... (county chips, count-up)," totaling six, not
+    the "seven independently-motivated changes" asserted in the same
+    sentence. Item 1 ("Listed X ago") is missing from the categorization
+    entirely, even though the mitigation sentence immediately after
+    correctly includes it ("items (1, 6, 7)").
 
-## No scope creep / premature abstraction / complexity found
+3.  **Nit** — "Hero-drift CSS correctness" bullet (lines 385–391). This
+    narrates a mistake from an earlier draft that no longer exists
+    anywhere in the current document — process/audit-trail narration
+    rather than a prospective risk of the shipped design, and redundant
+    with Technical Plan item 4's own correctness explanation.
 
-Each Stage 7 change was checked against the codebase and the Zoom Out
-standard:
-*   Removing the stray `DocumentUploader` reference — pure deletion, no
-    complexity added.
-*   Narrowing Goals to `CardClay` only — verified accurate: `CardClay`
-    already exists in `components/ui/Card.tsx` from a prior wave but isn't
-    yet applied to any page; `/about` has no Card/CardClay usage today, so
-    this is the only new per-page usage, matching the narrowed claim
-    exactly. A scope reduction, not an addition.
-*   Replacing undefined "lens" terminology with plain engineering
-    reasoning — the result is concise and grounded, introduces no new
-    mechanism, and if anything strengthens the case against Alternative B.
-*   The NFR focus-ring addition is verification-only — no new code,
-    component, or shared focus-ring token/utility introduced just to
-    paper over one exception.
-*   Heading promotion, rule normalization, code-fence language fixes, the
-    file citation (verified accurate against `app/notifications/page.tsx`),
-    and wording nits are all cosmetic/traceability fixes with zero
-    architectural or scope impact.
+4.  **Nit** — "County chip list growth" bullet (lines 392–396). Duplicates
+    content already fully stated in Technical Plan item 6 nearly
+    verbatim. Could simply point at item 6 instead of restating it.
 
-**No Blocker or Major findings. Ready to proceed to Stage 9.**
+5.  **Nit** — Line 272. The reduced-motion branch of `CountUp`'s
+    description still says "renders `value` immediately with no tween" —
+    "tween" wasn't fully scrubbed from this paragraph even though the
+    adjacent sentence was fixed to say "animates."
+
+## Items reviewed and found acceptable (no new finding)
+
+*   CUJ 2's corrected click-to-select/submit-to-navigate flow is now
+    internally consistent with Technical Plan item 6.
+*   The hero-drift `translate`-only CSS fix is simple, correctly scoped,
+    and resolves the prior bug without introducing a new abstraction.
+*   The `ProcessSteps` commitment to the Reveal-reuse approach stays
+    within `ProcessSteps.tsx`, reuses `Reveal` rather than forking it.
+*   `aria-pressed` on county chips is a minimal, correctly-placed
+    accessibility addition.
+*   `flex-wrap` handling bounded at the real 15-county list is
+    proportionate — no speculative pagination/scrolling machinery added.
+*   Removal of the duplicate "Deferred" subsection reduces redundancy
+    with no residual duplicate found.
+*   The "-lens"/"RLS"/"the brief"/"Wave N" grounding fixes and the
+    Alternatives wording nits all check out — no bare subjective
+    judgments remain unsupported.
+
+**Overall**: No scope creep or premature abstraction introduced by
+Stage 7's fixes, but the new Risks & Mitigations section (my own
+addition) introduced two Majors of its own — a rollback-strategy
+contradiction and an arithmetic error — both ironic given the section
+exists specifically to improve document rigor.

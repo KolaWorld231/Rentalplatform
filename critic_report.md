@@ -1,109 +1,115 @@
 # Stage 7: Critic Review (Round 1)
 
-**Target**: `docs/designs/wave-9-page-polish-design.md`
-**Audit range (FeatureRange)**: lines 1–302
+**Target**: `docs/designs/homepage-liveliness-design.md`
+**Audit range (FeatureRange)**: lines 1–393
 **Reviewers**: egm-design (`feature-spec-standard`), egm-structural
 (`feature-spec-standard`), egm-style (own persona standard)
 
 ## Consolidated Findings
 
-### 🔴 Blocker
-
-**design-1-1** — Lines 245–246, 263. "The Comprehension lens" / "the Zoom
-Out lens" are cited as the deciding authority for rejecting both
-alternatives, but neither term is defined anywhere in the document or in
-`Additional Resources`. The underlying engineering reasoning (native
-accessibility semantics; rule-of-three threshold) is sound on its own, but
-is presented as validated by an unverifiable external process a reader
-cannot inspect. *(Same issue independently surfaced by Stage 6
-Comprehension, finding #2.)*
-
-**design-1-2** — Lines 40–41 vs. 189–230. Goals state the wave uses
-`CardClay`, `Button`/`buttonVariants`, `Badge`, and `Reveal`, but the
-per-page Technical Plan and Detailed Implementation Plan only ever apply
-`CardClay` and the new `Switch`. `Button`, `Badge`, and `Reveal` are never
-shown landing on any page. *(Same issue independently surfaced by Stage 6
-Comprehension, finding #1.)*
-
-**structural-1-1** — Lines 7–9, 272–274, 289–291, 301. Horizontal-rule
-dividers are applied inconsistently between `##` sections — some
-equal-weight H2 boundaries get a rule, others don't, with no stated rule
-for when one applies. Misleads a reader about actual section boundaries.
-
 ### 🟡 Major
 
-**design-1-3** — Lines 61–63 vs. the rest of the document. `DocumentUploader`
-appears in Non-Goals with no stated connection to any of the five in-scope
-pages; nothing in Overview, Problem, CUJs, or the per-page table mentions
-document upload. Reads as copy-paste residue from an unrelated wave.
-*(Same issue independently surfaced by Stage 6 Comprehension, finding #3
-— now confirmed by two independent reviewers across two stages. Author's
-note: this is a genuine authoring error, not a documentation gap — the
-line should simply be removed.)*
+**design-1-1** — Lines 91–99 (CUJ 2) vs. lines 236–249 (item 6). CUJ 2
+states clicking a county chip navigates to `/search?county=<county>`
+directly, but the Technical Plan describes chip clicks as setting local
+controlled state only, with navigation deferred to form submission. Two
+different interactions are specified for the same feature; whichever
+section is correct, the other needs to change to match.
 
-**design-1-4** — Lines 274–287 (entire document). No dedicated "Risks &
-Mitigations" section per the feature-spec-standard. The closest proxy
-(Non-Functional Requirements) doesn't address the one real risk specific
-to the new `Switch` primitive: the `peer-focus-visible:` focus treatment
-explicitly diverges from the existing `.focus-ring` utility used
-everywhere else in the app (lines 183–187 note this divergence but never
-assess its risk) — a potential visual-consistency regression with no
-stated mitigation.
+**design-1-2** — Lines 172–196 (item 4). The `--hero-drift-base` CSS
+variable mechanism is asserted to preserve each tile's static
+rotation/position through the drift animation, but nothing in the plan
+specifies how that variable gets populated per tile. As literally
+described, the `@keyframes` rule's `transform: var(--hero-drift-base,
+none) ...` would replace — not merge with — each tile's existing
+Tailwind-utility-driven static transform the moment the animation starts,
+contradicting the stated goal. Needs either an explicit per-tile inline
+`style` step or a corrected mechanism description.
 
-**structural-1-2** — Line 291. `### Additional Resources` is an H3 with no
-parent H2 — every other top-level section in range is H2. Structurally
-reads as a subsection of "Non-Functional Requirements" (the preceding H2),
-misrepresenting its actual status as a sibling top-level section.
+**design-1-3** — Lines 198–214 (item 5), contradicting the "Open
+Questions: None outstanding" claim at line 75. Two architecturally
+distinct implementation approaches are left as an "or" in the same
+paragraph (extracting/duplicating `Reveal`'s internal visibility logic vs.
+wrapping each segment in its own `<Reveal>`). This is an unresolved
+decision, not a settled one — the document should commit to one approach.
+*(Echoes Stage 5's Nit #2 on the same section, now elevated: not just
+redundant prose, but a genuine unresolved fork.)*
 
-**structural-1-3** — Lines 36–66. Non-Goals' `DocumentUploader` bullet
-(line 61) also breaks the section's internal parallel-construction
-pattern: every other Non-Goals bullet traces to a Goal, CUJ, or Technical
-Plan item elsewhere in the document; this one is an orphan reference.
-*(Structural echo of design-1-3/Stage-6-finding-3 — same root cause, not
-a separate fix.)*
+**design-1-4** — Lines 236–249 and 374–376. The Non-Functional
+Requirements section explicitly reasons through county-chip accessibility
+and concludes native `<button>` elements need "no extra ARIA wiring" —
+true for operability, but chips also get a visually-toggled active state
+with no `aria-pressed` (or equivalent) proposed to convey that state to
+screen readers. A real gap given the document explicitly reasoned about
+accessibility here and still missed it.
+
+**design-1-5** — Lines 227–249 (item 6). Counties are derived with no
+upper bound (`[...new Set(...)]`, could be anywhere from 2 to dozens as
+the marketplace grows), but the plan only specifies a horizontal chip row
+with no wrapping/scroll/cap strategy for a long list, especially on
+mobile hero search width. The empty-list case is handled; the
+many-counties case isn't.
+
+**structural-1-1** — Lines 1–393 (whole-document scope). No section
+titled or scoped to "Risks & Mitigations," a required area per
+feature-spec-standard. Risk-relevant content is scattered across
+Non-Functional Requirements (rollback, accessibility, performance) and
+the implicit bundling risk in Non-Goals/Alternatives — a fresh reader
+can't find "what could go wrong and how it's mitigated" as one navigable
+unit.
 
 ### 🟢 Nit
 
-**design-1-5** — Lines 245–250. "Blocker-severity risk" borrows this
-review pipeline's own severity vocabulary inside the artifact under
-review, blurring document content with review-process framing.
+**design-1-6 / structural / comprehension echo** — Lines 270, 359.
+"Comprehension-lens finding," "Zoom-Out-lens priority ranking" cited as
+established vocabulary, never defined. *(Independently confirmed by all
+three Stage 7 reviewers plus Stage 6 — four independent confirmations of
+the same repeat mistake from Wave 9.)*
 
-**design-1-6** — Lines 211–219 vs. 134–139. The `/notifications` existing
-`className="h-4 w-4"` claim lacks the file-citation rigor shown for the
-shared-header claim a few paragraphs earlier.
+**design-1-7** — Line 29 vs. 229/251. "Stat strip" used before it's ever
+described structurally.
 
-**structural-1-4** — Lines 38–66. Minor punctuation/clause-structure
-drift between Goals and Non-Goals bullets.
+**design-1-8** — Lines 63, 119. "RLS" unexpanded both times it appears.
 
-**structural-1-5** — Line 106. "Technical Plan (Architecture)" diverges
-from the standard's exact suggested heading ("Proposed Architecture"),
-though the parenthetical preserves traceability.
+**design-1-9** — Line 68. "The brief" cited as an authority three times
+before the document states what it is (only resolved at lines 386–387).
 
-**structural-1-6** — Lines 120, 145, 191. Code fences use the generic
-` ```text ` hint for blocks that are actually JSX (`tsx`) — cosmetic only.
+**design-1-10** — Line 243. "Wave 5" referenced with no definition of
+what wave numbering means or where it's documented.
 
-**style-1-1** — Lines 25–26. "pages that look like they belong to an
-earlier, unfinished version of the product" is a subjective quality
-judgment; the factual observations later in the same paragraph (plain
-text, unstyled checkboxes) already carry the point without the
-evaluative framing.
+**structural-1-2** — Lines 20, 111. Section heading names drift from the
+standard's canonical terms ("The Problem" vs. "Problem Statement";
+"Technical Plan (Architecture)" vs. "Proposed Architecture").
 
-**style-1-2** — Lines 103–104. Same "unstyled, unfinished" evaluative
-pattern repeated in CUJ 2; recommend a single pass to de-editorialize
-both instances together with style-1-1.
+**structural-1-3** — Lines 122–280. The clean `### 1.`–`### 7.` numbered
+sequence in the Technical Plan is broken by an unnumbered trailing
+`### Deferred` subsection that restates content already in Non-Goals.
 
-**style-1-3** — Line 33. "the one *genuinely* new UI primitive" — filler
-intensifier, no verifiable content added.
+**structural-1-4** — Lines 178–183. The `@keyframes hero-drift` block is
+fenced as ` ```text ` despite being literal CSS; should be ` ```css `.
 
-**style-1-4** — Line 237. "no native-`<input>` default-styling quirks to
-fight" — colloquial phrasing inconsistent with the document's otherwise
-dry register (contrast with line 163's more precise phrasing).
+**structural-1-5** — Lines 386–392. Additional Resources references use
+inline code spans instead of markdown links for in-repo file paths.
 
-**style-1-5** — Lines 16–17. "visibly jarring" is an evaluative lead-in
-ahead of an already well-supported, specific, verifiable list.
+**style-1-1** — Line 189. "Belt-and-suspenders" is a colloquial idiom
+inconsistent with the document's otherwise dry register.
+
+**style-1-2** — Lines 350–351. "genuinely novel, eye-catching" is an
+unmeasurable subjective quality judgment, an outlier against the rest of
+the Alternatives section's neutral, factual framing.
+
+**style-1-3** — Lines 311–312. "genuinely dynamic scroll-linked effect"
+— same subjective-judgment issue as style-1-2.
+
+**style-1-4** — Lines 118–120 and throughout items 1–7. Heavy repetition
+of "already" (sometimes 2–3 times per sentence) — serves the document's
+reuse-focused point but could be tightened.
+
+**style-1-5** — Lines 251, 264. "Tween" is animation-industry jargon
+never defined, though the surrounding sentence makes the mechanism clear
+regardless.
 
 ## Round 1 Clean-Round Assessment
 
-Not clean: two Blockers (design-1-1, structural-1-1) and four Majors
-unresolved. All three requested reviewers ran successfully (no "not run"
-status).
+Not clean: six Majors unresolved (0 Blockers). All three requested
+reviewers ran successfully (no "not run" status).

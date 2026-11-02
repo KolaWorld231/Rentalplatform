@@ -249,3 +249,19 @@ dialog[open][data-drawer-side="right"] {
 .animate-dropdown-in {
   animation: dropdown-in 0.15s ease-out;
 }
+
+/*
+  Idle drift for the homepage hero's blurred background photo tiles —
+  keeps them from reading as a frozen screenshot. Animates only the
+  native `translate` property, which Tailwind v4's `rotate-*` utilities
+  don't touch (they use the independent native `rotate` property), so
+  each tile's static rotation class keeps working untouched alongside
+  this animation.
+*/
+@keyframes hero-drift {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 4px -4px; }
+}
+.animate-hero-drift {
+  animation: hero-drift 38s ease-in-out infinite;
+}

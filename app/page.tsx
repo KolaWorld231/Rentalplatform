@@ -5,6 +5,7 @@ import { HeroSearch } from "@/components/properties/HeroSearch";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CountUp } from "@/components/ui/CountUp";
 import { Reveal } from "@/components/ui/Reveal";
 import { brand, subscriptionPlan } from "@/lib/config/brand";
 import { createClient } from "@/lib/supabase/server";
@@ -58,6 +59,7 @@ export default async function HomePage() {
   // A stat with nothing behind it yet is hidden rather than shown as zero.
   const countiesCovered = new Set((coverageRows ?? []).map((r) => r.county)).size;
   const ownersListing = new Set((coverageRows ?? []).map((r) => r.owner_id)).size;
+  const counties = [...new Set((coverageRows ?? []).map((r) => r.county))].sort();
   const stats = [
     { value: publishedCount ?? 0, label: "Active listings" },
     { value: ownersListing, label: "Property owners" },
@@ -80,7 +82,7 @@ export default async function HomePage() {
               src={propertyImageUrl(img.storage_path)}
               alt=""
               className={cn(
-                "absolute hidden object-cover opacity-20 blur-md saturate-50 lg:block",
+                "absolute hidden object-cover opacity-20 blur-md saturate-50 lg:block animate-hero-drift motion-reduce:animate-none",
                 i === 0 && "right-[-4rem] top-[-2rem] h-72 w-96 rotate-6 rounded-[var(--radius-2xl)]",
                 i === 1 && "right-24 top-56 h-56 w-72 -rotate-3 rounded-[var(--radius-2xl)]",
                 i === 2 && "right-[28rem] top-8 h-48 w-64 rotate-2 rounded-[var(--radius-2xl)]",
@@ -96,7 +98,7 @@ export default async function HomePage() {
           <p className="mx-auto mt-4 max-w-xl text-lg text-sage-100">{brand.heroSupportingCopy}</p>
 
           <div className="mx-auto mt-8 max-w-2xl">
-            <HeroSearch />
+            <HeroSearch counties={counties} />
           </div>
 
           <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -119,7 +121,9 @@ export default async function HomePage() {
             <div className="mx-auto mt-10 flex max-w-xl flex-wrap items-center justify-center gap-x-10 gap-y-4 border-t border-ivory-50/15 pt-6">
               {stats.map((stat) => (
                 <div key={stat.label}>
-                  <p className="font-display text-2xl font-semibold">{stat.value.toLocaleString()}+</p>
+                  <p className="font-display text-2xl font-semibold">
+                    <CountUp value={stat.value} />+
+                  </p>
                   <p className="text-xs text-sage-200">{stat.label}</p>
                 </div>
               ))}

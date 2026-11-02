@@ -50,7 +50,7 @@ export function PropertyCardMedia({
 
   return (
     <div
-      className="relative h-full w-full"
+      className="relative h-full w-full transition-transform duration-300 group-hover:scale-[1.03] group-focus-within:scale-[1.03] motion-reduce:transition-none"
       onMouseEnter={startCycling}
       onMouseLeave={stopCycling}
       onFocus={startCycling}

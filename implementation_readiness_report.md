@@ -1,78 +1,98 @@
 # Stage 9: Implementation Readiness Test (Round 1)
 
-**Target**: `docs/designs/wave-9-page-polish-design.md`
-**Audit range (DetailedRange)**: lines 304–435
+**Target**: `docs/designs/homepage-liveliness-design.md`
+**Audit range (DetailedRange)**: lines 430–583
 **Reviewers**: egm-implementation-readiness (`implementation-readiness-standard`),
 egm-codebase-details (`implementation-readiness-standard`), egm-style (own persona standard)
 
 ## Consolidated Findings
 
+### 🔴 Blocker
+
+**impl-1-1 / codebase-1-1** — Lines 501–511 (item 6). Two compounding
+problems: (1) item 6's "Type / Scope" line claims `ProcessSteps.tsx` has
+a `"use client"` directive — it doesn't; the file has no directive at
+all (it's server-renderable and merely nests the client component
+`Reveal`). (2) The actual mechanism described — wrapping each spine
+segment in its own `<Reveal delayMs={i * 100}>` and styling it with
+`scale-y-0`→`scale-y-100` "as that `Reveal` instance becomes visible" —
+is unimplementable as written: `Reveal.tsx` exposes no prop, context, or
+attribute letting a sibling or child react to its internal `visible`
+state; it only toggles its *own* wrapper div's opacity/translate-y
+classes. An implementer would have to either fork `Reveal` (explicitly
+forbidden) or invent an undocumented mechanism.
+
+**impl-1-2 / codebase-1-2** — Lines 503–511 (item 6), cross-referenced
+against `ProcessSteps.tsx`'s actual layout (`flex flex-col gap-8
+lg:gap-10`, variable-height steps, today's spine is one continuous
+absolutely-positioned element sized via `top-6`/`bottom-6` insets against
+the whole container). Splitting into `steps.length - 1` per-gap segments
+requires a positioning formula (top offset, height, left offset) per
+segment that the plan never gives — with variable-height step rows, this
+can't be derived without either JS measurement or a layout restructure,
+neither of which is specified.
+
 ### 🟡 Major
 
-**impl-1-1** — Lines 121–133 (template) / item #2 (lines 326–339). The
-shared header template renders the `eyebrow` slot unconditionally, unlike
-`supportingLine` which is explicitly guarded with `{supportingLine && (...)}`.
-Item #2 states `/notifications` needs "no eyebrow," but the plan never
-says whether to delete the `<p>` block entirely, add a conditional, or
-leave it empty — three visually different, equally defensible readings.
-Violates the Zero-Decision Rule.
+**impl-1-3** — Lines 450–458 (item 2). Names the keyframe and the single
+property to animate (`translate`) but gives no concrete duration — "~30-
+45s" is a range, not a decided value.
 
-**impl-1-2** — Lines 312–321 vs. 326–339. `wrapperClassName` is introduced
-on `Switch` specifically to solve per-call-site spacing, but its only
-actual call site (`/notifications`, both instances) never specifies a
-value or states "pass nothing." The two `Switch` instances must stack
-inside the existing `flex flex-col gap-2` form; the implementer is left
-to independently decide whether spacing needs correcting.
+**impl-1-4** — Lines 434–445 (item 1, `CountUp`). "An ease-out curve"
+names no formula. Also unspecified: whether the animating `aria-hidden`
+span applies `.toLocaleString()` during the count-up (only the final
+`sr-only` value's formatting is specified) — relevant once a stat reaches
+four digits.
 
-**codebase-1-1** — Lines 361–370 (`/safety` item), tracing back to the
-Open Questions resolution (lines 78–83). The claim that `/safety`'s
-warning block "already matches the established warning-block pattern" is
-inaccurate: `LegalPageShell.tsx` and `app/checkout/mock/page.tsx` use
-`rounded-[var(--radius-md)] bg-warning-100 p-3 text-xs text-warning-500`,
-but the actual `/safety` warning block (`app/safety/page.tsx:35`) uses
-`p-4 text-sm` — different padding and text size. The decision to leave
-this block untouched rests on a false premise. *(Author's note: this is
-a genuine error from my own earlier drafting, not a reviewer
-misunderstanding — the Open Questions resolution should not have
-asserted an exact match without checking the specific utility values.)*
+**impl-1-5 / codebase-1-3** — Line 521 (item 7, `HeroSearch`).
+`aria-pressed={county === selectedChip}` references `selectedChip`,
+never defined anywhere in the plan. Worse: the FeatureRange's Technical
+Plan (item 6) uses a *third*, equally undefined name for the same
+comparison, `selectedCounty` — both introduced during Stage 7
+remediation. The only real state variable is `county`; chips are
+rendered via `counties.map(...)`, and neither the loop variable's name
+nor the correct comparison is pinned down anywhere.
 
-**codebase-1-2** — Lines 408–415 (Verification Plan, Unit Tests). States
-"nothing in the auth/messaging/subscription test files" should be
-affected, but `tests/unit/` contains no files scoped to auth or
-messaging (`vitest.config.ts` confirms the actual suite: `mock-payment-
-provider.test.ts`, `listing-completeness.test.ts`, `validation.test.ts`,
-`format.test.ts`). Names test categories that don't exist in the suite.
+**impl-1-6** — Lines 481–486 (item 4, `PropertyCard`). Doesn't specify
+where the new "Listed X ago" line goes relative to the existing price/
+title/location/bed-bath lines (though the FeatureRange's Technical Plan
+item 1 does specify this ordering — it just isn't repeated here).
+
+**codebase-1-4** (Nit, included here for grouping) — Line 561
+(Verification Plan). Uses `npx tsc --noEmit` instead of the project's own
+`npm run typecheck` script (defined in `package.json`), which the same
+bullet list otherwise uses correctly for lint/test/build.
 
 ### 🟢 Nit
 
-**impl-1-3** — Lines 334–336. The second `Switch` call site (`email_
-enabled`) is left as "the `email_enabled` equivalent" rather than
-spelling out the exact label string, inconsistent with how fully the
-first instance (`in_app_enabled`) is spelled out.
+**impl-1-8** — Line 509. `transform-origin: top` written as a raw CSS
+declaration instead of the Tailwind utility `origin-top`, inconsistent
+with the rest of the document's exact-Tailwind-class convention.
 
-**impl-1-4** — Lines 354–370. Items #4–#7 describe existing markup in
-prose ("the current bare `<h1>`") without quoting the literal JSX being
-replaced, unlike item #2 which quotes the literal input markup verbatim.
+**style-1-1** — Lines 551–554. "trivial" / "not worth a dedicated test
+on its own" are subjective judgments; the surrounding clause already
+gives concrete justification (one-line `Set` dedup, no branching logic).
 
-**codebase-1-3** — Lines 399–406. "Following the same format as waves
-1–8's entries" doesn't quote the actual heading convention in
-`docs/IMPLEMENTATION_STATUS.md` (`## Conversion-focused redesign, wave N
-(post-Milestone-8)`), relying on the implementer to infer it.
+**style-1-2** — Line 563. "stay green" is a CI-dashboard idiom; "must
+continue passing" is more precise.
 
-**codebase-1-4** — Lines 329–330. Describes adding the header "above the
-existing unread-count/'Mark all read' row," but `app/notifications/
-page.tsx` has no unread-count element — only a conditionally-rendered
-"Mark all read" button. Minor mischaracterization; doesn't change the
-correctness of the edit itself.
+## Disputed Finding
 
-**style-1-1** — Lines 329–330. "already self-explanatory" is a
-subjective quality judgment rather than a verifiable criterion.
-
-**style-1-2** — Lines 403–406. "actually complete — not before" —
-"actually" is filler; "not before" redundantly restates "once ...
-complete."
+**impl-1-7 (CONTESTED)** — Line 480 (item 4b, badge `animate-pulse`).
+The reviewer flagged this as missing a `motion-reduce:` companion class,
+claiming it would fail the Verification Plan's reduced-motion check.
+Checked against `app/globals.css`'s actual global rule (lines ~146–150):
+`*, *::before, *::after { animation-duration: 0.01ms !important; ... }`
+— a universal selector that zeroes `animation-duration` for every
+element, including `Badge`'s `animate-pulse`, with no explicit
+`motion-reduce:` class needed. This exactly matches the Technical Plan's
+own stated reasoning for item 2 ("the app's existing global
+`prefers-reduced-motion` CSS block already zeroes `animation-duration`…
+so this is reduced-motion-safe with zero additional code"). The finding
+is incorrect — not a comprehension gap, a checkable fact about the CSS.
 
 ## Round 1 Clean-Round Assessment
 
-Not clean: four Majors unresolved (0 Blockers). All three requested
-reviewers ran successfully (no "not run" status).
+Not clean: two Blockers, five Majors unresolved (one contested, pending
+user decision). All three requested reviewers ran successfully (no "not
+run" status).

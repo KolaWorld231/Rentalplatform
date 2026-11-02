@@ -29,10 +29,12 @@ export function ProcessSteps({
 
   return (
     <div className="relative mt-6 flex flex-col gap-8 lg:gap-10">
-      <div
-        aria-hidden="true"
+      <Reveal
+        delayMs={(steps.length - 1) * 100}
         className="absolute bottom-6 left-[1.4rem] top-6 hidden w-px bg-border lg:block"
-      />
+      >
+        {null}
+      </Reveal>
       {steps.map((step, i) => (
         <Reveal key={step.title} delayMs={i * 100}>
           <div
