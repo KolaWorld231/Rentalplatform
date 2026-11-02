@@ -1,5 +1,9 @@
 # Goldfish Annotated Review Report
 
+**Status: resolved** — all PROPOSE FIX items (Issues 1-11, 13, 14, 16-18,
+20) auto-accepted and applied; 3 DECLINE items (Issues 12, 15, 19) left
+unchanged as accepted nits.
+
 **Target:** `docs/designs/homepage-liveliness-design.md` (lines 1–393)
 
 ## Prioritized Findings & AI Suggestions

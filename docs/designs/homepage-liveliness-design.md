@@ -43,8 +43,10 @@ visual language.
 *   Use only plain CSS/Tailwind utilities and `@keyframes` — no new runtime
     dependencies, no animation libraries (explicitly no Framer Motion).
 *   Respect `prefers-reduced-motion` everywhere, including the one
-    JS-driven effect (the stat-strip count-up) that the app's existing
-    global CSS reduced-motion rule doesn't reach on its own.
+    JS-driven effect (the homepage's stat-strip count-up — the three
+    numbers, active listings, owners, counties, in the hero) that the
+    app's existing global CSS reduced-motion rule doesn't reach on its
+    own.
 *   Extend existing components and utilities (`Reveal`, `ProcessSteps`,
     `PropertyCard`, `HeroSearch`, `lib/utils/format.ts`) rather than forking
     or replacing them.
@@ -60,13 +62,15 @@ visual language.
     browser support as of this writing).
 *   No marquee/ticker of listings.
 *   No change to any Server Action, Supabase query shape beyond what
-    `app/page.tsx` already fetches, or any RLS policy.
+    `app/page.tsx` already fetches, or any Row-Level Security (RLS)
+    policy.
 *   No redesign of `PropertyCard`, `HeroSearch`, `ProcessSteps`, or
     `Reveal`'s existing core structure — every change in this wave extends
     an existing pattern rather than replacing it.
 *   Cursor-tilt parallax on the hero photo tiles is explicitly deferred
-    (not part of this wave) — the brief rated it Medium effort with the
-    lowest mission-alignment priority of everything considered, and it adds
+    (not part of this wave) — the brainstorm brief (`docs/designs/
+    homepage-liveliness.md`) rated it Medium effort with the lowest
+    mission-alignment priority of everything considered, and it adds
     a new client wrapper for a purely decorative effect. If wanted later,
     it would be scoped as its own follow-up.
 
@@ -94,9 +98,12 @@ in this single wave.
     published listing.
 *   **When**: the visitor is looking at the hero search bar.
 *   **Then**: a row of real county chips (not a fixed list — only counties
-    that actually have published listings) is visible; clicking one
-    navigates to `/search?county=<county>`, filtering results exactly the
-    same way the full search filters sidebar already does.
+    that actually have published listings) is visible; clicking one toggles
+    it as the selected county (same active/inactive treatment as
+    `SearchFilters.tsx`'s category chips); submitting the search
+    (alongside any city/bedrooms already entered) navigates to
+    `/search?county=<county>...`, filtering results exactly the same way
+    the full search filters sidebar already does.
 
 ### CUJ 3: Visitor with `prefers-reduced-motion` enabled
 
@@ -175,25 +182,27 @@ New `@keyframes hero-drift` in `app/globals.css`, added alongside the
 existing `@keyframes dropdown-in` (same file region, same short
 "why this exists" comment convention already used there):
 
-```text
+```css
 @keyframes hero-drift {
-  0%, 100% { transform: var(--hero-drift-base, none); }
-  50% { transform: var(--hero-drift-base, none) translate(4px, -4px) rotate(1deg); }
+  0%, 100% { translate: 0 0; }
+  50% { translate: 4px -4px; }
 }
 ```
 
 Applied via a new utility class (e.g. `.animate-hero-drift`) with a 30-45s
 duration, `ease-in-out`, `infinite`, and an explicit
 `motion-reduce:animate-none` on the three `<img>` tiles in the hero
-background (`app/page.tsx`'s `heroPhotos.map(...)` block). Belt-and-suspenders
-with the global reduced-motion rule, matching the pattern `Reveal.tsx`
-already double-guards with. Each tile keeps its existing per-tile static
-`rotate-*`/position classes (`right-[-4rem] top-[-2rem] ...`, etc.) as the
-drift's base transform — the `--hero-drift-base` CSS variable preserves
-each tile's distinct static rotation/position so the drift animates
-*around* it rather than overwriting it. Pure `transform`, no `blur`/
-`box-shadow` animation — GPU-cheap per the brief's bandwidth-constraint
-guidance.
+background (`app/page.tsx`'s `heroPhotos.map(...)` block). This animates
+only the native CSS `translate` property, not `transform` or a custom
+property. Confirmed against Wave 9's `Switch` component investigation:
+Tailwind v4 applies utilities like `rotate-6`/`-rotate-3`/`rotate-2` via
+the native CSS `rotate` property, entirely independent of `translate` —
+so each hero tile's existing static `rotate-*` Tailwind class keeps
+working completely untouched, with no CSS variable or inline style
+needed to "preserve" it. Redundant safeguard alongside the global
+reduced-motion rule, matching the pattern `Reveal.tsx` already
+double-guards with. Pure `translate`, no `blur`/`box-shadow` animation —
+GPU-cheap per the brief's bandwidth-constraint guidance.
 
 ### 5. `ProcessSteps` spine fills in synced to each step's reveal
 
@@ -201,17 +210,12 @@ guidance.
 bg-border` line behind all steps, fully drawn and static, plus wraps each
 step in `<Reveal delayMs={i * 100}>`. Change: split the single spine into
 `steps.length - 1` segments, one between each pair of consecutive step
-markers, each with `transform-origin: top` and `scale-y-0` by default; each
-segment transitions to `scale-y-100` using the *same* `i * 100`ms delay
-value already computed for that step's own `Reveal` wrapper (passed as an
-inline `style={{ transitionDelay: ... }}`, mirroring `Reveal.tsx`'s own
-`transitionDelay` pattern), driven by the same `visible` state logic
-`Reveal` already uses internally (or, simpler: each segment's visibility is
-tied to its *own* small `Reveal`-style IntersectionObserver trigger,
+markers, each with `transform-origin: top` and `scale-y-0` by default,
+transitioning to `scale-y-100` as it becomes visible. Each segment is
+wrapped in its own `<Reveal delayMs={i * 100}>` matching step N's marker,
 reusing `Reveal`'s existing component rather than duplicating its
-IntersectionObserver logic — segment N wrapped in its own `<Reveal
-delayMs={i * 100}>` matching step N's marker). This stays inside
-`ProcessSteps.tsx`; no change to `Reveal.tsx` itself, no new component.
+IntersectionObserver logic. This stays inside `ProcessSteps.tsx`; no
+change to `Reveal.tsx` itself, no new component.
 
 ### 6. Real county chips in `HeroSearch`
 
@@ -235,20 +239,26 @@ strip's own "hide when zero" pattern).
 
 `HeroSearch.tsx` gets a new optional prop `counties?: string[]` (defaults
 to `[]` so the component stays usable with its current zero-prop call
-signature elsewhere, if any exists). When non-empty, render a horizontal
-row of chip `<button type="button">` elements above the existing input row,
-each setting a new `county` controlled-state value (mirroring the existing
-`city`/`bedrooms` `useState` pattern) and visually toggling an active state
-using the same active-chip treatment already established elsewhere in the
-app (`SearchFilters.tsx`'s category chips, per Wave 5) for visual
-consistency — not a new chip visual language. Each chip is a real
-`<button>`, not a `<div>` with an onClick, so it's natively
-keyboard-operable (Tab + Enter/Space) with no extra ARIA wiring needed;
-focus state uses the existing `.focus-ring` utility. On submit, `county` is
-appended to the `URLSearchParams` alongside `city`/`bedrooms` exactly like
-the existing fields.
+signature elsewhere, if any exists). When non-empty, render a `flex
+flex-wrap gap-2` row of chip `<button type="button">` elements above the
+existing input row (wrapping to multiple lines on narrow widths rather
+than scrolling or truncating — the real county list is bounded at 15, per
+`LIBERIA_COUNTIES` in `lib/validation/property.ts`, not an open-ended
+list), each setting a new `county` controlled-state value (mirroring the
+existing `city`/`bedrooms` `useState` pattern) and visually toggling an
+active state using the same active-chip treatment already established
+elsewhere in the app (`SearchFilters.tsx`'s category chips, per a prior
+design wave — see `docs/IMPLEMENTATION_STATUS.md`) for visual consistency
+— not a new chip visual language. Each chip is a real `<button>`, not a
+`<div>` with an onClick, so it's natively keyboard-operable (Tab +
+Enter/Space) with no extra wiring needed for operability; each chip also
+carries `aria-pressed={county === selectedCounty}` so its toggle state is
+announced to assistive technology. Focus state uses the existing
+`.focus-ring` utility. On submit, `county` is appended to the
+`URLSearchParams` alongside `city`/`bedrooms` exactly like the existing
+fields.
 
-### 7. Count-up tween on the stat strip
+### 7. Count-up animation on the stat strip
 
 New file `components/ui/CountUp.tsx`: a small `"use client"` component
 taking a single prop `value: number` (the already-real, server-fetched
@@ -260,24 +270,19 @@ Internally:
 *   On mount, checks `window.matchMedia("(prefers-reduced-motion:
     reduce)").matches` (same check `Reveal.tsx` already performs) — if
     true, renders `value` immediately with no tween, matching CUJ 3.
-*   Otherwise, tweens a local `displayValue` state from `0` to `value` over
-    a short fixed duration (~800ms) via `requestAnimationFrame`, using an
-    ease-out curve computed in plain JS (no dependency).
+*   Otherwise, animates a local `displayValue` state from `0` to `value`
+    over a short fixed duration (~800ms) via `requestAnimationFrame`, using
+    an ease-out curve computed in plain JS (no dependency).
 *   The rendered text node is wrapped with `aria-hidden="true"` on the
     animating span, with a visually-hidden (`sr-only`) sibling span holding
     the static final `value` for assistive tech — so screen readers read
     the correct final number immediately rather than a stream of changing
-    numbers, per the brief's Comprehension-lens finding.
+    numbers, per the brainstorm brief's accessibility analysis.
 
 `app/page.tsx`'s stat-strip rendering (`stat.value.toLocaleString()`)
 changes to `<CountUp value={stat.value} />`; `CountUp` internally applies
 `.toLocaleString()` itself to match today's formatting (e.g. "1,234+" —
 the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
-
-### Deferred (explicitly out of scope per Non-Goals)
-
-Cursor-tilt parallax on hero tiles is not part of this wave's Technical
-Plan — see Non-Goals.
 
 ## Alternatives Considered
 
@@ -308,8 +313,8 @@ Plan — see Non-Goals.
 
 ### Alternative C: CSS `animation-timeline: scroll()` scroll-driven parallax
 
-*   **Pros**: pure CSS, no JavaScript scroll listener needed, would give
-    the hero photo tiles a genuinely dynamic scroll-linked effect.
+*   **Pros**: pure CSS, no JavaScript scroll listener needed, would tie
+    the hero photo tiles' motion to scroll position.
 *   **Cons**: Chrome-only browser support as of this writing; every other
     browser would need an explicit static no-op fallback, adding
     complexity for a purely decorative effect.
@@ -347,21 +352,50 @@ Plan — see Non-Goals.
 
 ### Alternative F: Cursor-tilt parallax on hero tiles
 
-*   **Pros**: a genuinely novel, eye-catching interaction not currently
-    present anywhere in the app; reinforces the "tilt toward light" feel
-    the clay shadow tokens already evoke.
+*   **Pros**: an interaction pattern not currently implemented anywhere in
+    the app; reinforces the "tilt toward light" feel the clay shadow
+    tokens already evoke.
 *   **Cons**: Medium effort requiring a new small client wrapper around
     just the hero photo-tile layer, with `mousemove` listeners that need
     throttling/rAF-batching; purely decorative (the tiles are already
     `aria-hidden="true"`), so it has no functional payoff beyond
     atmosphere.
 *   **Reason for Rejection**: not rejected outright, but deprioritized out
-    of this wave's scope — the brief's Zoom-Out-lens priority ranking rates
-    real recency signals and interactive hero search refinement (items 1
+    of this wave's scope — the brainstorm brief's mission-alignment
+    priority ranking rates real recency signals and interactive hero
+    search refinement (items 1
     and 6 in the Technical Plan) above micro-motion polish, and this item
     carries real implementation cost (new client boundary, event listener
     management) for a purely atmospheric effect. Captured in Non-Goals as
     an explicit candidate for a future, separately-scoped wave.
+
+## Risks & Mitigations
+
+*   **Bundling risk**: this wave combines seven independently-motivated
+    changes — five purely decorative/CSS-only (badge pulse, hover scale,
+    hero drift, spine fill-in) and two functional/new-component (county
+    chips, count-up) — into one design and one likely rollback unit. A
+    single `git revert` of the whole wave would undo real functional wins
+    (county chips, "Listed X ago") if a purely cosmetic item needs to be
+    pulled post-launch. **Mitigation**: sequence commits so the
+    data-bearing/functional items (1, 6, 7) aren't entangled with the
+    purely decorative ones (2–5) at the commit/PR level, even though this
+    design doc covers both — a cosmetic item can then be reverted
+    independently without losing the functional ones.
+*   **Hero-drift CSS correctness**: the original draft of this design
+    proposed a `--hero-drift-base` CSS variable mechanism that would have
+    silently discarded each hero tile's static rotation the moment the
+    drift animation started. **Mitigation**: resolved during review — see
+    Technical Plan item 4, which now animates only the native `translate`
+    CSS property, confirmed independent of the `rotate` property Tailwind
+    v4 already uses for each tile's static rotation.
+*   **County chip list growth**: counties are derived with no hardcoded
+    cap. **Mitigation**: the real list is bounded at 15 (`LIBERIA_COUNTIES`
+    in `lib/validation/property.ts`), and the chip row wraps
+    (`flex-wrap`) rather than requiring truncation or horizontal scroll —
+    see Technical Plan item 6.
+*   See Non-Functional Requirements below for accessibility, performance,
+    and rollback mitigations that apply across all seven items.
 
 ## Non-Functional Requirements
 
@@ -369,11 +403,13 @@ Plan — see Non-Goals.
     `PropertyCardMedia` hover scale, `ProcessSteps` spine fill) is covered
     for free by the existing global `prefers-reduced-motion` rule in
     `app/globals.css`. The one exception, `CountUp`'s `requestAnimationFrame`
-    tween, needs its own explicit `window.matchMedia` check (mirroring
+    animation, needs its own explicit `window.matchMedia` check (mirroring
     `Reveal.tsx`) plus an `sr-only` static-value sibling so assistive tech
     always reads the correct final number, never a changing stream.
     County chips must be real `<button>` elements (native keyboard
-    operability), not `<div onClick>`.
+    operability), not `<div onClick>`, and each must carry
+    `aria-pressed` reflecting its selected state so assistive technology
+    gets the toggle, not just the operability.
 *   **Performance**: all animations are `transform`/`opacity` only (GPU-cheap),
     no `blur`/`box-shadow` animation, matching the brief's bandwidth/
     low-end-device guidance. No new queries — the county list and all stat
@@ -401,8 +437,8 @@ Plan — see Non-Goals.
 *   **Proposed Changes**: Export a `CountUp` component taking `value:
     number`. On mount, checks `prefers-reduced-motion` via
     `window.matchMedia` (same pattern as `Reveal.tsx`); if reduced motion
-    is on, renders `value.toLocaleString()` immediately with no tween.
-    Otherwise, tweens a local state integer from `0` to `value` via
+    is on, renders `value.toLocaleString()` immediately with no animation.
+    Otherwise, animates a local state integer from `0` to `value` via
     `requestAnimationFrame` over ~800ms with an ease-out curve, rendering
     the animating number in an `aria-hidden="true"` span and the static
     final value in an `sr-only` sibling span for assistive tech. No new
@@ -416,9 +452,10 @@ Plan — see Non-Goals.
     short comment explaining its purpose (matching the existing
     documentation convention for `dropdown-in`), plus a
     `.animate-hero-drift` utility class (duration ~30-45s, `ease-in-out`,
-    `infinite`) applying it, with transform composed against a
-    `--hero-drift-base` CSS custom property so each hero tile's existing
-    static rotation/position is preserved as the animation's base state.
+    `infinite`) applying it. The keyframe animates only the native CSS
+    `translate` property (not `transform`, and no custom property needed)
+    — each hero tile's existing static `rotate-*` Tailwind class uses the
+    independent native CSS `rotate` property and keeps working untouched.
 
 #### 3. `app/page.tsx` (Modify)
 
@@ -427,13 +464,10 @@ Plan — see Non-Goals.
     [...new Set((coverageRows ?? []).map((r) => r.county))].sort()` from
     the already-fetched `coverageRows` query result, and pass it as a new
     `counties` prop to `<HeroSearch />`. (b) Apply `animate-hero-drift
-    motion-reduce:animate-none` plus a per-tile `--hero-drift-base` inline
-    style (set to each tile's existing static `rotate`/position, currently
-    expressed via Tailwind classes — kept as Tailwind classes for the base
-    layout, with the CSS variable added purely for the drift keyframe's
-    reference point) to the three `<img>` elements in the
-    `heroPhotos.map(...)` block. (c) Replace each stat strip's raw
-    `{stat.value.toLocaleString()}+` rendering with
+    motion-reduce:animate-none` to the three `<img>` elements in the
+    `heroPhotos.map(...)` block, alongside their existing static
+    `rotate-*`/position Tailwind classes (unchanged). (c) Replace each
+    stat strip's raw `{stat.value.toLocaleString()}+` rendering with
     `<CountUp value={stat.value} />+`.
 
 #### 4. `components/properties/PropertyCard.tsx` (Modify)
@@ -471,7 +505,7 @@ Plan — see Non-Goals.
     with `steps.length - 1` individual segment `<div>`s, one per gap
     between consecutive step markers, each wrapped in its own `<Reveal
     delayMs={i * 100}>` (reusing `Reveal` rather than forking it, per the
-    brief's Structural-lens guidance) and styled with `scale-y-0`
+    brainstorm brief's structural guidance) and styled with `scale-y-0`
     transitioning to `scale-y-100` with `transform-origin: top` as that
     `Reveal` instance becomes visible — synced to the same `i * 100`ms
     delay already used for step `i`'s own content reveal.
@@ -482,21 +516,23 @@ Plan — see Non-Goals.
 *   **Proposed Changes**: Add a new optional prop `counties?: string[]`
     (default `[]`). Add a new `county` controlled-state value (`useState`,
     mirroring the existing `city`/`bedrooms` pattern). When `counties` is
-    non-empty, render a horizontal row of `<button type="button">` chips
-    above the existing input row — one per county — using the same
-    active/inactive chip visual treatment already established in
-    `SearchFilters.tsx`'s category chips (Wave 5), toggling the `county`
-    state on click (click again to deselect). On submit, append `county`
-    to the existing `URLSearchParams` construction alongside `city` and
-    `bedrooms`, each independently optional exactly as `searchParamsSchema`
-    in `lib/validation/property.ts` already defines them.
+    non-empty, render a `flex flex-wrap gap-2` row of `<button
+    type="button">` chips above the existing input row — one per county,
+    each carrying `aria-pressed={county === selectedChip}` — using the
+    same active/inactive chip visual treatment already established in
+    `SearchFilters.tsx`'s category chips (a prior design wave — see
+    `docs/IMPLEMENTATION_STATUS.md`), toggling the `county` state on click
+    (click again to deselect). On submit, append `county` to the existing
+    `URLSearchParams` construction alongside `city` and `bedrooms`, each
+    independently optional exactly as `searchParamsSchema` in
+    `lib/validation/property.ts` already defines them.
 
 #### 8. `docs/DESIGN_SYSTEM.md` (Modify)
 
 *   **Type / Scope**: Documentation.
 *   **Proposed Changes**: Add a `CountUp` bullet to the "Component
     inventory (`components/ui/`)" section, following the existing bullet
-    format (e.g. "`CountUp` — tweens a numeral from 0 to its final real
+    format (e.g. "`CountUp` — animates a numeral from 0 to its final real
     value on mount, reduced-motion-safe, used on homepage stat strips.").
     No change to the "Property-card system (Milestone 3)" section's prose
     — the new relative-time line and pulse badge are additive to the
@@ -532,13 +568,14 @@ with how `Reveal.tsx`'s equivalent branch has no unit test today either.
     chips (Tab + Enter/Space select/deselect, visible focus ring); DevTools
     `prefers-reduced-motion: reduce` emulation confirming hero drift, badge
     pulse, `PropertyCardMedia` hover scale, `ProcessSteps` spine fill, and
-    `CountUp`'s tween all stop/skip per CUJ 3, while `CountUp`'s
+    `CountUp`'s animation all stop/skip per CUJ 3, while `CountUp`'s
     accessible text still reads the correct final value.
 *   **E2E/Integration (live, against the real Supabase project)**: seed at
     least one property published within 72 hours and confirm its "New"
     badge pulses and its relative-time line renders correctly; seed
     properties across at least two distinct counties and confirm the
-    corresponding chips render in `HeroSearch` and that clicking one
+    corresponding chips render in `HeroSearch`, that clicking one toggles
+    its selected/`aria-pressed` state, and that submitting the search
     navigates to `/search?county=<value>` with correctly filtered results;
     visually confirm (desktop + mobile viewport) the hero drift, card
     hover-scale, and `ProcessSteps` spine fill render without layout shift
