@@ -1,23 +1,30 @@
 # Design System
 
 DomiLink's visual identity combines restrained Claymorphism (soft dimensional
-surfaces), editorial real-estate presentation, and a local-first Liberian
-feel. This document is the source of truth; every page must draw from these
-tokens rather than inventing new values inline.
+surfaces), editorial real-estate presentation, and a bold black/white/red
+brand palette. This document is the source of truth; every page must draw
+from these tokens rather than inventing new values inline.
 
 ## Color tokens (`app/globals.css`)
 
+Token group names (`forest`/`ivory`/`sage`/`clay`/`charcoal`) predate the
+current palette and are kept as-is since they're referenced throughout the
+codebase — only the underlying hex values changed when the brand moved to
+red/black/white. There is deliberately no separate accent color: `clay`
+aliases onto the same red family as `brand`, so there is one hue doing both
+primary and accent duty, plus neutral black/white/gray.
+
 | Token | Hex | Use |
 |---|---|---|
-| `--color-forest-800` / `brand-800` | `#173d35` | Hero surfaces, deep brand fills |
-| `--color-forest-600` / `brand-600` | `#24594a` | Primary buttons, links, brand marks |
-| `--color-ivory-100` | `#f8f5ee` | Main canvas background |
-| `--color-surface` | `#ffffff` | Elevated cards, inputs |
-| `--color-sage-200` | `#dce8dd` | Selected filters, skeletons, secondary surfaces |
-| `--color-clay-500` | `#d98567` | Restrained accent / primary conversion CTA |
-| `--color-charcoal-700` | `#242925` | Body text |
-| `--color-charcoal-400` | `#68716b` | Secondary/metadata text |
-| `--color-success/warning/error/info-500` | — | Status feedback, paired with a `-100` tint for backgrounds |
+| `--color-forest-800` / `brand-800` | `#a00c30` (Embers) | Hero surfaces, deep brand fills |
+| `--color-forest-600` / `brand-600` | `#da1a32` (Bonfire Red) | Primary buttons, links, brand marks |
+| `--color-ivory-100` | `#f7f6f6` | Main canvas background (near Magnolia White) |
+| `--color-surface` | `#ffffff` | Elevated cards, inputs (Magnolia White) |
+| `--color-sage-200` | `#e8e8e8` | Selected filters, skeletons, secondary surfaces (neutral gray) |
+| `--color-clay-500` | `#da1a32` (Bonfire Red) | Accent / primary conversion CTA — same hue as brand, no second accent color |
+| `--color-charcoal-700` | `#1a1a1a` | Body text (near Black Swarm) |
+| `--color-charcoal-400` | `#737373` | Secondary/metadata text |
+| `--color-success/warning/error/info-500` | — | Status feedback, paired with a `-100` tint for backgrounds — unchanged, deliberately distinct from brand red so errors/success remain visually distinguishable from brand/accent elements |
 
 Tailwind utility classes are generated from these via `@theme inline` (e.g.
 `bg-brand-600`, `text-charcoal-500`, `bg-sage-100`). Dark mode redefines
@@ -25,7 +32,7 @@ Tailwind utility classes are generated from these via `@theme inline` (e.g.
 `prefers-color-scheme: dark`.
 
 Gradients are not used as a substitute for design; the hero's only treatment
-is a flat deep-forest fill against the ivory canvas.
+is a flat Embers fill against the white/near-white canvas.
 
 ## Typography
 
@@ -58,10 +65,10 @@ components.
 - `--shadow-clay-inset` — recessed surfaces (text inputs, filter wells).
 - `--shadow-clay-raised` — tactile secondary cards (`<CardClay>`).
 
-Shadows are soft, dual-toned, and tuned to stay visible against the warm
-ivory background without ever using pure black. Not every surface gets full
-clay treatment — flat surfaces are used where density/readability need it
-(e.g. dense list rows, dashboard tables).
+Shadows are soft, dual-toned, and tuned to stay visible against the white
+canvas, tinted black to match the neutral palette. Not every surface gets
+full clay treatment — flat surfaces are used where density/readability need
+it (e.g. dense list rows, dashboard tables).
 
 ## Component inventory (`components/ui/`)
 
@@ -120,8 +127,8 @@ pattern.
 
 ## Messaging patterns (Milestone 5)
 
-`MessageThread` right-aligns the current user's own messages in brand
-green on an ivory canvas, left-aligns the other participant's in sage —
+`MessageThread` right-aligns the current user's own messages in brand red
+on a white canvas, left-aligns the other participant's in neutral gray —
 the same two-tone convention most people already read as "mine vs
 theirs," rather than inventing a new one. The conversation list reuses the
 unread-dot + relative-timestamp pattern from property cards instead of a

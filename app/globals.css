@@ -3,36 +3,39 @@
 /*
   DomiLink design tokens.
   See docs/DESIGN_SYSTEM.md for the full rationale behind these values.
-  Palette: deep forest green (brand/primary actions), warm ivory (canvas),
-  surface white (elevated cards), sage (selected/support), clay (restrained accent).
+  Palette: Bonfire Red / Embers (brand/primary actions — also the sole
+  accent, replacing the old clay color), Magnolia White (canvas, surface),
+  Black Swarm (text). Token group names (forest/ivory/sage/clay/charcoal)
+  are kept as-is since they're referenced throughout the codebase and by
+  the `@theme inline` block below — only the hex values changed.
 */
 :root {
-  --color-forest-900: #122b25;
-  --color-forest-800: #173d35;
-  --color-forest-700: #1f4b41;
-  --color-forest-600: #24594a;
-  --color-forest-500: #2f6e5c;
-  --color-forest-100: #e3ede8;
+  --color-forest-900: #4a0718;
+  --color-forest-800: #a00c30;
+  --color-forest-700: #b8122f;
+  --color-forest-600: #da1a32;
+  --color-forest-500: #e8495c;
+  --color-forest-100: #fbe2e5;
 
-  --color-ivory-50: #fbf9f4;
-  --color-ivory-100: #f8f5ee;
-  --color-ivory-200: #f1ecdf;
+  --color-ivory-50: #ffffff;
+  --color-ivory-100: #f7f6f6;
+  --color-ivory-200: #efeded;
 
-  --color-sage-100: #eef3ee;
-  --color-sage-200: #dce8dd;
-  --color-sage-300: #c3d6c4;
+  --color-sage-100: #f2f2f2;
+  --color-sage-200: #e8e8e8;
+  --color-sage-300: #d6d6d6;
 
-  --color-clay-400: #e3a083;
-  --color-clay-500: #d98567;
-  --color-clay-600: #c06a4c;
+  --color-clay-400: #e8495c;
+  --color-clay-500: #da1a32;
+  --color-clay-600: #a00c30;
 
-  --color-charcoal-900: #1b1f1b;
-  --color-charcoal-700: #242925;
-  --color-charcoal-500: #454c46;
-  --color-charcoal-400: #68716b;
+  --color-charcoal-900: #000000;
+  --color-charcoal-700: #1a1a1a;
+  --color-charcoal-500: #4d4d4d;
+  --color-charcoal-400: #737373;
 
   --color-surface: #ffffff;
-  --color-border: #e5e6df;
+  --color-border: #e5e5e5;
 
   --color-success-500: #2f8f5b;
   --color-success-100: #e3f3ea;
@@ -61,13 +64,13 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  /* Claymorphism shadow tokens: soft dual-light shadows against the warm canvas */
-  --shadow-subtle: 0 1px 2px 0 rgba(23, 61, 53, 0.06);
-  --shadow-raised: 0 1px 2px rgba(23, 61, 53, 0.05), 0 8px 20px -6px rgba(23, 61, 53, 0.12);
-  --shadow-floating: 0 2px 4px rgba(23, 61, 53, 0.06), 0 16px 32px -10px rgba(23, 61, 53, 0.16);
-  --shadow-modal: 0 8px 16px rgba(23, 61, 53, 0.08), 0 32px 64px -16px rgba(23, 61, 53, 0.28);
-  --shadow-clay-inset: inset 0 2px 4px rgba(23, 61, 53, 0.08), inset 0 -1px 1px rgba(255, 255, 255, 0.6);
-  --shadow-clay-raised: 6px 6px 16px rgba(23, 61, 53, 0.12), -4px -4px 12px rgba(255, 255, 255, 0.7);
+  /* Claymorphism shadow tokens: soft dual-light shadows against the white canvas */
+  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 20px -6px rgba(0, 0, 0, 0.12);
+  --shadow-floating: 0 2px 4px rgba(0, 0, 0, 0.06), 0 16px 32px -10px rgba(0, 0, 0, 0.16);
+  --shadow-modal: 0 8px 16px rgba(0, 0, 0, 0.08), 0 32px 64px -16px rgba(0, 0, 0, 0.28);
+  --shadow-clay-inset: inset 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 -1px 1px rgba(255, 255, 255, 0.6);
+  --shadow-clay-raised: 6px 6px 16px rgba(0, 0, 0, 0.12), -4px -4px 12px rgba(255, 255, 255, 0.7);
 }
 
 @theme inline {
@@ -125,8 +128,8 @@
   :root {
     --background: var(--color-charcoal-900);
     --foreground: var(--color-ivory-100);
-    --color-surface: #23281f;
-    --color-border: #343b32;
+    --color-surface: #1a1a1a;
+    --color-border: #333333;
   }
 }
 

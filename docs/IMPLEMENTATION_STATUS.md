@@ -789,6 +789,73 @@ nav — all three candidates the user picked when offered a choice.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
   (33/33) all clean.
 
+## Brand palette update: black / Bonfire Red / Magnolia White (post-Milestone-8)
+
+The user provided a reference palette (Black Swarm `#000000`, Bonfire Red
+`#da1a32`, Embers `#a00c30`, Magnolia White `#ffffff`) and asked for a full
+re-theme, with the existing clay/orange accent dropped in favor of red-only
+accents (both confirmed explicitly via clarifying questions before
+touching anything).
+
+- **`app/globals.css`** is the single source of truth for every color in
+  the app — Tailwind v4's CSS-native `@theme inline` block maps semantic
+  classes (`bg-brand-600`, `text-charcoal-700`, `bg-sage-100`, etc.) onto
+  these `:root` custom properties. The token *names*
+  (`forest`/`ivory`/`sage`/`clay`/`charcoal`) were kept exactly as-is —
+  renaming them would have meant touching every component file for no
+  visual benefit — only their hex values changed:
+  - `forest-*` (brand): `#173d35`→`#a00c30` (Embers, `brand-800`) through
+    `#24594a`→`#da1a32` (Bonfire Red, `brand-600`), with a consistent red
+    ramp for the lighter/darker steps.
+  - `ivory-*`/`surface` (canvas/cards): warm off-white → Magnolia White /
+    near-white neutrals.
+  - `sage-*` (secondary support/hover backgrounds): green tints → neutral
+    grays (no longer accent-colored, since the accent was dropped).
+  - `clay-*` (accent): re-aliased onto the **same red family** as `brand`
+    (`clay-500` = Bonfire Red, same as `brand-600`) rather than its own
+    hue — this is what "drop the accent, red-only" means in practice: one
+    brand hue does double duty as both primary and accent color, with no
+    second competing color.
+  - `charcoal-*` (text): green-tinted darks → Black Swarm-based blacks
+    (`charcoal-900` is literally `#000000`).
+  - Shadow token rgba tints (previously green, `rgba(23, 61, 53, …)`) →
+    black (`rgba(0, 0, 0, …)`), and the dark-mode media query's surface/
+    border colors updated to match.
+  - `success`/`warning`/`error`/`info` status colors were deliberately
+    left unchanged — keeping error red visually distinct (more muted/
+    brick-toned) from the vivid brand/accent red was a conscious choice,
+    not an oversight, so form errors don't read as brand-colored
+    highlights.
+  - This means every component across all 5 prior redesign waves
+    (hero, property cards, pricing, messaging, dashboard, auth, nav)
+    picked up the new palette automatically with zero component-level
+    edits — confirmed by grepping the codebase for any hardcoded hex
+    values outside `globals.css` (none found) before and after.
+- **`docs/DESIGN_SYSTEM.md`** updated to document the new hex values and
+  explicitly note the "one hue does brand + accent duty" decision, so a
+  future session doesn't reintroduce a second accent color by habit.
+- **A real deploy/dev-cache pitfall caught and fixed during verification**:
+  the first live check after editing `globals.css` still rendered the old
+  green palette. Investigated rather than assumed fine — confirmed via
+  `curl`ing the compiled CSS chunk directly that the *old* hex values were
+  still present in Turbopack's output even after restarting `next dev`
+  and `rm -rf .next`. Root cause: an incomplete first cleanup (an earlier
+  cache-clear command had been interrupted). Force-killing the dev server
+  process directly and fully removing `.next` resolved it — reconfirmed by
+  `curl`ing the new CSS chunk and seeing only the new hex values before
+  taking a single screenshot.
+- Live-verified (after the above fix) across `/`, `/pricing`,
+  `/how-it-works`, `/login`, and `/search`: red hero/CTAs, white canvas,
+  near-black text all render correctly with no console/page errors; the
+  pricing page's error-red "X" icons remain visually distinct from the
+  brand red; the register page's renter/owner track cards and the
+  `/how-it-works` two-track layout both now render in the same red (an
+  expected, deliberate consequence of dropping the second accent color —
+  not a bug).
+- No RLS/Server Action/query changes — pure CSS token values.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
