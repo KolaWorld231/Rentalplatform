@@ -1263,6 +1263,58 @@ a now-dark `Card`/`background`.
   issue, not a product bug — resolved by clearing `.next` and
   restarting.)
 
+## Demo listings disclosure (post-Milestone-8)
+
+The live database had zero real listings (expected — no real owner has
+signed up yet), which made the homepage/search empty states the only
+thing visible on the live preview. The user asked for seeded demo
+apartment data. Per `CLAUDE.md` rule #9 ("never fabricate demo data in
+production paths"), this was confirmed with the user first — the live
+Supabase project (`ccuelnrmvtmtgukqyvrb`) is the one flagged for
+production use, not a disposable sandbox. They chose **permanent,
+clearly-marked seed data** over an unmarked fake catalog or a separate
+preview-only database.
+
+- **`scripts/seed-demo-listings.mjs`** (new, committed — not a throwaway
+  `scripts-tmp-*` script, since this data is meant to persist):
+  idempotent (matches on owner email / listing slug, safe to re-run),
+  reads Supabase credentials from `.env.local` the same way every other
+  service-role script this session has, and:
+  - Creates one owner account, `demo-listings@domilink.app` / display
+    name "DomiLink Listings Team", granted the `owner` role.
+  - Sets its `owner_profiles.bio` to explicitly disclose it's
+    placeholder content maintained by the DomiLink team and not
+    available for rent (`public_contact_opt_in: false`).
+  - Inserts 6 published listings under that account: a 2BR apartment in
+    Sinkor ($350/mo), a 3BR house in Paynesville ($500/mo), a studio
+    near Capitol Hill ($200/mo), a single room in Gbarnga ($80/mo), a
+    retail shop in Buchanan ($300/mo), and a serviced office in Sinkor
+    ($450/mo) — spanning 3 counties, 6 categories, both residential and
+    commercial `usage_type`, realistic Liberia pricing/copy.
+  - No photos attached — deliberately left to the app's existing "No
+    photo yet" placeholder (`components/properties/PropertyCardMedia.tsx`)
+    rather than sourcing stock images with an uncertain license for a
+    specific named property.
+- This is the one sanctioned exception to rule #9 on this project, and
+  it's disclosed in three places: this entry, the script's own header
+  comment, and the owner account's bio — never presented as unmarked
+  real inventory.
+- **To remove later** (once real owners have listings): delete the
+  `demo-listings@domilink.app` auth user — `owner_profiles`,
+  `user_roles`, and all 6 `properties` rows cascade via `on delete
+  cascade` FKs, same mechanism used for the test-account cleanup
+  scripts earlier this session.
+- No Server Action, RLS policy, or schema change — pure data insert via
+  the existing service-role pattern.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (33/33) all clean after adding the script.
+- Verified live: queried all 6 rows back from Supabase directly
+  (`listing_status: "published"`), then a live Playwright pass against
+  `domilink-preview.vercel.app` confirmed the homepage no longer shows
+  the empty state, `/search` lists the seeded properties, and the
+  Sinkor apartment's own detail page renders its title, price, and
+  "DomiLink Listings Team" as the owner.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
