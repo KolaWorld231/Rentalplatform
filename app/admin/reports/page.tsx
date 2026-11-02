@@ -43,28 +43,25 @@ export default async function AdminReportsPage() {
                 </div>
                 <Badge variant="warning">open</Badge>
               </div>
-              <div className="mt-3 flex gap-2">
-                <form
-                  action={async () => {
-                    "use server";
-                    await resolvePropertyReportAction(r.id, "resolved", "Action taken.");
-                  }}
-                >
-                  <Button type="submit" size="sm" variant="primary">
+              <form className="mt-3 flex flex-col gap-2">
+                <label className="flex flex-col gap-1 text-xs font-medium text-charcoal-500">
+                  Resolution notes (internal — not shown to the reporter)
+                  <textarea
+                    name="reason"
+                    rows={2}
+                    className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-charcoal-700 shadow-[var(--shadow-clay-inset)]"
+                    placeholder="e.g. Listing removed; owner warned"
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <Button type="submit" size="sm" variant="primary" formAction={resolvePropertyReportAction.bind(null, r.id, "resolved")}>
                     Mark resolved
                   </Button>
-                </form>
-                <form
-                  action={async () => {
-                    "use server";
-                    await resolvePropertyReportAction(r.id, "dismissed", "No violation found.");
-                  }}
-                >
-                  <Button type="submit" size="sm" variant="secondary">
+                  <Button type="submit" size="sm" variant="secondary" formAction={resolvePropertyReportAction.bind(null, r.id, "dismissed")}>
                     Dismiss
                   </Button>
-                </form>
-              </div>
+                </div>
+              </form>
             </Card>
           ))}
         </div>

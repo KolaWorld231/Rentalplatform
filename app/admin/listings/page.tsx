@@ -77,32 +77,27 @@ function formatRentAmount(n: number) {
 
 function ModerationActions({ propertyId, approveStatus }: { propertyId: string; approveStatus: "published" }) {
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      <form action={async () => { "use server"; await moderatePropertyAction(propertyId, approveStatus, ""); }}>
-        <Button type="submit" size="sm" variant="primary">
+    <form className="mt-3 flex flex-col gap-2">
+      <label className="flex flex-col gap-1 text-xs font-medium text-charcoal-500">
+        Reason (shown to the owner for reject/suspend; optional for approve)
+        <textarea
+          name="reason"
+          rows={2}
+          className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-charcoal-700 shadow-[var(--shadow-clay-inset)]"
+          placeholder="e.g. Photos don't match the description"
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" size="sm" variant="primary" formAction={moderatePropertyAction.bind(null, propertyId, approveStatus)}>
           Approve
         </Button>
-      </form>
-      <form
-        action={async () => {
-          "use server";
-          await moderatePropertyAction(propertyId, "rejected", "Does not meet listing guidelines");
-        }}
-      >
-        <Button type="submit" size="sm" variant="secondary">
+        <Button type="submit" size="sm" variant="secondary" formAction={moderatePropertyAction.bind(null, propertyId, "rejected")}>
           Reject
         </Button>
-      </form>
-      <form
-        action={async () => {
-          "use server";
-          await moderatePropertyAction(propertyId, "suspended", "Suspended pending review");
-        }}
-      >
-        <Button type="submit" size="sm" variant="danger">
+        <Button type="submit" size="sm" variant="danger" formAction={moderatePropertyAction.bind(null, propertyId, "suspended")}>
           Suspend
         </Button>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }

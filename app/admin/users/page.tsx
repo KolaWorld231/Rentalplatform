@@ -32,12 +32,17 @@ export default async function AdminUsersPage() {
               <Badge variant={p.account_status === "active" ? "success" : "error"}>{p.account_status}</Badge>
             </div>
             {p.account_status === "active" ? (
-              <form
-                action={async () => {
-                  "use server";
-                  await suspendUserAction(p.id, "Policy violation reported via admin review");
-                }}
-              >
+              <form action={suspendUserAction.bind(null, p.id)} className="flex items-end gap-2">
+                <label className="flex flex-col gap-1 text-xs font-medium text-charcoal-500">
+                  Reason (required, shown to the user)
+                  <textarea
+                    name="reason"
+                    required
+                    rows={1}
+                    className="focus-ring w-64 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-1.5 text-sm text-charcoal-700 shadow-[var(--shadow-clay-inset)]"
+                    placeholder="e.g. Repeated policy violations reported"
+                  />
+                </label>
                 <Button type="submit" size="sm" variant="danger">
                   Suspend
                 </Button>

@@ -1169,6 +1169,57 @@ it unimplementable as originally specified).
   string-equality check against `1e-05s` instead of a numeric
   comparison — both fixed and re-verified, not product bugs).
 
+## Admin console fix: free-text moderation reasons (post-Milestone-8)
+
+A standard scoped fix, not an EGM wave: every admin moderation/suspension
+action previously sent a hardcoded, generic reason (or none at all) with
+no way for the admin to type something specific to the case. Fixed for
+every action whose underlying table already has a column to store a
+reason — no schema migration.
+
+- **`app/admin/actions.ts`**: `moderatePropertyAction`,
+  `reviewIdentityVerificationAction`, `reviewPropertyVerificationAction`,
+  and `resolvePropertyReportAction` now take `FormData` as their final
+  parameter (previously a plain hardcoded string baked in at the call
+  site) and read `formData.get("reason")`, writing it to
+  `properties.moderation_reason` / `*_verification_requests.reviewer_notes`
+  / `property_reports.resolution_notes` respectively, and passing it
+  through unchanged to the existing `recordAdminAction`/`notifyUser`
+  calls. `suspendUserAction` now requires a non-empty reason (thrown
+  server-side if missing) instead of accepting an already-hardcoded
+  string.
+- **`app/admin/listings/page.tsx`, `app/admin/verifications/page.tsx`,
+  `app/admin/reports/page.tsx`, `app/admin/users/page.tsx`**: each
+  row's action buttons now share one `<textarea name="reason">` inside a
+  single `<form>`, with each `Button` using `formAction={action.bind(null,
+  ...args)}` to route that particular submission to the correct outcome
+  while still carrying the shared textarea's value — no `"use client"`
+  conversion needed anywhere; all five pages stay Server Components with
+  native-form mutations.
+- `resolveMessageReportAction` (message reports, in
+  `app/admin/reports/page.tsx`) was deliberately left unchanged:
+  `message_reports` has no notes/resolution column, and adding one would
+  require a schema migration out of scope for this fix.
+- No RLS policy, `requireAnyRole` check, or Server Action authorization
+  logic changed — only how the reason string reaches the action.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean on the first pass.
+- Live Playwright pass against the real Supabase project (seeded admin/
+  owner/reporter/suspend-target accounts, one pending-review listing, one
+  open property report, one identity verification request, one property
+  verification request — all fully deleted afterward): confirmed
+  Listings' Reject button submits the typed reason into
+  `properties.moderation_reason` and flips `listing_status`; confirmed
+  Verifications' "Needs more info" button submits the typed reason into
+  `identity_verification_requests.reviewer_notes`; confirmed Reports'
+  "Mark resolved" button submits the typed reason into
+  `property_reports.resolution_notes`; confirmed Users' Suspend button is
+  blocked by native `required` validation when the textarea is empty,
+  and succeeds — writing `profiles.account_status`, the
+  `admin_audit_logs` row, and a `notifications` row with the typed reason
+  — once filled in. All four confirmed directly against the database, not
+  just the UI's apparent success.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
