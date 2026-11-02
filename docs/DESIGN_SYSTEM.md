@@ -87,6 +87,8 @@ it (e.g. dense list rows, dashboard tables).
   search filters.
 - `Switch` — styled native checkbox toggle, CSS-only `peer-checked:`
   styling, used for notification preferences.
+- `CountUp` — animates a numeral from 0 to its final real value on mount,
+  reduced-motion-safe, used on homepage stat strips.
 
 ## Navigation
 

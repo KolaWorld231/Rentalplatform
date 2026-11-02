@@ -1,7 +1,7 @@
 import { BedDouble, Bath, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
-import { formatCategory, formatRentalFrequency, formatUsd, isRecentlyPublished } from "@/lib/utils/format";
+import { formatCategory, formatRelativeDate, formatRentalFrequency, formatUsd, isRecentlyPublished } from "@/lib/utils/format";
 import type { PropertyWithCover } from "@/services/properties";
 import { FavouriteButton } from "./FavouriteButton";
 import { PropertyCardMedia } from "./PropertyCardMedia";
@@ -35,14 +35,14 @@ export function PropertyCard({
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-raised)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] active:translate-y-0 active:shadow-[var(--shadow-clay-inset)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <Link href={`/properties/${property.slug}`} className="focus-ring block">
-        <div className="relative aspect-[4/3] w-full bg-sage-200">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-sage-200">
           <PropertyCardMedia storagePaths={orderedPaths} alt={property.title} />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
             <Badge variant="neutral" className="bg-surface/90">
               {formatCategory(property.category)}
             </Badge>
             {isNew && (
-              <Badge variant="clay" className="gap-1 bg-clay-500/90 text-ivory-50">
+              <Badge variant="clay" className="animate-pulse gap-1 bg-clay-500/90 text-ivory-50">
                 <Sparkles className="h-3 w-3" aria-hidden="true" />
                 New
               </Badge>
@@ -80,6 +80,11 @@ export function PropertyCard({
           <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
           {[property.community, property.city, property.county].filter(Boolean).join(", ")}
         </p>
+        {property.published_at && (
+          <p className="text-xs text-charcoal-400">
+            Listed {formatRelativeDate(property.published_at)}
+          </p>
+        )}
         {(property.bedrooms !== null || property.bathrooms !== null) && (
           <p className="mt-1 flex items-center gap-3 text-xs text-charcoal-500">
             {property.bedrooms !== null && (

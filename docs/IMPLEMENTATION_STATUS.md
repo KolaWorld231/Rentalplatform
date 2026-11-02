@@ -1080,6 +1080,95 @@ on any of the five pages — markup and classes only.
   insert silently failing a NOT NULL constraint on `notifications.type`,
   not a product bug — fixed in the seed script, re-verified clean).
 
+## Conversion-focused redesign, wave 10 (post-Milestone-8)
+
+Tenth wave: makes the homepage (hero, "Recently listed" grid, "How it
+works") feel more alive through motion, real-data liveness signals, and
+interactivity — CSS/Tailwind only, no new runtime dependencies. Drafted
+and reviewed through the full EGM pipeline: `/egm-brainstorm` →
+`docs/designs/homepage-liveliness.md` → `/egm-draft` →
+`docs/designs/homepage-liveliness-design.md` → `/egm-review` (five
+stages, two remediation rounds applied, including one round that forced
+a real redesign of one item after implementation-readiness review found
+it unimplementable as originally specified).
+
+- **`components/ui/CountUp.tsx`** (new): animates a numeral from 0 to its
+  final real value on mount using `requestAnimationFrame` and a cubic
+  ease-out curve, with an explicit `prefers-reduced-motion` check
+  (mirroring `Reveal.tsx`'s pattern, since the global CSS reduced-motion
+  rule doesn't reach JS-driven tweens) and an `sr-only` sibling holding
+  the static final value so screen readers never read a changing number.
+  Used for the homepage's three stat-strip numbers (active listings,
+  owners, counties). Documented in `docs/DESIGN_SYSTEM.md`.
+- **`app/globals.css`**: added `@keyframes hero-drift` (animates only the
+  native CSS `translate` property) and `.animate-hero-drift`, applied to
+  the hero's three blurred background photo tiles for a subtle 38s idle
+  drift. Confirmed via Wave 9's prior finding that Tailwind v4 applies
+  `rotate-*` utilities via the independent native `rotate` property, so
+  each tile's existing static rotation class needed no change.
+  Design-review caught and fixed a flawed earlier approach (a
+  `--hero-drift-base` CSS variable) that would have silently discarded
+  each tile's rotation — resolved before implementation reached this
+  file.
+- **`app/page.tsx`**: derives a `counties` array from the already-fetched
+  `coverageRows` query and passes it to `HeroSearch`; applies
+  `animate-hero-drift`/`motion-reduce:animate-none` to the hero tiles;
+  wraps each stat value in `<CountUp>`.
+- **`components/properties/PropertyCard.tsx`**: added
+  `overflow-hidden` to the image container (confirmed missing, not
+  "already present" as the brainstorm brief assumed); added
+  `animate-pulse` to the existing real `isNew` badge; added a "Listed X
+  ago" line (`formatRelativeDate`) between the location and bed/bath
+  lines, shown only when `published_at` is non-null.
+- **`components/properties/PropertyCardMedia.tsx`**: added a hover/focus
+  image scale, additive to the existing hover-photo-cycling behavior.
+- **`components/marketing/ProcessSteps.tsx`**: wrapped the existing
+  single connecting-line spine in one `<Reveal>` so it fades and slides
+  in, reusing `Reveal`'s native transition rather than forking it. An
+  earlier design draft proposed splitting the spine into per-step
+  segments with an independent `scale-y` "draw-in" effect — dropped
+  during implementation-readiness review: `Reveal` exposes no mechanism
+  for a sibling to observe its internal visibility state, and per-segment
+  positioning for the component's variable-height step rows had no
+  feasible formula without a layout restructure.
+- **`components/properties/HeroSearch.tsx`**: added an optional
+  `counties?: string[]` prop rendering real county filter chips (bounded
+  at 15, the actual `LIBERIA_COUNTIES` count, wrapping via `flex-wrap`
+  rather than scrolling/truncating) above the existing search row, using
+  the same chip visual treatment as `SearchFilters.tsx`'s category chips.
+  Clicking a chip toggles `aria-pressed` and local state; `county` is
+  appended to the search URL on submit alongside the existing `city`/
+  `bedrooms` params — additive, not a replacement, confirmed against
+  `searchParamsSchema`'s independently-optional fields.
+- No Server Action, Supabase query shape, or RLS policy changed.
+- `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run
+  test` (33/33) all clean. One lint fix needed mid-implementation:
+  `CountUp`'s reduced-motion branch originally called `setState`
+  synchronously inside an effect (the same `react-hooks/set-state-in-effect`
+  rule `Reveal.tsx` hit in Wave 1) — fixed with the identical
+  `requestAnimationFrame`-deferred pattern.
+- Live Playwright pass against the real Supabase project (local dev
+  server + seeded test properties across three counties, one published
+  within 72 hours, fully deleted afterward): confirmed the relative-time
+  line and pulsing "New" badge render only on the recent listing;
+  confirmed the image container has `overflow-hidden` and the media
+  wrapper carries the hover-scale classes; confirmed all three hero tiles
+  carry `animate-hero-drift`; confirmed `CountUp`'s visible and
+  `sr-only` values match after the animation completes; confirmed the
+  `ProcessSteps` spine renders with `Reveal`'s transition classes applied
+  directly to it (not a separate wrapper, avoiding a transform-containing-block
+  issue a naive implementation would have introduced); confirmed county
+  chips render for all three seeded counties, clicking one toggles
+  `aria-pressed`, and submitting the search navigates to
+  `/search?county=...` with correctly filtered results; confirmed, under
+  `prefers-reduced-motion: reduce` emulation, `CountUp` renders its final
+  value immediately and both the hero-drift and badge-pulse animations
+  have their `animation-duration` zeroed by the existing global CSS rule
+  (two initial false negatives here were test-script bugs — a locator
+  that assumed an `aria-hidden` attribute `Reveal` doesn't expose, and a
+  string-equality check against `1e-05s` instead of a numeric
+  comparison — both fixed and re-verified, not product bugs).
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
