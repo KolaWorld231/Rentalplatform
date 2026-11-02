@@ -920,6 +920,50 @@ center — three candidates offered, all three picked.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
   (33/33) all clean.
 
+## Conversion-focused redesign, wave 7 (post-Milestone-8)
+
+Seventh wave: the admin console nav + overview, the last major untouched
+surface. Scoped to nav + overview only (not the four queue pages, which
+are variable-length action lists, not a generic card-grid pattern).
+
+- **New `components/admin/AdminNav.tsx`**: fixed a real pre-existing bug
+  (same class as wave 5's main header fix) — the admin pill nav had zero
+  active-route highlighting, no `usePathname()` anywhere. Now the active
+  tab is filled brand-red with `aria-current="page"`. Also added live
+  pending-count badges on the Listings/Verifications/Reports tabs,
+  computed once in `app/admin/layout.tsx` via the same
+  `createServiceRoleClient()` aggregate-count pattern the Overview page
+  already used — real counts, never fabricated, each tab's badge hidden
+  entirely when its count is 0.
+- **`app/admin/page.tsx`**: replaced the flat 10-card stat grid (same
+  clay-overuse pattern fixed for the owner dashboard in wave 4) with four
+  labeled `MetricStrip` clusters — People / Listings / Trust & Safety /
+  Payments — each its own divided strip instead of one undifferentiated
+  grid, giving real information hierarchy to what was previously 10
+  identical boxes in a row. The admin-only revenue card picked up the
+  clay-raised elevation used for "anchor" cards elsewhere in the
+  redesign.
+- Live-verified against the real Supabase project with a seeded admin
+  account, one pending-review listing, and one pending identity
+  verification request, fully deleted afterward: confirmed the Overview
+  tab shows `aria-current="page"` while active, confirmed the Listings
+  and Verifications tabs show their correct live counts ("1" each,
+  matching the seeded data), confirmed clicking a tab moves the active
+  state and updates the URL correctly, confirmed the grouped metric
+  strips render with the right real counts per cluster.
+- Another test-script race (the third instance of this exact pattern
+  this session) caught and correctly diagnosed rather than assumed as a
+  product bug: an automated check read `aria-current` immediately after
+  `waitForLoadState('networkidle')` following a tab click and got stale
+  values; an isolated reproduction with a short settle delay confirmed
+  the nav's active-state tracking is actually correct.
+- No changes to `requireAnyRole`, any admin Server Action, or RLS — the
+  new layout-level count queries are read-only aggregates via the same
+  `service_role` pattern the Overview page already used for identical
+  counts, not a new privileged write path.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
