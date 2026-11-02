@@ -8,6 +8,44 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Input } from "@/components/ui/Input";
 import { LIBERIA_COUNTIES, PROPERTY_CATEGORIES } from "@/types/database";
 import { formatCategory } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/cn";
+
+function CategoryChips({ activeCategory }: { activeCategory: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  function toggleCategory(category: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (activeCategory === category) params.delete("category");
+    else params.set("category", category);
+    params.delete("page");
+    router.push(`/search?${params.toString()}`);
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {PROPERTY_CATEGORIES.map((category) => {
+        const active = activeCategory === category;
+        return (
+          <button
+            key={category}
+            type="button"
+            onClick={() => toggleCategory(category)}
+            aria-pressed={active}
+            className={cn(
+              "focus-ring rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+              active
+                ? "border-clay-500 bg-clay-500 text-ivory-50"
+                : "border-border bg-surface text-charcoal-600 hover:border-clay-500/50",
+            )}
+          >
+            {formatCategory(category)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function FilterFields({
   defaults,
@@ -96,6 +134,10 @@ export function SearchFilters({ resultCount }: { resultCount?: number }) {
 
   return (
     <>
+      <div className="mb-3">
+        <CategoryChips activeCategory={defaults.category ?? ""} />
+      </div>
+
       <div className="hidden rounded-[var(--radius-lg)] bg-surface p-5 shadow-[var(--shadow-raised)] md:block">
         <form
           onSubmit={(e) => {

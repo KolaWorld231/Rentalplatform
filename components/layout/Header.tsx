@@ -2,7 +2,8 @@
 
 import { Heart, Home, Menu, MessageCircle, Search, User, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/Button";
 import { brand } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
@@ -14,11 +15,31 @@ const navLinks = [
   { href: "/safety", label: "Safety" },
 ];
 
+function isActivePath(pathname: string, href: string): boolean {
+  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 4);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-ivory-100/95 backdrop-blur">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b border-border bg-ivory-100/95 backdrop-blur transition-shadow duration-200",
+        scrolled && "shadow-[var(--shadow-subtle)]",
+      )}
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold text-brand-800">
           <Home className="h-6 w-6 text-brand-600" aria-hidden="true" />
@@ -26,22 +47,52 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="focus-ring rounded-[var(--radius-sm)] text-sm font-medium text-charcoal-500 hover:text-brand-700"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const active = isActivePath(pathname, link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "focus-ring relative rounded-[var(--radius-sm)] pb-1 text-sm font-medium transition-colors",
+                  active ? "text-brand-700" : "text-charcoal-500 hover:text-brand-700",
+                )}
+              >
+                {link.label}
+                <span
+                  className={cn(
+                    "absolute -bottom-0.5 left-0 h-0.5 w-full rounded-full bg-brand-600 transition-opacity",
+                    active ? "opacity-100" : "opacity-0",
+                  )}
+                  aria-hidden="true"
+                />
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/messages" aria-label="Messages" className="focus-ring rounded-full p-2 hover:bg-sage-100">
+          <Link
+            href="/messages"
+            aria-label="Messages"
+            aria-current={isActivePath(pathname, "/messages") ? "page" : undefined}
+            className={cn(
+              "focus-ring rounded-full p-2 hover:bg-sage-100",
+              isActivePath(pathname, "/messages") && "bg-sage-100 text-brand-700",
+            )}
+          >
             <MessageCircle className="h-5 w-5 text-charcoal-500" />
           </Link>
-          <Link href="/favourites" aria-label="Saved properties" className="focus-ring rounded-full p-2 hover:bg-sage-100">
+          <Link
+            href="/favourites"
+            aria-label="Saved properties"
+            aria-current={isActivePath(pathname, "/favourites") ? "page" : undefined}
+            className={cn(
+              "focus-ring rounded-full p-2 hover:bg-sage-100",
+              isActivePath(pathname, "/favourites") && "bg-sage-100 text-brand-700",
+            )}
+          >
             <Heart className="h-5 w-5 text-charcoal-500" />
           </Link>
           {isAuthenticated ? (
@@ -77,13 +128,24 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
       {open && (
         <nav className="border-t border-border bg-ivory-100 px-4 py-4 md:hidden" aria-label="Mobile">
           <ul className="flex flex-col gap-3">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="block py-1.5 text-sm font-medium text-charcoal-700" onClick={() => setOpen(false)}>
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+            {navLinks.map((link) => {
+              const active = isActivePath(pathname, link.href);
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "block py-1.5 text-sm font-medium",
+                      active ? "text-brand-700" : "text-charcoal-700",
+                    )}
+                    onClick={() => setOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
             <li className="flex gap-2 pt-2">
               {isAuthenticated ? (
                 <Link
@@ -112,27 +174,36 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
 }
 
 export function MobileTabBar() {
+  const pathname = usePathname();
+  const tabs = [
+    { href: "/", label: "Home", icon: Home },
+    { href: "/search", label: "Search", icon: Search },
+    { href: "/favourites", label: "Saved", icon: Heart },
+    { href: "/messages", label: "Messages", icon: MessageCircle },
+  ];
+
   return (
     <nav
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-border bg-surface py-2 shadow-[var(--shadow-floating)] md:hidden"
     >
-      <Link href="/" className="flex flex-col items-center gap-0.5 px-3 py-1 text-xs text-charcoal-500">
-        <Home className="h-5 w-5" />
-        Home
-      </Link>
-      <Link href="/search" className="flex flex-col items-center gap-0.5 px-3 py-1 text-xs text-charcoal-500">
-        <Search className="h-5 w-5" />
-        Search
-      </Link>
-      <Link href="/favourites" className="flex flex-col items-center gap-0.5 px-3 py-1 text-xs text-charcoal-500">
-        <Heart className="h-5 w-5" />
-        Saved
-      </Link>
-      <Link href="/messages" className="flex flex-col items-center gap-0.5 px-3 py-1 text-xs text-charcoal-500">
-        <MessageCircle className="h-5 w-5" />
-        Messages
-      </Link>
+      {tabs.map((tab) => {
+        const active = isActivePath(pathname, tab.href);
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors",
+              active ? "font-semibold text-brand-700" : "text-charcoal-500",
+            )}
+          >
+            <tab.icon className="h-5 w-5" />
+            {tab.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

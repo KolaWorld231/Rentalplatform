@@ -731,6 +731,64 @@ Confirmed with the user to fix all four.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
   (33/33) all clean.
 
+## Conversion-focused redesign, wave 5 (post-Milestone-8)
+
+Fifth wave, targeting the auth flow, search filters, and global header/
+nav — all three candidates the user picked when offered a choice.
+
+- **Auth flow** (`login`, `register`, `forgot-password`, `reset-password`,
+  `onboarding/welcome`): every one of these five pages was an identical
+  pattern — a lone centered `Card` on a blank page, no brand presence.
+  Added `app/(auth)/layout.tsx`, a nested layout scoped to the `(auth)`
+  route group, giving all five a shared split-screen shell: a
+  `bg-brand-800` branded panel (reusing `brand.tagline` and
+  `heroSupportingCopy` from `lib/config/brand.ts` — no new copy system)
+  on the left at `lg:`, the existing per-page form unchanged on the
+  right. Collapses to a compact brand banner + full-width form on
+  mobile. Each page's own `<div className="mx-auto max-w-md ...">`
+  wrapper only had its redundant centering/padding trimmed (the layout
+  now handles that) — no logic changes.
+- **`app/(auth)/register/page.tsx`**: the renter/owner intent toggle
+  (two small buttons) became two larger selectable cards with icon +
+  title + one-line description, using the brand/clay accent split
+  established in wave 4's `/how-it-works` page (renter = brand, owner =
+  clay) for visual consistency across the app's two user tracks. Same
+  hidden `intent` form field and `registerAction` — presentation only.
+- **`components/properties/SearchFilters.tsx`**: added a row of
+  property-category quick-filter chips above the existing filter form
+  (reusing `PROPERTY_CATEGORIES`/`formatCategory`, already imported
+  elsewhere in the codebase) — a one-tap shortcut for the single most
+  common filter, setting the `category` URL param directly; the full
+  filter form is unchanged and still works independently.
+- **`components/layout/Header.tsx`**: fixed a real, pre-existing bug, not
+  just a style pass — neither the desktop nav nor `MobileTabBar` had any
+  active-route highlighting (no `usePathname()` anywhere). A user on
+  `/search` saw "Browse Properties" styled identically to every other
+  link, and the mobile tab bar never showed which tab was current. Added
+  `usePathname()` + `aria-current="page"` + a visual active state
+  (underline on desktop, bold color on mobile) to both. Also added a
+  subtle scroll-elevation shadow to the sticky header instead of a flat
+  always-on border.
+- Live-verified against the real Supabase project (local dev) at 1440px
+  and 375px: all five auth pages render the split layout and collapse
+  correctly on mobile with the register intent cards rendering and
+  switching visually; `aria-current="page"` confirmed present on
+  "Browse Properties" while on `/search`; the Apartment quick-filter
+  chip confirmed to set `?category=apartment` in the URL and its
+  `aria-pressed` state. No console/page errors at either viewport.
+- One investigation during this pass: an initial automated check of the
+  category-chip click appeared to fail (URL unchanged). Before
+  concluding it was a bug, isolated it with two independent manual
+  replications, both of which worked — the failure was a Playwright race
+  (`waitForLoadState('networkidle')` called immediately after `.click()`
+  can resolve before the triggered client-side navigation's fetch even
+  starts). Not a product bug; the test script was fixed and the chip
+  re-confirmed working correctly.
+- No RLS/Server Action changes; `registerAction`, `loginAction`, and the
+  rest of `lib/auth/actions.ts` are untouched.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
