@@ -1,144 +1,96 @@
-# Goldfish Annotated Review Report
+# Goldfish Annotated Review Report (Stage 9, Round 1)
 
-**Status: resolved** — all PROPOSE FIX items auto-accepted and applied;
-2 DECLINE items (structural-1-4, structural-1-5) left unchanged as
-accepted nits.
-
-**Target:** `docs/designs/wave-9-page-polish-design.md` (lines 1–302)
+**Target:** `docs/designs/wave-9-page-polish-design.md` (DetailedRange, lines 304–435)
 
 ## Prioritized Findings & AI Suggestions
 
-### Issue 1 [`egm-design`] - Severity: High
-*   **Affected Scope:** Lines 245-246, 263 (Alternatives Considered)
-*   **Discrepancy Description:** "The Comprehension lens" / "the Zoom Out lens" are cited as the deciding authority for rejecting both alternatives, but neither term is defined anywhere in the document.
-*   **Rationale:** The underlying engineering reasoning is sound, but presenting it as validated by an unverifiable external process undermines the rejection rationale's credibility for a fresh reader.
+### Issue 1 [`egm-implementation-readiness`] - Severity: Medium
+*   **Affected Scope:** Lines 121-133 (template) / item #2 (lines 326-339)
+*   **Discrepancy Description:** `eyebrow` slot renders unconditionally, unlike the guarded `supportingLine`; `/notifications` needs "no eyebrow" but the plan never says how to omit it.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Checkable and valid — confirmed no definition of either term exists anywhere in the document, including Additional Resources. The reasoning stands on its own without the "lens" framing.
+*   ***Justification:*** Valid — confirmed the template has no conditional around the eyebrow `<p>`. Add one, matching `supportingLine`'s pattern, and state the `/notifications` page passes no `eyebrow` prop so the block doesn't render.
 *   ***Proposed Edit:***
-    *   Location: Line 245-250 (Alternative A, Reason for Rejection) and line 263-270 (Alternative B, Reason for Rejection)
-    *   Change: Replace "the Comprehension lens flagged this as a Blocker-severity risk" with "this risks dropping keyboard operability or screen-reader semantics"; replace "the Zoom Out lens's 'rule of three'" with "the rule of three (a shared component is justified once there are three independently motivated call sites)". Remove "lens" framing from both.
+    *   Location: Technical Plan §1 template (lines 121-133)
+    *   Change: Wrap the eyebrow `<p>` in `{eyebrow && (...)}`, mirroring `supportingLine`.
+    *   Location: Detailed Implementation Plan item #2 (`/notifications`, lines 328-330)
+    *   Change: State explicitly that no `eyebrow` prop is passed, so the (now-conditional) eyebrow block doesn't render at all.
 
-### Issue 2 [`egm-design`] - Severity: High
-*   **Affected Scope:** Lines 40-41 (Goals) vs. 189-230 (Technical Plan §3)
-*   **Discrepancy Description:** Goals state the wave uses `CardClay`, `Button`/`buttonVariants`, `Badge`, `Reveal`, but the per-page plan only ever applies `CardClay` and the new `Switch`.
-*   **Rationale:** Goals over-promise relative to what the plan actually delivers; a reader cannot confirm this goal is achievable from the document as written.
+### Issue 2 [`egm-implementation-readiness`] - Severity: Medium
+*   **Affected Scope:** Lines 312-321 (Switch spec) vs. 326-339 (`/notifications`, its only call site)
+*   **Discrepancy Description:** `wrapperClassName` is introduced to solve per-call-site spacing, but is never used or specified at its one real call site.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Checkable — confirmed against Technical Plan §3 and the Detailed Implementation Plan: neither `Button`, `Badge`, nor `Reveal` is applied to any of the five pages by this wave (`Badge` pre-exists untouched on `/account`; it isn't newly applied).
+*   ***Justification:*** Confirmed against `app/notifications/page.tsx`: the parent `<form className="mt-3 flex flex-col gap-2">` already governs spacing between the two preference rows identically to today's plain `<label>` elements — no additional spacing value is needed. Removing the unused prop (rather than inventing an unused value) also resolves Stage 5's Nit about this same speculative API surface.
 *   ***Proposed Edit:***
-    *   Location: Line 40-41
-    *   Change: Replace "using only existing design tokens and components (`CardClay`, `Button`/`buttonVariants`, `Badge`, `Reveal`)" with "using only existing design tokens and the `CardClay` component — no other new component usage is introduced on these pages beyond what each already uses". Also adjust line 30 ("wrap existing content in the same `Card`/`Button`/`Badge` primitives") to say "wrap existing content in the same `Card` primitives".
+    *   Location: Detailed Implementation Plan item #1 (`Switch.tsx`, lines 319-321)
+    *   Change: Remove "and an optional `wrapperClassName` for layout spacing in each call site." — `Switch`'s props become just the native `InputHTMLAttributes` pass-through plus `label`.
 
-### Issue 3 [`egm-structural`] - Severity: High
-*   **Affected Scope:** Lines 7-9, 272-274, 289-291, 301 (horizontal rules)
-*   **Discrepancy Description:** Horizontal-rule dividers appear between some `##` sections but not others, with no stated rule for when one applies.
-*   **Rationale:** Inconsistent formatting misleads a reader about the document's actual section boundaries.
+### Issue 3 [`egm-codebase-details`] - Severity: Medium
+*   **Affected Scope:** Lines 361-370 (`/safety` item) and Open Questions (lines 78-83)
+*   **Discrepancy Description:** The claim that `/safety`'s warning block "already matches" `LegalPageShell`'s pattern is false — `app/safety/page.tsx` uses `p-4 text-sm`, while the established pattern (`LegalPageShell.tsx`, `app/checkout/mock/page.tsx`) uses `p-3 text-xs`.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Checkable — confirmed the majority of H2-to-H2 transitions in the document (e.g. Overview→Problem, Goals→Non-Goals, Technical Plan→Alternatives) have no rule. The minority with rules (lines 272, 289, 301) are the outliers.
+*   ***Justification:*** I wrote the Open Questions resolution without checking the specific utility values — confirmed error, not a reviewer misunderstanding. The fix is to change the decision: align `/safety`'s warning block to the established `p-3 text-xs` instead of leaving it untouched.
 *   ***Proposed Edit:***
-    *   Location: Lines 272, 289, 301
-    *   Change: Remove the three outlier horizontal rules so no `##`-to-`##` transition in the document uses one, matching the majority pattern. Keep the rule at line 7 (front-matter/body separator — a distinct, consistently-applied case).
+    *   Location: Open Questions, `/safety`'s warning block (lines 78-83)
+    *   Change: Replace "no change needed... `/safety` already matches it" with a corrected finding: the block uses `p-4 text-sm` instead of the established `p-3 text-xs`; this wave aligns it to match.
+    *   Location: Detailed Implementation Plan item #5 (`/safety`, lines 365-370)
+    *   Change: Replace "the warning block below it are left exactly as-is (already matches...)" with: the warning block's `p-4 text-sm` classes are changed to `p-3 text-xs` to match the established pattern in `LegalPageShell.tsx`/`app/checkout/mock/page.tsx`; no other change to that block.
 
-### Issue 4 [`egm-design` / `egm-structural`] - Severity: Medium
-*   **Affected Scope:** Line 61 (Non-Goals)
-*   **Discrepancy Description:** `DocumentUploader` appears in Non-Goals with no stated connection to any of the five in-scope pages; also breaks Non-Goals' parallel-construction pattern (every other bullet traces to something discussed elsewhere in the document).
-*   **Rationale:** Confirmed by two independent reviewers (egm-design and egm-structural) and by Stage 6 Comprehension. This is a genuine authoring error, not a documentation gap — `DocumentUploader` belongs to a different feature (property verification) unrelated to this wave's five pages.
+### Issue 4 [`egm-codebase-details`] - Severity: Medium
+*   **Affected Scope:** Lines 408-415 (Verification Plan, Unit Tests)
+*   **Discrepancy Description:** References "auth/messaging/subscription test files" that don't exist in `tests/unit/` (actual contents: `mock-payment-provider.test.ts`, `listing-completeness.test.ts`, `validation.test.ts`, `format.test.ts`).
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** I wrote this line; it was carried over by mistake from unrelated context. No contest — the reviewers are correct.
+*   ***Justification:*** Confirmed against `vitest.config.ts` and `tests/unit/`'s actual file listing.
 *   ***Proposed Edit:***
-    *   Location: Line 61
-    *   Change: Delete "`DocumentUploader`," from the Non-Goals bullet, leaving "No change to `markAllNotificationsReadAction`, `markNotificationReadAction`, `updateNotificationPreferencesAction`, or any other existing interactive wiring — markup and classes only."
+    *   Location: Line 413
+    *   Change: Replace "nothing in the auth/messaging/subscription test files should be affected" with "nothing in `mock-payment-provider.test.ts`, `listing-completeness.test.ts`, `validation.test.ts`, or `format.test.ts` should be affected".
 
-### Issue 5 [`egm-design`] - Severity: Medium
-*   **Affected Scope:** Lines 274-287 (Non-Functional Requirements)
-*   **Discrepancy Description:** No Risks & Mitigations content addresses the `Switch` component's `peer-focus-visible:` divergence from the existing `.focus-ring` utility used everywhere else in the app.
-*   **Rationale:** This is the one real, specific risk tied to the one genuinely new UI primitive in this wave — the document notes the divergence (lines 183-187) but never assesses its risk or mitigation.
+### Issue 5 [`egm-implementation-readiness`] - Severity: Low
+*   **Affected Scope:** Lines 334-336
+*   **Discrepancy Description:** Second `Switch` call site left as "the `email_enabled` equivalent" rather than spelled out, unlike the first instance.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Valid and checkable — confirmed the divergence is noted but unaddressed as a risk.
+*   ***Justification:*** Easy to close the gap for consistency with the plan's own precision elsewhere.
 *   ***Proposed Edit:***
-    *   Location: Non-Functional Requirements, Accessibility bullet (line 276-281)
-    *   Change: Append a sentence: "The `peer-focus-visible:` focus treatment is a deliberate, scoped exception to the site-wide `.focus-ring` utility (the visible focus target is an `aria-hidden` track, not the input itself); verification must include a side-by-side visual check that `Switch`'s focus ring reads consistently with `.focus-ring`'s outline color/offset elsewhere on the page, to catch any divergence before merge."
+    *   Location: Line 332-335
+    *   Change: Spell out the second instance in full: `<Switch name="email_enabled" defaultChecked={prefs?.email_enabled ?? true} label="Email notifications (sent only if an email provider is configured — see docs/DEPLOYMENT.md)" />`.
 
-### Issue 6 [`egm-structural`] - Severity: Medium
-*   **Affected Scope:** Line 291 (`### Additional Resources`)
-*   **Discrepancy Description:** H3 heading with no parent H2 — reads as a subsection of the preceding "Non-Functional Requirements" H2 rather than a sibling top-level section.
-*   **Rationale:** Misrepresents the document's actual structure.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Checkable — confirmed every other top-level section in range is H2; this is the sole H3 at this level.
-*   ***Proposed Edit:***
-    *   Location: Line 291
-    *   Change: Promote `### Additional Resources` to `## Additional Resources`. Also promote `### Future Improvements` if present at the same level (not present in this document — N/A).
-
-### Issue 7 [`egm-design`] - Severity: Low
-*   **Affected Scope:** Lines 245-250
-*   **Discrepancy Description:** "Blocker-severity risk" borrows this review pipeline's own severity vocabulary inside the artifact under review.
-*   ***AI Suggestion:*** PROPOSE FIX (bundled with Issue 1's edit — the rephrase already removes this term)
-*   ***Justification:*** Same edit as Issue 1 resolves this; no separate edit needed.
-*   ***Proposed Edit:*** Covered by Issue 1.
-
-### Issue 8 [`egm-design`] - Severity: Low
-*   **Affected Scope:** Lines 211-219 vs. 134-139
-*   **Discrepancy Description:** The `/notifications` existing-checkbox markup claim lacks the file-citation rigor shown for the header-shape claim.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Worth the small edit for consistency.
-*   ***Proposed Edit:***
-    *   Location: Line 211-219 (Section 3 ASCII table, `/notifications` row)
-    *   Change: Append "(confirmed in `app/notifications/page.tsx`)" after the existing-markup description in that row.
-
-### Issue 9 [`egm-structural`] - Severity: Low
-*   **Affected Scope:** Lines 38-66
-*   **Discrepancy Description:** Minor punctuation/clause-structure drift between Goals and Non-Goals bullets.
+### Issue 6 [`egm-implementation-readiness`] - Severity: Low
+*   **Affected Scope:** Lines 354-370
+*   **Discrepancy Description:** Items #4-#7 describe existing markup in prose without quoting literal JSX, unlike item #2.
 *   ***AI Suggestion:*** DECLINE
-*   ***Justification:*** Too vague to action with a precise edit; not worth the churn for a cosmetic nit with no concrete replacement proposed by the reviewer.
+*   ***Justification:*** The descriptions are accurate and unambiguous (confirmed against source); quoting full JSX for four more pages adds bulk without resolving a real ambiguity. Not worth the churn.
 
-### Issue 10 [`egm-structural`] - Severity: Low
-*   **Affected Scope:** Line 106
-*   **Discrepancy Description:** "Technical Plan (Architecture)" diverges from the standard's exact suggested heading "Proposed Architecture".
-*   ***AI Suggestion:*** DECLINE
-*   ***Justification:*** The reviewer's own write-up already concludes this is a Nit because the parenthetical preserves traceability — no change needed.
-
-### Issue 11 [`egm-structural`] - Severity: Low
-*   **Affected Scope:** Lines 120, 145, 191
-*   **Discrepancy Description:** Code fences use generic ` ```text ` for blocks that are actually JSX.
+### Issue 7 [`egm-codebase-details`] - Severity: Low
+*   **Affected Scope:** Lines 399-406
+*   **Discrepancy Description:** Doesn't quote the exact `docs/IMPLEMENTATION_STATUS.md` heading convention.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial, zero-risk fix worth doing while editing nearby.
+*   ***Justification:*** Confirmed the actual convention via grep; trivial to quote exactly.
 *   ***Proposed Edit:***
-    *   Location: Lines 120, 145 (JSX blocks only — line 191 is a plain-text diagram, left as `text`)
-    *   Change: Change ` ```text ` to ` ```tsx ` on lines 120 and 145.
+    *   Location: Line 401-402
+    *   Change: "Append a Wave 9 entry following the same format as waves 1–8's entries" → "Append a `## Conversion-focused redesign, wave 9 (post-Milestone-8)` entry, following the same format as waves 1–8's identically-patterned headings".
 
-### Issue 12 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Lines 25-26, 103-104 (The Problem; CUJ 2)
-*   **Discrepancy Description:** "pages that look like they belong to an earlier, unfinished version of the product" / "reading as an unstyled, unfinished page" are subjective quality judgments; the factual details nearby already carry the point.
+### Issue 8 [`egm-codebase-details`] - Severity: Low
+*   **Affected Scope:** Lines 329-330
+*   **Discrepancy Description:** Describes an "unread-count" row that doesn't exist — only a conditional "Mark all read" button exists.
 *   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Easy de-editorializing pass, no loss of meaning.
+*   ***Justification:*** Confirmed against `app/notifications/page.tsx`; trivial correction.
 *   ***Proposed Edit:***
-    *   Location: Line 25-26
-    *   Change: Replace "pages that look like they belong to an earlier, unfinished version of the product" with "pages that lack the shared header and Card treatment every other page already has".
-    *   Location: Line 103-104
-    *   Change: Replace "instead of reading as an unstyled, unfinished page relative to `/pricing` or `/how-it-works`" with "instead of lacking the Card/header treatment `/pricing` and `/how-it-works` already have".
+    *   Location: Line 329-331
+    *   Change: "above the existing unread-count/'Mark all read' row" → "above the existing conditionally-rendered 'Mark all read' button row".
 
-### Issue 13 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Line 33
-*   **Discrepancy Description:** "the one genuinely new UI primitive" — filler intensifier.
+### Issue 9 [`egm-style`] - Severity: Low
+*   **Affected Scope:** Lines 329-330
+*   **Discrepancy Description:** "already self-explanatory" is a subjective quality judgment.
+*   ***AI Suggestion:*** PROPOSE FIX
+*   ***Justification:*** Trivial wording fix, bundles with Issue 8's edit to the same line.
+*   ***Proposed Edit:***
+    *   Location: Line 329-330
+    *   Change: "no eyebrow needed since the page title is already self-explanatory" → "no `eyebrow` prop passed — the page title is the route name with no ambiguity to disambiguate".
+
+### Issue 10 [`egm-style`] - Severity: Low
+*   **Affected Scope:** Lines 403-406
+*   **Discrepancy Description:** "actually complete — not before" has a filler intensifier and a redundant clause.
 *   ***AI Suggestion:*** PROPOSE FIX
 *   ***Justification:*** Trivial wording fix.
 *   ***Proposed Edit:***
-    *   Location: Line 33
-    *   Change: "the one genuinely new UI primitive this wave needs" → "the one new UI primitive this wave needs".
-
-### Issue 14 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Line 237
-*   **Discrepancy Description:** "no native-`<input>` default-styling quirks to fight" is colloquial, inconsistent with the document's dry register.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial wording fix, matches the document's own more precise phrasing elsewhere (line 163).
-*   ***Proposed Edit:***
-    *   Location: Line 237
-    *   Change: "no native-`<input>` default-styling quirks to fight" → "no native default-styling inconsistencies to override".
-
-### Issue 15 [`egm-style`] - Severity: Low
-*   **Affected Scope:** Lines 16-17
-*   **Discrepancy Description:** "visibly jarring" is an evaluative lead-in ahead of an already well-supported, specific list.
-*   ***AI Suggestion:*** PROPOSE FIX
-*   ***Justification:*** Trivial wording fix.
-*   ***Proposed Edit:***
-    *   Location: Line 16-17
-    *   Change: "is visibly jarring — plain text blocks next to one `Card` here, a flat FAQ stack there, two unstyled native checkboxes on `/notifications`, no shared header treatment anywhere" → "has no shared visual treatment: plain text blocks next to one `Card` here, a flat FAQ stack there, two unstyled native checkboxes on `/notifications`, no shared header anywhere".
+    *   Location: Line 404-405
+    *   Change: "once the implementation and its live verification are actually complete — not before" → "once the implementation and its live verification are complete".
