@@ -48,11 +48,15 @@ export default async function OwnerPropertiesPage() {
         <div className="mt-6 flex flex-col gap-3">
           {properties.map((p) => {
             const cover = p.property_images.find((i) => i.is_cover) ?? p.property_images[0];
+            const stale = p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at);
             return (
               <Link
                 key={p.id}
                 href={`/dashboard/properties/${p.id}/edit`}
-                className="focus-ring flex items-center gap-4 rounded-[var(--radius-lg)] bg-surface p-3 shadow-[var(--shadow-raised)] hover:shadow-[var(--shadow-floating)]"
+                className={cn(
+                  "focus-ring flex items-center gap-4 rounded-[var(--radius-lg)] bg-surface p-3 shadow-[var(--shadow-raised)] hover:shadow-[var(--shadow-floating)]",
+                  stale && "ring-1 ring-warning-500/40",
+                )}
               >
                 <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-sage-200">
                   {cover && (
@@ -60,16 +64,22 @@ export default async function OwnerPropertiesPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-charcoal-700">{p.title}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-medium text-charcoal-700">{p.title}</p>
+                    {stale && (
+                      <Badge variant="warning" className="shrink-0">
+                        needs reconfirmation
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-charcoal-400">{p.city}, {p.county}</p>
                 </div>
-                <p className="text-sm font-semibold text-brand-800">{formatUsd(p.rent_amount)}</p>
-                <Badge variant={p.listing_status === "published" ? "success" : "neutral"}>
-                  {p.listing_status.replace("_", " ")}
-                </Badge>
-                {p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at) && (
-                  <Badge variant="warning">needs reconfirmation</Badge>
-                )}
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <p className="text-sm font-semibold text-brand-800">{formatUsd(p.rent_amount)}</p>
+                  <Badge variant={p.listing_status === "published" ? "success" : "neutral"}>
+                    {p.listing_status.replace("_", " ")}
+                  </Badge>
+                </div>
               </Link>
             );
           })}

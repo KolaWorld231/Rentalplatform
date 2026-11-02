@@ -83,36 +83,60 @@ export default async function EditPropertyPage({ params }: PageProps) {
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {property.listing_status !== "published" && (
-            <form action={async () => { "use server"; await setListingStatusAction(id, "published"); }}>
-              <Button type="submit" variant="primary" size="sm">
-                Publish listing
-              </Button>
-            </form>
-          )}
-          {property.listing_status === "published" && (
-            <form action={async () => { "use server"; await setListingStatusAction(id, "draft"); }}>
-              <Button type="submit" variant="secondary" size="sm">
-                Unpublish
-              </Button>
-            </form>
-          )}
-          <form action={async () => { "use server"; await setAvailabilityAction(id, "rented"); }}>
-            <Button type="submit" variant="secondary" size="sm">
-              Mark as rented
-            </Button>
-          </form>
-          <form action={async () => { "use server"; await setAvailabilityAction(id, "available"); }}>
-            <Button type="submit" variant="secondary" size="sm">
-              Mark as available
-            </Button>
-          </form>
-          <form action={async () => { "use server"; await setListingStatusAction(id, "archived"); }}>
-            <Button type="submit" variant="ghost" size="sm">
-              Archive
-            </Button>
-          </form>
+        <div className="mt-4 flex flex-col gap-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Visibility</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {property.listing_status !== "published" ? (
+                <form action={async () => { "use server"; await setListingStatusAction(id, "published"); }}>
+                  <Button type="submit" variant="primary" size="sm">
+                    Publish listing
+                  </Button>
+                </form>
+              ) : (
+                <form action={async () => { "use server"; await setListingStatusAction(id, "draft"); }}>
+                  <Button type="submit" variant="secondary" size="sm">
+                    Unpublish
+                  </Button>
+                </form>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Availability</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <form action={async () => { "use server"; await setAvailabilityAction(id, "available"); }}>
+                <Button
+                  type="submit"
+                  variant={property.availability_status === "available" ? "primary" : "secondary"}
+                  size="sm"
+                >
+                  Available
+                </Button>
+              </form>
+              <form action={async () => { "use server"; await setAvailabilityAction(id, "rented"); }}>
+                <Button
+                  type="submit"
+                  variant={property.availability_status === "rented" ? "primary" : "secondary"}
+                  size="sm"
+                >
+                  Rented
+                </Button>
+              </form>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Danger zone</p>
+            <div className="mt-2">
+              <form action={async () => { "use server"; await setListingStatusAction(id, "archived"); }}>
+                <Button type="submit" variant="ghost" size="sm" className="text-error-500 hover:bg-error-100">
+                  Archive this listing
+                </Button>
+              </form>
+            </div>
+          </div>
         </div>
       </section>
 

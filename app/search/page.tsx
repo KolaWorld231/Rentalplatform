@@ -1,9 +1,10 @@
-import { Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { SearchBar } from "@/components/properties/SearchBar";
 import { SearchFilters } from "@/components/properties/SearchFilters";
+import { SortSelect } from "@/components/properties/SortSelect";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PropertyCardSkeleton } from "@/components/ui/Skeleton";
@@ -100,6 +101,10 @@ async function SearchResults({
             </Card>
           ) : (
             <>
+              <div className="mb-4 flex items-center justify-end">
+                <SortSelect />
+              </div>
+
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {properties.map((property, i) => (
                   <PropertyCard
@@ -112,24 +117,51 @@ async function SearchResults({
               </div>
 
               {totalPages > 1 && (
-                <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-2">
-                  {Array.from({ length: totalPages }).map((_, i) => {
-                    const p = i + 1;
-                    const params = new URLSearchParams(flatParams as Record<string, string>);
-                    params.set("page", String(p));
+                <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-4">
+                  {(() => {
+                    const prevParams = new URLSearchParams(flatParams as Record<string, string>);
+                    prevParams.set("page", String(page - 1));
+                    const nextParams = new URLSearchParams(flatParams as Record<string, string>);
+                    nextParams.set("page", String(page + 1));
+                    const prevDisabled = page <= 1;
+                    const nextDisabled = page >= totalPages;
+
                     return (
-                      <Link
-                        key={p}
-                        href={`/search?${params.toString()}`}
-                        aria-current={p === page ? "page" : undefined}
-                        className={`focus-ring flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] text-sm font-medium ${
-                          p === page ? "bg-brand-600 text-ivory-50" : "bg-surface text-charcoal-600 shadow-[var(--shadow-subtle)]"
-                        }`}
-                      >
-                        {p}
-                      </Link>
+                      <>
+                        {prevDisabled ? (
+                          <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] text-charcoal-400 opacity-40">
+                            <ChevronLeft className="h-4 w-4" />
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/search?${prevParams.toString()}`}
+                            aria-label="Previous page"
+                            className="focus-ring flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-surface text-charcoal-600 shadow-[var(--shadow-subtle)] hover:text-brand-700"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Link>
+                        )}
+
+                        <p className="text-sm font-medium text-charcoal-600">
+                          Page {page} of {totalPages}
+                        </p>
+
+                        {nextDisabled ? (
+                          <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] text-charcoal-400 opacity-40">
+                            <ChevronRight className="h-4 w-4" />
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/search?${nextParams.toString()}`}
+                            aria-label="Next page"
+                            className="focus-ring flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-surface text-charcoal-600 shadow-[var(--shadow-subtle)] hover:text-brand-700"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        )}
+                      </>
                     );
-                  })}
+                  })()}
                 </nav>
               )}
             </>

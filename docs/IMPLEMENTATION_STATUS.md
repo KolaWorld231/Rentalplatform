@@ -856,6 +856,70 @@ touching anything).
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
   (33/33) all clean.
 
+## Conversion-focused redesign, wave 6 (post-Milestone-8)
+
+Sixth wave: search results/sort, owner property management, verification
+center — three candidates offered, all three picked.
+
+- **New `components/properties/SortSelect.tsx`**: a real functional gap
+  closed, not just a style pass — `searchProperties`
+  (`services/properties.ts`) and `searchParamsSchema`
+  (`lib/validation/property.ts`) already supported
+  `sort: newest/price_asc/price_desc`, but no UI ever set it. Live-
+  verified: selecting "Price: low to high" on three seeded listings
+  ($800/$300/$500) correctly set `?sort=price_asc` and reordered the
+  results to $300/$500/$800.
+- **`app/search/page.tsx`**: replaced the flat row of numbered page
+  links with real prev/next controls + "Page X of Y", disabled
+  (not just hidden) at the bounds — still plain `<Link>`s, so pagination
+  keeps working without JS exactly as before.
+- **`app/dashboard/properties/page.tsx`**: promoted the "needs
+  reconfirmation" warning next to the listing title (previously tacked
+  on at the end of the row) and added a warning-ring highlight on the
+  whole row, matching the information-priority pattern already used for
+  `PropertyCard`.
+- **`app/dashboard/properties/[id]/edit/page.tsx`**: split the five
+  undifferentiated status buttons into three labeled groups —
+  **Visibility** (Publish/Unpublish), **Availability** (Available/Rented,
+  styled as a two-option toggle with the active state primary-colored),
+  and a separated **Danger zone** for Archive (ghost-styled, error-tinted,
+  visually set apart from the others instead of sitting at the same
+  weight as "publish"). Same three Server Actions
+  (`setListingStatusAction`/`setAvailabilityAction`), just regrouped
+  markup — live-verified clicking "Rented" correctly calls
+  `setAvailabilityAction` and the button picks up the active style.
+- **`app/dashboard/verification/page.tsx`**: the identity-verification
+  card now gets the clay-raised elevation + a success-tinted ring when
+  `status === "verified"` (previously identical styling regardless of
+  status) — live-verified by seeding a `verified` identity request and
+  confirming the visual treatment actually changes. Each property's
+  verification row now pairs the status badge and its one relevant
+  action together instead of a bare button floating below the badge.
+- Live-verified against the real Supabase project with freshly seeded
+  data (one owner, three listings at different prices, one deliberately
+  stale), fully deleted afterward.
+- One real red herring investigated during this pass: the sort control
+  appeared to silently fail in an automated check (URL/price order
+  unchanged). Rather than assume a bug, isolated it — an identical
+  interaction in a standalone script worked correctly. Root cause: the
+  check interacted with the `<select>` immediately after
+  `waitUntil: 'networkidle'` resolved, before React had finished
+  hydrating the client component, so the native `change` event fired
+  with no handler attached yet. Not a product bug; confirmed by adding a
+  short settle delay before interacting, after which the same check
+  passed consistently. Separately, a "stale badge missing" result turned
+  out to be the test script's own later step (clicking "Rented", which
+  legitimately reconfirms availability) overwriting the seeded stale
+  timestamp from an earlier run — also not a product bug, confirmed by
+  resetting the timestamp and re-checking cleanly.
+- No changes to `searchProperties`, `setListingStatusAction`,
+  `setAvailabilityAction`, `confirmAvailabilityAction`,
+  `submitIdentityVerificationAction`,
+  `submitPropertyVerificationAction`, `DocumentUploader`, or any RLS
+  policy — presentation/layout only.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run test`
+  (33/33) all clean.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

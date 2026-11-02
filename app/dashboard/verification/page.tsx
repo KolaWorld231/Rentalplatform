@@ -6,6 +6,7 @@ import { DocumentLink } from "@/components/verification/DocumentLink";
 import { DocumentUploader } from "@/components/verification/DocumentUploader";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils/cn";
 import type {
   IdentityVerificationRequest,
   PrivateVerificationDocument,
@@ -65,10 +66,17 @@ export default async function VerificationCenterPage() {
         Documents are stored privately and reviewed only by our moderation team.
       </p>
 
-      <Card className="mt-6 p-6">
+      <Card
+        className={cn(
+          "mt-6 p-6",
+          identity?.status === "verified" && "shadow-[var(--shadow-clay-raised)] ring-1 ring-success-500/30",
+        )}
+      >
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-charcoal-700">
-            <ShieldCheck className="h-5 w-5 text-brand-600" />
+            <ShieldCheck
+              className={cn("h-5 w-5", identity?.status === "verified" ? "text-success-500" : "text-brand-600")}
+            />
             Identity verification
           </h2>
           {identity && (
@@ -120,32 +128,37 @@ export default async function VerificationCenterPage() {
         <div className="mt-4 flex flex-col gap-4">
           {(properties ?? []).map((property) => {
             const request = propertyRequests?.find((r) => r.property_id === property.id);
+            const verified = request?.status === "verified";
             return (
-              <div key={property.id} className="rounded-[var(--radius-md)] border border-border p-4">
-                <div className="flex items-center justify-between">
+              <div
+                key={property.id}
+                className={cn(
+                  "rounded-[var(--radius-md)] border border-border p-4",
+                  verified && "border-success-500/40 bg-success-100/30",
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium text-charcoal-700">{property.title}</p>
-                  {request ? (
-                    <Badge variant={STATUS_COPY[request.status]?.variant ?? "neutral"}>
-                      {STATUS_COPY[request.status]?.label ?? request.status}
+                  <div className="flex items-center gap-2">
+                    <Badge variant={request ? (STATUS_COPY[request.status]?.variant ?? "neutral") : "neutral"}>
+                      {request ? (STATUS_COPY[request.status]?.label ?? request.status) : "Not submitted"}
                     </Badge>
-                  ) : (
-                    <Badge variant="neutral">Not submitted</Badge>
-                  )}
+                    {!request && (
+                      <form
+                        action={async () => {
+                          "use server";
+                          await submitPropertyVerificationAction(property.id);
+                        }}
+                      >
+                        <Button type="submit" size="sm" variant="secondary">
+                          Submit for review
+                        </Button>
+                      </form>
+                    )}
+                  </div>
                 </div>
-                {!request ? (
-                  <form
-                    action={async () => {
-                      "use server";
-                      await submitPropertyVerificationAction(property.id);
-                    }}
-                    className="mt-2"
-                  >
-                    <Button type="submit" size="sm" variant="secondary">
-                      Submit for review
-                    </Button>
-                  </form>
-                ) : (
-                  <div className="mt-2 flex flex-col gap-2">
+                {request && (
+                  <div className="mt-3 flex flex-col gap-2">
                     <div className="flex flex-col gap-1">
                       {request.private_verification_documents.map((d) => (
                         <DocumentLink key={d.id} documentId={d.id} filename={d.original_filename} />
