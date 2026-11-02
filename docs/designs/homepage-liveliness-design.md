@@ -189,8 +189,8 @@ existing `@keyframes dropdown-in` (same file region, same short
 }
 ```
 
-Applied via a new utility class (e.g. `.animate-hero-drift`) with a 30-45s
-duration, `ease-in-out`, `infinite`, and an explicit
+Applied via a new utility class (e.g. `.animate-hero-drift`, `animation:
+hero-drift 38s ease-in-out infinite`), and an explicit
 `motion-reduce:animate-none` on the three `<img>` tiles in the hero
 background (`app/page.tsx`'s `heroPhotos.map(...)` block). This animates
 only the native CSS `translate` property, not `transform` or a custom
@@ -204,18 +204,26 @@ reduced-motion rule, matching the pattern `Reveal.tsx` already
 double-guards with. Pure `translate`, no `blur`/`box-shadow` animation —
 GPU-cheap per the brief's bandwidth-constraint guidance.
 
-### 5. `ProcessSteps` spine fills in synced to each step's reveal
+### 5. `ProcessSteps` spine fades and slides in
 
 `ProcessSteps.tsx` currently renders one continuous `absolute ... w-px
-bg-border` line behind all steps, fully drawn and static, plus wraps each
-step in `<Reveal delayMs={i * 100}>`. Change: split the single spine into
-`steps.length - 1` segments, one between each pair of consecutive step
-markers, each with `transform-origin: top` and `scale-y-0` by default,
-transitioning to `scale-y-100` as it becomes visible. Each segment is
-wrapped in its own `<Reveal delayMs={i * 100}>` matching step N's marker,
-reusing `Reveal`'s existing component rather than duplicating its
-IntersectionObserver logic. This stays inside `ProcessSteps.tsx`; no
-change to `Reveal.tsx` itself, no new component.
+bg-border` spine behind all steps, already fully positioned correctly by
+the existing container insets (`top-6`/`bottom-6`), fully drawn and
+static, plus wraps each step in `<Reveal delayMs={i * 100}>`. Change:
+wrap that single existing spine element in one `<Reveal delayMs={(steps
+.length - 1) * 100}>` — delayed to roughly when the last step's own
+content reveal completes — so the whole line fades and slides into place
+using `Reveal`'s existing, unmodified opacity/translate-y transition, the
+same motion every other `Reveal` usage in the app already has. No
+per-segment split, no new CSS, no change to `Reveal.tsx` itself, no new
+component. (An earlier draft of this design proposed splitting the spine
+into per-gap segments with an independent `scale-y` "draw-in" effect —
+dropped during review: `Reveal` exposes no mechanism for a sibling/child
+to react to its internal visibility state, and per-gap segment
+positioning for the component's variable-height step rows has no
+feasible formula without a layout restructure or JS measurement. Reusing
+`Reveal`'s own transition directly on the existing single element avoids
+both problems.)
 
 ### 6. Real county chips in `HeroSearch`
 
@@ -251,9 +259,10 @@ elsewhere in the app (`SearchFilters.tsx`'s category chips, per a prior
 design wave — see `docs/IMPLEMENTATION_STATUS.md`) for visual consistency
 — not a new chip visual language. Each chip is a real `<button>`, not a
 `<div>` with an onClick, so it's natively keyboard-operable (Tab +
-Enter/Space) with no extra wiring needed for operability; each chip also
-carries `aria-pressed={county === selectedCounty}` so its toggle state is
-announced to assistive technology. Focus state uses the existing
+Enter/Space) with no extra wiring needed for operability; rendered via
+`counties.map((c) => ...)`, each chip carries `aria-pressed={c ===
+county}` so its toggle state is announced to assistive technology. Focus
+state uses the existing
 `.focus-ring` utility. On submit, `county` is appended to the
 `URLSearchParams` alongside `city`/`bedrooms` exactly like the existing
 fields.
@@ -272,7 +281,8 @@ Internally:
     true, renders `value` immediately with no tween, matching CUJ 3.
 *   Otherwise, animates a local `displayValue` state from `0` to `value`
     over a short fixed duration (~800ms) via `requestAnimationFrame`, using
-    an ease-out curve computed in plain JS (no dependency).
+    the cubic ease-out formula `1 - Math.pow(1 - t, 3)` (`t` = elapsed /
+    duration, clamped to [0, 1]), computed in plain JS (no dependency).
 *   The rendered text node is wrapped with `aria-hidden="true"` on the
     animating span, with a visually-hidden (`sr-only`) sibling span holding
     the static final `value` for assistive tech — so screen readers read
@@ -281,8 +291,10 @@ Internally:
 
 `app/page.tsx`'s stat-strip rendering (`stat.value.toLocaleString()`)
 changes to `<CountUp value={stat.value} />`; `CountUp` internally applies
-`.toLocaleString()` itself to match today's formatting (e.g. "1,234+" —
-the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
+`.toLocaleString()` to both the animating span's current tweened integer
+on every frame and the final `sr-only` value, matching today's formatting
+(e.g. "1,234+" — the "+" suffix stays in the surrounding JSX, outside
+`CountUp`, unchanged).
 
 ## Alternatives Considered
 
@@ -439,10 +451,12 @@ the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
     `window.matchMedia` (same pattern as `Reveal.tsx`); if reduced motion
     is on, renders `value.toLocaleString()` immediately with no animation.
     Otherwise, animates a local state integer from `0` to `value` via
-    `requestAnimationFrame` over ~800ms with an ease-out curve, rendering
-    the animating number in an `aria-hidden="true"` span and the static
-    final value in an `sr-only` sibling span for assistive tech. No new
-    dependency — pure `requestAnimationFrame`/`Date.now()` math.
+    `requestAnimationFrame` over ~800ms using the cubic ease-out formula
+    `1 - Math.pow(1 - t, 3)`, rendering the animating number
+    (`.toLocaleString()`-formatted on every frame) in an `aria-hidden="true"`
+    span and the static final value in an `sr-only` sibling span for
+    assistive tech. No new dependency — pure `requestAnimationFrame`/
+    `Date.now()` math.
 
 #### 2. `app/globals.css` (Modify)
 
@@ -451,8 +465,8 @@ the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
     immediately after the existing `@keyframes dropdown-in` block, with a
     short comment explaining its purpose (matching the existing
     documentation convention for `dropdown-in`), plus a
-    `.animate-hero-drift` utility class (duration ~30-45s, `ease-in-out`,
-    `infinite`) applying it. The keyframe animates only the native CSS
+    `.animate-hero-drift` utility class (`animation: hero-drift 38s
+    ease-in-out infinite`) applying it. The keyframe animates only the native CSS
     `translate` property (not `transform`, and no custom property needed)
     — each hero tile's existing static `rotate-*` Tailwind class uses the
     independent native CSS `rotate` property and keeps working untouched.
@@ -483,7 +497,10 @@ the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
     {formatRelativeDate(property.published_at)}` — only when
     `property.published_at` is non-null (it's typed as nullable per the
     existing `isRecentlyPublished(property.published_at, ...)` call's
-    null-safe signature).
+    null-safe signature). Inserted immediately after the existing location
+    `<p>`, before the bed/bath `<p>` — matching the price → title →
+    location → "Listed X ago" → beds/baths order already specified in
+    Technical Plan item 1.
 
 #### 5. `components/properties/PropertyCardMedia.tsx` (Modify)
 
@@ -498,17 +515,16 @@ the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
 
 #### 6. `components/marketing/ProcessSteps.tsx` (Modify)
 
-*   **Type / Scope**: React client component (`"use client"`, already
-    imports `Reveal`).
-*   **Proposed Changes**: Replace the single continuous spine `<div
+*   **Type / Scope**: React server-renderable component (no `"use client"`
+    directive; already imports the client component `Reveal`, which
+    composes fine as a child of a server component).
+*   **Proposed Changes**: Wrap the existing single spine `<div
     aria-hidden="true" className="absolute ... w-px bg-border lg:block" />`
-    with `steps.length - 1` individual segment `<div>`s, one per gap
-    between consecutive step markers, each wrapped in its own `<Reveal
-    delayMs={i * 100}>` (reusing `Reveal` rather than forking it, per the
-    brainstorm brief's structural guidance) and styled with `scale-y-0`
-    transitioning to `scale-y-100` with `transform-origin: top` as that
-    `Reveal` instance becomes visible — synced to the same `i * 100`ms
-    delay already used for step `i`'s own content reveal.
+    in `<Reveal delayMs={(steps.length - 1) * 100}>` (reusing `Reveal`
+    rather than forking it, per the brainstorm brief's structural
+    guidance), with no other change to the spine's existing classes or
+    positioning. No per-segment split, no `scale-y`/`transform-origin`
+    styling.
 
 #### 7. `components/properties/HeroSearch.tsx` (Modify)
 
@@ -517,15 +533,17 @@ the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
     (default `[]`). Add a new `county` controlled-state value (`useState`,
     mirroring the existing `city`/`bedrooms` pattern). When `counties` is
     non-empty, render a `flex flex-wrap gap-2` row of `<button
-    type="button">` chips above the existing input row — one per county,
-    each carrying `aria-pressed={county === selectedChip}` — using the
-    same active/inactive chip visual treatment already established in
-    `SearchFilters.tsx`'s category chips (a prior design wave — see
-    `docs/IMPLEMENTATION_STATUS.md`), toggling the `county` state on click
-    (click again to deselect). On submit, append `county` to the existing
-    `URLSearchParams` construction alongside `city` and `bedrooms`, each
-    independently optional exactly as `searchParamsSchema` in
-    `lib/validation/property.ts` already defines them.
+    type="button">` chips above the existing input row, rendered via
+    `counties.map((c) => <button key={c} ... aria-pressed={c === county}
+    onClick={() => setCounty(c === county ? "" : c)}>{c}</button>)` — each
+    chip toggling `county` on click (clicking the already-selected chip
+    deselects it) — using the same active/inactive chip visual treatment
+    already established in `SearchFilters.tsx`'s category chips (a prior
+    design wave — see `docs/IMPLEMENTATION_STATUS.md`). On submit, append
+    `county` to the existing `URLSearchParams` construction alongside
+    `city` and `bedrooms`, each independently optional exactly as
+    `searchParamsSchema` in `lib/validation/property.ts` already defines
+    them.
 
 #### 8. `docs/DESIGN_SYSTEM.md` (Modify)
 
@@ -550,17 +568,18 @@ the "+" suffix stays in the surrounding JSX, outside `CountUp`, unchanged).
 
 No new vitest unit test is planned: every change in this wave is either a
 pure CSS/markup addition, a reuse of an already-tested utility
-(`formatRelativeDate`, `isRecentlyPublished`), or a trivial one-line
-transformation of already-fetched data (the county-list `Set` dedup) not
-worth a dedicated test on its own. `CountUp`'s reduced-motion branch is
-covered by the live/manual accessibility verification below, consistent
-with how `Reveal.tsx`'s equivalent branch has no unit test today either.
+(`formatRelativeDate`, `isRecentlyPublished`), or the one-line
+transformation of already-fetched data (the county-list `Set` dedup),
+which has no independent branching logic to test. `CountUp`'s
+reduced-motion branch is covered by the live/manual accessibility
+verification below, consistent with how `Reveal.tsx`'s equivalent branch
+has no unit test today either.
 
 ### Verification Plan
 
-*   **Compilation/Build**: `npx tsc --noEmit`, `npm run build`.
+*   **Compilation/Build**: `npm run typecheck`, `npm run build`.
 *   **Static Analysis & Linting**: `npm run lint`.
-*   **Unit Tests**: `npm run test` (existing suite must stay green — no
+*   **Unit Tests**: `npm run test` (existing suite must continue passing — no
     new tests added per the Testing Note above, but regressions in
     `formatRelativeDate`/`isRecentlyPublished`'s existing callers would
     show up in `format.test.ts`).

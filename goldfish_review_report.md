@@ -1,5 +1,11 @@
 # Goldfish Annotated Review Report (Stage 9, Round 1)
 
+**Status: resolved** — all PROPOSE FIX items (Issues 1-6, 9, 10) applied,
+including a real redesign of the ProcessSteps spine fill-in (Issue 1);
+Issue 7 was superseded by Issue 1's redesign (no separate edit needed);
+Issue 8 remains CONTESTED and unchanged (verified factually incorrect
+against app/globals.css's actual rule).
+
 **Target:** `docs/designs/homepage-liveliness-design.md` (DetailedRange, lines 430–583, with two edits reaching into the FeatureRange to fix cross-referenced inconsistencies)
 
 ## Prioritized Findings & AI Suggestions
