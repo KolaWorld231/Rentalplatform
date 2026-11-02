@@ -75,12 +75,14 @@ None outstanding. Two questions raised during drafting have been resolved:
     restate existing `/about` copy, repeating the redundant-restatement
     problem Wave 4 removed from `/pricing`. `/about` gets the header +
     `CardClay` wrap only, no value row.
-*   **`/safety`'s warning block**: no change needed. The brief characterized
-    it as a bespoke one-off, but `rounded-[var(--radius-md)] bg-warning-100
-    p-3 text-xs text-warning-500` + `AlertTriangle` is already the
-    established warning-block shape, used identically in
-    `components/layout/LegalPageShell.tsx` and `app/checkout/mock/page.tsx`.
-    `/safety` already matches it.
+*   **`/safety`'s warning block**: the brief characterized it as a bespoke
+    one-off; checking the actual established shape (`rounded-[var(--radius-md)]
+    bg-warning-100 p-3 text-xs text-warning-500` + `AlertTriangle`, used
+    identically in `components/layout/LegalPageShell.tsx` and
+    `app/checkout/mock/page.tsx`) against `/safety`'s current markup shows
+    it does *not* already match: `/safety` uses `p-4 text-sm` instead of
+    `p-3 text-xs`. This wave aligns `/safety`'s warning block to the
+    established `p-3 text-xs` classes — the only change to that block.
 
 ## Critical User Journeys (CUJs)
 
@@ -120,9 +122,11 @@ extracted into a `PageHeader` component this wave:
 
 ```tsx
 <div className="mb-6">
-  <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">
-    {eyebrow /* optional, e.g. "Account" */}
-  </p>
+  {eyebrow && (
+    <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">
+      {eyebrow}
+    </p>
+  )}
   <h1 className="font-display text-2xl font-semibold text-charcoal-700">
     {title}
   </h1>
@@ -195,10 +199,10 @@ Notes:
                                           copy unchanged, no stat strip.
 
 /safety           1 Card (checklist) +  shared header added above the
-                  1 bespoke warning      existing Card + warning block.
-                  block                  Warning block markup unchanged
-                                          (already matches LegalPageShell's
-                                          pattern — see Open Questions).
+                  1 warning block        existing Card. Warning block's
+                  (p-4 text-sm)          p-4/text-sm changed to p-3/
+                                          text-xs to match LegalPageShell's
+                                          pattern — see Open Questions.
 
 /help             Card-per-FAQ list +    shared header added above the
                   1 contact Card         existing Cards. FAQ/contact Card
@@ -318,8 +322,7 @@ listed there.
     `InputHTMLAttributes<HTMLInputElement>` except `type`/`className`
     (so `name`, `defaultChecked`, `id`, `required`, `disabled`, etc. all
     pass through), plus an optional `label?: ReactNode` rendered as the
-    visible text next to the control, and an optional `wrapperClassName`
-    for layout spacing in each call site. No internal state, no
+    visible text next to the control. No internal state, no
     `"use client"` directive — it is a plain function component usable
     from a Server Component tree.
 
@@ -327,14 +330,17 @@ listed there.
 
 *   **Type / Scope**: Next.js Server Component page.
 *   **Proposed Changes**: Add the shared header block (title "Notifications",
-    no eyebrow needed since the page title is already self-explanatory)
-    above the existing unread-count/"Mark all read" row. Replace both
+    no `eyebrow` prop passed — the page title is the route name with no
+    ambiguity to disambiguate) above the existing conditionally-rendered
+    "Mark all read" button row. Replace both
     `<input type="checkbox" name="in_app_enabled" defaultChecked={...}
-    className="h-4 w-4" />` and the `email_enabled` equivalent with
+    className="h-4 w-4" />` and the `email_enabled` equivalent with:
     `<Switch name="in_app_enabled" defaultChecked={prefs?.in_app_enabled ??
-    true} label="In-app notifications" />` and the `email_enabled`
-    equivalent, preserving the existing label copy (including the
-    email-provider caveat text) exactly. No change to the data fetch, the
+    true} label="In-app notifications" />` and
+    `<Switch name="email_enabled" defaultChecked={prefs?.email_enabled ??
+    true} label="Email notifications (sent only if an email provider is
+    configured — see docs/DEPLOYMENT.md)" />`, preserving the existing
+    label copy exactly. No change to the data fetch, the
     notification list rendering, `markAllNotificationsReadAction`, or the
     inline per-notification "Mark read" form.
 
@@ -365,9 +371,11 @@ listed there.
 *   **Proposed Changes**: Add the shared header block (eyebrow "Safety",
     title "Safety guidance") above the existing supporting paragraph,
     replacing the current bare `<h1>`/`<p>` pair with the shared shape. The
-    existing checklist `<Card>` and the warning block below it are left
-    exactly as-is (already matches the established warning-block pattern —
-    see Open Questions resolution).
+    existing checklist `<Card>` is left exactly as-is. The warning block
+    below it has its `p-4 text-sm` classes changed to `p-3 text-xs`, to
+    match the established pattern in `LegalPageShell.tsx`/
+    `app/checkout/mock/page.tsx` (see Open Questions resolution) — no
+    other change to that block.
 
 #### 6. `app/help/page.tsx` (Modify)
 
@@ -399,11 +407,11 @@ listed there.
 #### 9. `docs/IMPLEMENTATION_STATUS.md` (Modify)
 
 *   **Type / Scope**: Documentation.
-*   **Proposed Changes**: Append a Wave 9 entry following the same format
-    as waves 1–8's entries: what changed (five pages + one new component)
-    and what was verified (see Verification Plan below), once the
-    implementation and its live verification are actually complete — not
-    before.
+*   **Proposed Changes**: Append a `## Conversion-focused redesign, wave 9
+    (post-Milestone-8)` entry, following the same format as waves 1–8's
+    identically-patterned headings: what changed (five pages + one new
+    component) and what was verified (see Verification Plan below), once
+    the implementation and its live verification are complete.
 
 ### Verification Plan
 
@@ -411,8 +419,10 @@ listed there.
 *   **Static Analysis & Linting**: `npm run lint`.
 *   **Unit Tests**: `npm run test` (existing suite; no new unit tests are
     expected for a presentation-only change, but the full suite must stay
-    green — in particular, nothing in the auth/messaging/subscription test
-    files should be affected by this wave's page-markup changes).
+    green — in particular, nothing in `mock-payment-provider.test.ts`,
+    `listing-completeness.test.ts`, `validation.test.ts`, or
+    `format.test.ts` should be affected by this wave's page-markup
+    changes).
 *   **Accessibility spot checks**: keyboard-only pass on `/notifications`
     (Tab to the first `Switch`, Space to toggle, confirm visual state
     changes and the form still submits the toggled value); a screen-reader

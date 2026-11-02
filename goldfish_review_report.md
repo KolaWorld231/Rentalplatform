@@ -1,5 +1,11 @@
 # Goldfish Annotated Review Report (Stage 9, Round 1)
 
+**Status: resolved** — all 9 PROPOSE FIX items auto-accepted and applied
+(Issue 3's fix also required a consistency edit to the Technical Plan §3
+table, not just the two locations originally scoped, since it carried the
+same stale "already matches" claim); 1 DECLINE item (Issue 6) left
+unchanged as an accepted nit.
+
 **Target:** `docs/designs/wave-9-page-polish-design.md` (DetailedRange, lines 304–435)
 
 ## Prioritized Findings & AI Suggestions
