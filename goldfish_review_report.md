@@ -1,5 +1,9 @@
 # Goldfish Annotated Review Report
 
+**Status: resolved** — all PROPOSE FIX items auto-accepted and applied;
+2 DECLINE items (structural-1-4, structural-1-5) left unchanged as
+accepted nits.
+
 **Target:** `docs/designs/wave-9-page-polish-design.md` (lines 1–302)
 
 ## Prioritized Findings & AI Suggestions

@@ -13,32 +13,33 @@ homepage, property cards, pricing, property detail, messaging, dashboards,
 auth, search, admin — into one consistent Claymorphism visual language. Five
 pages were left out of that work: `/about`, `/safety`, `/help`,
 `/notifications`, and `/account`. They still render, and nothing on them is
-broken, but moving from any of the redesigned pages onto one of these five is
-visibly jarring — plain text blocks next to one `Card` here, a flat FAQ stack
-there, two unstyled native checkboxes on `/notifications`, no shared header
-treatment anywhere. This design closes that gap on the five remaining pages
-without changing what any of them do.
+broken, but moving from any of the redesigned pages onto one of these five
+has no shared visual treatment: plain text blocks next to one `Card` here,
+a flat FAQ stack there, two unstyled native checkboxes on `/notifications`,
+no shared header anywhere. This design closes that gap on the five
+remaining pages without changing what any of them do.
 
 ## The Problem
 
 A user who has just subscribed, verified their identity, or sent their first
-message is routed through `/account` and `/notifications` — pages that look
-like they belong to an earlier, unfinished version of the product. `/about`
+message is routed through `/account` and `/notifications` — pages that lack
+the shared header and Card treatment every other page already has. `/about`
 and `/safety` are the pages most likely to be shared or linked externally
 (trust-building copy, safety guidance) and currently read as plain unstyled
 text with zero visual anchoring. The fix is a presentation-only pass: wrap
-existing content in the same `Card`/`Button`/`Badge` primitives and header
-pattern already proven across the other eight waves, and replace the two
-raw, unstyled `<input type="checkbox">` elements on `/notifications` with a
-small, properly styled native checkbox component — the one genuinely new UI
-primitive this wave needs.
+existing content in the same `Card` primitives and header pattern already
+proven across the other eight waves, and replace the two raw, unstyled
+`<input type="checkbox">` elements on `/notifications` with a small,
+properly styled native checkbox component — the one new UI primitive this
+wave needs.
 
 ## Goals
 
 *   Bring `/about`, `/safety`, `/help`, `/notifications`, and `/account`
     visually in line with the Claymorphism system already shipped in waves
-    1–8, using only existing design tokens and components (`CardClay`,
-    `Button`/`buttonVariants`, `Badge`, `Reveal`).
+    1–8, using only existing design tokens and the `CardClay` component —
+    no other new component usage is introduced on these pages beyond what
+    each already uses.
 *   Apply one identical, literal header shape (title + optional
     eyebrow/supporting line) across all five pages, copy-pasted rather than
     extracted into a new component this wave.
@@ -58,7 +59,7 @@ primitive this wave needs.
 *   No new shared `PageHeader` component this wave — the rule-of-three
     threshold for extraction isn't met yet; the same literal JSX block is
     duplicated across the five pages instead.
-*   No change to `DocumentUploader`, `markAllNotificationsReadAction`,
+*   No change to `markAllNotificationsReadAction`,
     `markNotificationReadAction`, `updateNotificationPreferencesAction`, or
     any other existing interactive wiring — markup and classes only.
 *   No new runtime dependencies (no animation library, no custom
@@ -100,8 +101,8 @@ None outstanding. Two questions raised during drafting have been resolved:
 *   **Given**: an anonymous visitor lands on `/about` from an external link.
 *   **When**: they read the page and click through to `/safety`.
 *   **Then**: both pages now share the same header shape and `CardClay`
-    surface treatment used across the rest of the app, instead of reading as
-    an unstyled, unfinished page relative to `/pricing` or `/how-it-works`.
+    surface treatment used across the rest of the app, instead of lacking
+    the Card/header treatment `/pricing` and `/how-it-works` already have.
 
 ## Technical Plan (Architecture)
 
@@ -117,7 +118,7 @@ Per the brief's locked decision, the same JSX block is copy-pasted into
 `/about`, `/safety`, `/help`, `/account`, and `/notifications` — not
 extracted into a `PageHeader` component this wave:
 
-```text
+```tsx
 <div className="mb-6">
   <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">
     {eyebrow /* optional, e.g. "Account" */}
@@ -142,7 +143,7 @@ consistently, not changing the heading style itself.
 
 A styled native `<input type="checkbox">`, not a custom widget:
 
-```text
+```tsx
 <label className="inline-flex items-center gap-3">
   <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
     <input
@@ -211,9 +212,9 @@ Notes:
 /notifications    raw <input            shared header added above the
                   type="checkbox"        existing notification list.
                   className="h-4 w-4">  Both checkboxes in the Preferences
-                  x2                     Card replaced with <Switch>,
-                                          same name/defaultChecked props.
-                                          Notification list items, "Mark
+                  x2 (confirmed in       Card replaced with <Switch>,
+                  app/notifications/     same name/defaultChecked props.
+                  page.tsx)              Notification list items, "Mark
                                           read"/"Mark all read" forms
                                           untouched.
 ```
@@ -234,7 +235,7 @@ listed there.
 ### Alternative A: Div-based custom toggle for `/notifications`
 
 *   **Pros**: common Claymorphism toggle look (fully custom track/thumb with
-    no native-`<input>` default-styling quirks to fight), easier to add a
+    no native default-styling inconsistencies to override), easier to add a
     check/cross icon inside the thumb later if wanted.
 *   **Cons**: requires either a hidden native input plus manual
     `role="checkbox"`/`aria-checked`/keyboard-handler wiring reimplemented
@@ -242,8 +243,8 @@ listed there.
     recreates behavior the browser already gives a native `<input>` for
     free, and risks silently dropping keyboard operability or correct
     screen-reader semantics if the reimplementation is incomplete.
-*   **Reason for Rejection**: the Comprehension lens flagged this as a
-    Blocker-severity risk — DomiLink's accessibility baseline (semantic
+*   **Reason for Rejection**: this risks dropping keyboard operability or
+    screen-reader semantics — DomiLink's accessibility baseline (semantic
     HTML, keyboard operability) is treated as non-optional, and a
     styled native `<input type="checkbox">` with `peer-checked:` CSS gets
     the same clay visual result with zero accessibility reimplementation
@@ -260,16 +261,14 @@ listed there.
     variation has been observed yet to design the component's prop surface
     around. Building the abstraction now means guessing at that surface
     before a second, independently-motivated use case exists.
-*   **Reason for Rejection**: the Zoom Out lens's "rule of three" — a
-    shared component is justified once there are three *independently
-    motivated* call sites, not three copies added in the same change. Five
+*   **Reason for Rejection**: the rule of three — a shared component is
+    justified once there are three *independently motivated* call sites,
+    not three copies added in the same change. Five
     copies added in one wave don't meet that bar any more than two would;
     duplicating one small, stable literal JSX block across five pages costs
     less than committing to an abstraction's shape prematurely. The brief's
     locked decision explicitly defers this to a future wave once a
     genuinely new page needs the same header outside this batch.
-
---------------------------------------------------------------------------------
 
 ## Non-Functional Requirements
 
@@ -278,7 +277,13 @@ listed there.
     `<input type="checkbox">` it wraps — this is the explicit reason
     Alternative A (a div-based toggle) was rejected. Verification must
     include a keyboard-only pass (Tab to focus, Space to toggle) and a
-    screen-reader spot check, not just a visual screenshot.
+    screen-reader spot check, not just a visual screenshot. The
+    `peer-focus-visible:` focus treatment is a deliberate, scoped exception
+    to the site-wide `.focus-ring` utility (the visible focus target is an
+    `aria-hidden` track, not the input itself); verification must include a
+    side-by-side visual check that `Switch`'s focus ring reads consistently
+    with `.focus-ring`'s outline color/offset elsewhere on the page, to
+    catch any divergence before merge.
 *   **Rollback**: this wave has no schema or data migration. Rollback is a
     single `git revert` of the wave's commit(s); no backfill or data cleanup
     is needed either direction.
@@ -286,9 +291,7 @@ listed there.
     weight beyond the few lines of CSS/markup `Switch` adds (no new runtime
     dependency) — not a concern for this wave.
 
---------------------------------------------------------------------------------
-
-### Additional Resources
+## Additional Resources
 
 *   `docs/designs/wave-9-page-polish.md` — the brainstorm-stage concepts
     brief this design is drafted from.
@@ -297,8 +300,6 @@ listed there.
 *   `CLAUDE.md` rules #9 (never fabricate data) and #10 (one cohesive visual
     language) — the constraints that ruled out the `/about` stat strip and
     any one-off visual treatment, respectively.
-
---------------------------------------------------------------------------------
 
 ## Detailed Implementation Plan
 
