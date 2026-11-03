@@ -371,6 +371,32 @@ export type PaymentWebhookEvent = {
   processed_at: string | null;
 };
 
+export type WebAuthnCredential = {
+  id: string;
+  user_id: string;
+  credential_id: string;
+  public_key: string;
+  counter: number;
+  device_type: string;
+  backed_up: boolean;
+  transports: string[];
+  label: string;
+  created_at: string;
+  last_used_at: string | null;
+};
+
+export type WebAuthnChallengePurpose = "registration" | "authentication";
+
+export type WebAuthnChallenge = {
+  id: string;
+  user_id: string | null;
+  purpose: WebAuthnChallengePurpose;
+  challenge: string;
+  metadata: Record<string, unknown>;
+  expires_at: string;
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -452,6 +478,14 @@ export type Database = {
       support_tickets: TableDef<
         SupportTicket,
         Partial<SupportTicket> & Pick<SupportTicket, "user_id" | "subject" | "message">
+      >;
+      webauthn_credentials: TableDef<
+        WebAuthnCredential,
+        Partial<WebAuthnCredential> & Pick<WebAuthnCredential, "user_id" | "credential_id" | "public_key" | "device_type">
+      >;
+      webauthn_challenges: TableDef<
+        WebAuthnChallenge,
+        Partial<WebAuthnChallenge> & Pick<WebAuthnChallenge, "purpose" | "challenge" | "expires_at">
       >;
     };
     Views: Record<string, never>;

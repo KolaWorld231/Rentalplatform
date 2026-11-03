@@ -1315,6 +1315,107 @@ preview-only database.
   Sinkor apartment's own detail page renders its title, price, and
   "DomiLink Listings Team" as the owner.
 
+## Passkey (biometric) sign-up/sign-in + low-email-market recommendations (post-Milestone-8)
+
+The user asked for biometric (WebAuthn passkey) sign-up/sign-in, plus
+suggestions for markets like Liberia with low active email usage.
+Confirmed scope with the user: build full passkey sign-up/sign-in
+(password+email stays as the fallback, not removed); for the low-email
+angle, write a recommendations doc rather than build phone/WhatsApp OTP
+now, since those are blocked on real SMS/WhatsApp Business API
+credentials the same way the payment provider is blocked in
+`docs/PAYMENTS.md`.
+
+- **Confirmed before building**: Supabase Auth has no native
+  passwordless-passkey *primary* sign-in — WebAuthn there is only an MFA
+  second factor on an already-authenticated session. A real passkey-only
+  sign-up/sign-in required a custom build: `@simplewebauthn/server` +
+  `@simplewebauthn/browser` (new deps) for the WebAuthn ceremonies, two
+  new tables (`webauthn_credentials`, `webauthn_challenges` — see
+  `docs/DATABASE_SCHEMA.md`), and a session-minting trick for turning a
+  verified ceremony into a real Supabase session: `admin.generateLink({
+  type: "magiclink", email })` (generates a token, sends no email) →
+  `verifyOtp({ type: "magiclink", token_hash })` on the request-scoped
+  cookie-writing client.
+- **`lib/auth/webauthn-actions.ts`** (new): `startPasskeyRegistrationAction`/
+  `verifyPasskeyRegistrationAction` (add a passkey to an existing
+  account), `startPasskeySignupAction`/`verifyPasskeySignupAction`
+  (brand-new account, no password ever set — the `auth.users` row is only
+  created *after* the WebAuthn ceremony verifies, so an abandoned
+  ceremony never leaves an orphaned account), `startPasskeyLoginAction`/
+  `verifyPasskeyLoginAction` (discoverable-credential sign-in, no email
+  typed), `listPasskeysAction`/`deletePasskeyAction` (account
+  management). A lightweight application-level rate limit (mirroring
+  `services/messaging.ts`'s existing pattern) caps ceremony starts, since
+  Supabase's own built-in auth rate limiting — the project's documented
+  protection for auth endpoints, `docs/SECURITY.md` — doesn't cover these
+  new custom Server Actions.
+- **UI**: `app/(auth)/login/page.tsx` gets a "Sign in with a passkey"
+  button above the existing password form; `app/(auth)/register/page.tsx`
+  gets a passkey/password toggle sharing the same name/email fields and
+  renter/owner intent cards; `app/account/page.tsx` gets a new "Passkeys"
+  card (`components/auth/PasskeyManager.tsx`) to add/revoke passkeys on
+  an existing account. Every passkey UI element is gated by
+  `lib/auth/use-passkey-support.ts` (wraps `browserSupportsWebAuthn()`)
+  and degrades to simply not rendering on unsupported browsers/devices —
+  a real concern given device diversity in Liberia — never a broken
+  button.
+- **`supabase/migrations/20261103000100_webauthn.sql`**: RLS enabled on
+  both new tables; `webauthn_credentials` grants `select`/`delete` to
+  `authenticated` scoped to the caller's own rows, no client
+  `insert`/`update` at all; `webauthn_challenges` has no `anon`/
+  `authenticated` grant whatsoever, `service_role`-only. **Applied to the
+  live Supabase project** via the Management API once the user added a
+  `SUPABASE_ACCESS_TOKEN` network secret — the first token generated was
+  itself read-only (`current_user` resolved to `supabase_read_only_user`,
+  confirmed via a direct query, which blocked even `SET
+  transaction_read_only = off`'s effect since the role's own grants
+  lacked `CREATE` on `public`, not just the session's read-only flag); a
+  regenerated read-write token resolved to the `postgres` role and the
+  migration applied cleanly. Confirmed both new tables exist with
+  `relrowsecurity = true` in `public` — a same-named pair also exists in
+  the `auth` schema (`relrowsecurity = false`), which is Supabase's own
+  native GoTrue WebAuthn-as-MFA-factor storage, an unrelated naming
+  coincidence, not a conflict.
+- **`docs/AUTH_ALTERNATIVES.md`** (new): phone/SMS OTP (Supabase-native,
+  blocked on a real SMS provider with confirmed Liberia coverage —
+  Twilio/Infobip/MessageBird named as candidates, same "needs the project
+  owner's provider choice and credentials" framing as `docs/PAYMENTS.md`),
+  WhatsApp OTP (not Supabase-native — needs a custom Edge Function + Meta
+  WhatsApp Business Cloud API with template approval, reusing this
+  change's session-minting pattern), long-lived "remember this device"
+  sessions, USSD (partnership-dependent, out of reach for a web app
+  alone), and operational mitigations (agent-assisted onboarding,
+  data-light design).
+- No change to `registerAction`/`loginAction`/the password flow —
+  additive only. No change to `profiles.phone`/`phone_verified_at`
+  (confirmed unrelated/unused before this change, left alone).
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (36/36 — 3 new `passkeySignupSchema` cases added) all clean.
+- **Live Playwright pass against the real Supabase project**, using
+  Chromium's WebAuthn virtual authenticator (CDP
+  `WebAuthn.addVirtualAuthenticator`) rather than a compiled-build-only
+  check: confirmed passkey sign-up creates a real account and redirects
+  to onboarding; confirmed the account page shows the signed-up email and
+  one passkey; confirmed logging out and signing back in with the
+  discoverable-credential passkey flow (no email typed) succeeds and
+  returns to the same account; confirmed adding a second passkey from
+  `/account` using a **second, separate virtual authenticator**
+  (simulating a different physical device — reusing the same virtual
+  authenticator for a second registration correctly throws
+  `InvalidStateError`, exactly as a real platform authenticator would,
+  since resident-key WebAuthn credentials are one-per-site-per-
+  authenticator by spec, not a bug) succeeds and shows 2 passkeys;
+  confirmed revoking one brings it back to 1. All 4 seeded test accounts
+  and their passkey rows fully deleted from the live project afterward
+  (`webauthn_credentials`/`webauthn_challenges` row counts confirmed back
+  at 0). One local-only false start during this pass: `.env.local`'s
+  `NEXT_PUBLIC_APP_URL` was `:3100` while the dev server actually binds
+  `:3000` (a pre-existing mismatch noted earlier this session) — caused a
+  WebAuthn origin-mismatch rejection against `localhost`, not a real bug;
+  fixed locally (gitignored, no effect on the deployed app) by pointing
+  it at `:3000` to match.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
@@ -1377,3 +1478,8 @@ credentials or input, not more engineering time against this codebase.
 - **Email/SMS providers**: unconfigured; in-app notifications work without
   them, transactional email/SMS is documented but inactive until credentials
   are supplied.
+- **SMS/WhatsApp provider for low-email-market auth**: see
+  `docs/AUTH_ALTERNATIVES.md` — phone/SMS OTP and WhatsApp OTP are
+  researched and ready to build, blocked on choosing and contracting a
+  provider with confirmed Liberia coverage (same shape of decision as the
+  payment provider above).
