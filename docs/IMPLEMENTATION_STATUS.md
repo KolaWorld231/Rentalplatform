@@ -1364,12 +1364,19 @@ credentials the same way the payment provider is blocked in
   both new tables; `webauthn_credentials` grants `select`/`delete` to
   `authenticated` scoped to the caller's own rows, no client
   `insert`/`update` at all; `webauthn_challenges` has no `anon`/
-  `authenticated` grant whatsoever, `service_role`-only.
-  **Not yet applied to the live Supabase project** — the Management-API
-  personal access token used to apply every other migration this session
-  (see "How the migrations were applied" above) wasn't available in this
-  session; flagged to the user to add `SUPABASE_ACCESS_TOKEN` to the
-  environment's secrets so it can be applied.
+  `authenticated` grant whatsoever, `service_role`-only. **Applied to the
+  live Supabase project** via the Management API once the user added a
+  `SUPABASE_ACCESS_TOKEN` network secret — the first token generated was
+  itself read-only (`current_user` resolved to `supabase_read_only_user`,
+  confirmed via a direct query, which blocked even `SET
+  transaction_read_only = off`'s effect since the role's own grants
+  lacked `CREATE` on `public`, not just the session's read-only flag); a
+  regenerated read-write token resolved to the `postgres` role and the
+  migration applied cleanly. Confirmed both new tables exist with
+  `relrowsecurity = true` in `public` — a same-named pair also exists in
+  the `auth` schema (`relrowsecurity = false`), which is Supabase's own
+  native GoTrue WebAuthn-as-MFA-factor storage, an unrelated naming
+  coincidence, not a conflict.
 - **`docs/AUTH_ALTERNATIVES.md`** (new): phone/SMS OTP (Supabase-native,
   blocked on a real SMS provider with confirmed Liberia coverage —
   Twilio/Infobip/MessageBird named as candidates, same "needs the project
@@ -1385,11 +1392,29 @@ credentials the same way the payment provider is blocked in
   (confirmed unrelated/unused before this change, left alone).
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
   (36/36 — 3 new `passkeySignupSchema` cases added) all clean.
-- **Live verification not yet performed** — blocked on the same missing
-  database credential as the migration above; this needs a live Supabase
-  Auth session to actually exercise (Chromium's WebAuthn virtual
-  authenticator via Playwright, per the plan), not just a compiled build.
-  To be completed once the migration is applied.
+- **Live Playwright pass against the real Supabase project**, using
+  Chromium's WebAuthn virtual authenticator (CDP
+  `WebAuthn.addVirtualAuthenticator`) rather than a compiled-build-only
+  check: confirmed passkey sign-up creates a real account and redirects
+  to onboarding; confirmed the account page shows the signed-up email and
+  one passkey; confirmed logging out and signing back in with the
+  discoverable-credential passkey flow (no email typed) succeeds and
+  returns to the same account; confirmed adding a second passkey from
+  `/account` using a **second, separate virtual authenticator**
+  (simulating a different physical device — reusing the same virtual
+  authenticator for a second registration correctly throws
+  `InvalidStateError`, exactly as a real platform authenticator would,
+  since resident-key WebAuthn credentials are one-per-site-per-
+  authenticator by spec, not a bug) succeeds and shows 2 passkeys;
+  confirmed revoking one brings it back to 1. All 4 seeded test accounts
+  and their passkey rows fully deleted from the live project afterward
+  (`webauthn_credentials`/`webauthn_challenges` row counts confirmed back
+  at 0). One local-only false start during this pass: `.env.local`'s
+  `NEXT_PUBLIC_APP_URL` was `:3100` while the dev server actually binds
+  `:3000` (a pre-existing mismatch noted earlier this session) — caused a
+  WebAuthn origin-mismatch rejection against `localhost`, not a real bug;
+  fixed locally (gitignored, no effect on the deployed app) by pointing
+  it at `:3000` to match.
 
 ## Overall production-readiness summary
 
@@ -1453,13 +1478,6 @@ credentials or input, not more engineering time against this codebase.
 - **Email/SMS providers**: unconfigured; in-app notifications work without
   them, transactional email/SMS is documented but inactive until credentials
   are supplied.
-- **Supabase Management API access token**: the `webauthn_credentials`/
-  `webauthn_challenges` migration (above) hasn't been applied to the live
-  project yet — this session didn't have the personal access token used
-  to apply every earlier migration. Add `SUPABASE_ACCESS_TOKEN` to the
-  environment's secrets (a Supabase personal access token from
-  https://supabase.com/dashboard/account/tokens) so a session can apply
-  it and complete live verification of the passkey feature.
 - **SMS/WhatsApp provider for low-email-market auth**: see
   `docs/AUTH_ALTERNATIVES.md` — phone/SMS OTP and WhatsApp OTP are
   researched and ready to build, blocked on choosing and contracting a
