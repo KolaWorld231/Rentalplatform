@@ -35,7 +35,7 @@ export function SubscriptionGateDialog({
           Your message is saved — get the Direct Access Pass and it sends right away.
         </p>
 
-        <div className="w-full rounded-[var(--radius-lg)] bg-ivory-100 p-5 shadow-[var(--shadow-clay-raised)]">
+        <div className="w-full rounded-[var(--radius-lg)] bg-ivory-100 p-5 shadow-[var(--shadow-clay-raised)] dark:bg-[#242424]">
           <p className="font-display text-2xl font-semibold text-brand-800">
             Unlimited messaging
             <span className="block text-base font-normal text-charcoal-400">

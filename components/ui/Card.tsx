@@ -17,7 +17,7 @@ export function CardClay({ className, ...props }: HTMLAttributes<HTMLDivElement>
   return (
     <div
       className={cn(
-        "rounded-[var(--radius-lg)] bg-ivory-100 shadow-[var(--shadow-clay-raised)]",
+        "rounded-[var(--radius-lg)] bg-ivory-100 shadow-[var(--shadow-clay-raised)] dark:bg-[#242424]",
         className,
       )}
       {...props}

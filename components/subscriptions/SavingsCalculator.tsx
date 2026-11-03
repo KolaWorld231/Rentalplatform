@@ -15,7 +15,7 @@ export function SavingsCalculator({
   const savings = Math.max(0, agentCost - passPriceUsd);
 
   return (
-    <div className="rounded-[var(--radius-lg)] bg-ivory-100 p-6 shadow-[var(--shadow-clay-inset)]">
+    <div className="rounded-[var(--radius-lg)] bg-ivory-100 p-6 shadow-[var(--shadow-clay-inset)] dark:bg-[#242424]">
       <label htmlFor="property-count" className="flex items-center justify-between text-sm font-medium text-charcoal-700">
         <span>Properties you&apos;d want to contact</span>
         <span className="font-display text-lg font-semibold text-brand-800">{propertyCount}</span>

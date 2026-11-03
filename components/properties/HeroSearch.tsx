@@ -44,7 +44,7 @@ export function HeroSearch({ counties = [] }: { counties?: string[] }) {
           if (county) params.set("county", county);
           router.push(`/search${params.toString() ? `?${params.toString()}` : ""}`);
         }}
-        className="flex flex-col gap-2 rounded-[var(--radius-xl)] bg-ivory-50 p-2.5 shadow-[var(--shadow-clay-raised)] sm:flex-row sm:items-center"
+        className="flex flex-col gap-2 rounded-[var(--radius-xl)] bg-surface p-2.5 shadow-[var(--shadow-clay-raised)] sm:flex-row sm:items-center"
       >
         <div className="flex flex-1 items-center gap-2 px-2">
           <Search className="h-5 w-5 shrink-0 text-charcoal-400" aria-hidden="true" />
