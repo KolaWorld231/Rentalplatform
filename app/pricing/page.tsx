@@ -7,7 +7,7 @@ import { brand, subscriptionPlan } from "@/lib/config/brand";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveSubscription } from "@/lib/subscriptions/service";
-import { formatExpiryDate, formatUsd } from "@/lib/utils/format";
+import { formatExpiryDate } from "@/lib/utils/format";
 import { startCheckoutAction } from "../checkout/actions";
 
 export const metadata = { title: "Pricing" };
@@ -20,7 +20,7 @@ const agentColumn = [
 ];
 
 const passColumn = [
-  `$${subscriptionPlan.priceUsd} once, for ${subscriptionPlan.durationDays} days`,
+  `One flat subscription, for ${subscriptionPlan.durationDays} days`,
   "Message as many owners as you like — no extra fee",
   "Payments verified server-side before activation",
   "Conversations stay visible even after it expires",
@@ -89,9 +89,11 @@ export default async function PricingPage({
             Best value
           </Badge>
           <p className="text-sm font-semibold text-brand-700">{subscriptionPlan.name}</p>
-          <p className="mt-2 font-display text-4xl font-semibold text-brand-800">
-            {formatUsd(subscriptionPlan.priceUsd)}
-            <span className="text-base font-normal text-charcoal-400"> / {subscriptionPlan.durationDays} days</span>
+          <p className="mt-2 font-display text-3xl font-semibold text-brand-800">
+            Unlimited messaging
+            <span className="block text-base font-normal text-charcoal-400">
+              for {subscriptionPlan.durationDays} days
+            </span>
           </p>
           <ul className="mt-4 flex flex-col gap-2.5">
             {passColumn.map((item) => (
@@ -120,7 +122,7 @@ export default async function PricingPage({
               size="lg"
               className="w-full transition-transform active:translate-y-0.5 sm:w-auto"
             >
-              Subscribe for {formatUsd(subscriptionPlan.priceUsd)}
+              Subscribe
             </Button>
           </form>
         )}

@@ -65,7 +65,7 @@ export function ContactOwnerForm({
         </Button>
       </form>
       <p className="mt-2 text-xs text-charcoal-400">
-        Unlimited owners, one $5 pass. No per-property fee.
+        Subscribe once, message unlimited owners. No per-property fee.
       </p>
 
       <SubscriptionGateDialog

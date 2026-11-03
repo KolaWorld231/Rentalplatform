@@ -22,7 +22,7 @@ const howItWorks = [
   {
     icon: MessageCircle,
     title: "Unlock direct messaging",
-    body: `Get the ${subscriptionPlan.name} for $${subscriptionPlan.priceUsd} and message as many owners as you like for ${subscriptionPlan.durationDays} days.`,
+    body: `Subscribe to the ${subscriptionPlan.name} and message as many owners as you like for ${subscriptionPlan.durationDays} days.`,
   },
   {
     icon: ShieldCheck,
@@ -112,8 +112,8 @@ export default async function HomePage() {
               {brand.secondaryCta}
             </Link>
             <p className="text-sm text-sage-200">
-              Renters pay just ${subscriptionPlan.priceUsd} for {subscriptionPlan.durationDays} days of
-              unlimited direct messaging.
+              Renters subscribe for {subscriptionPlan.durationDays} days of unlimited direct
+              messaging.
             </p>
           </div>
 

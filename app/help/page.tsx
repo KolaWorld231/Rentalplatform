@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: "What does the Direct Access Pass unlock?",
-    a: "A 30-day pass for $5 lets you start direct conversations with as many property owners as you like, with no per-property fee.",
+    a: "Subscribing to the Direct Access Pass lets you start direct conversations with as many property owners as you like for 30 days, with no per-property fee. See the Pricing page for the current cost.",
   },
   {
     q: "What happens when my pass expires?",

@@ -1416,6 +1416,87 @@ credentials the same way the payment provider is blocked in
   fixed locally (gitignored, no effect on the deployed app) by pointing
   it at `:3000` to match.
 
+## De-emphasize the $5 price mention; search/display communities (post-Milestone-8)
+
+Two fixes requested by the user together.
+
+**1. Stop repeating the exact subscription price everywhere.** Confirmed
+scope via `AskUserQuestion`: remove the literal "$5" from marketing copy
+*and* the pricing page's own copy/price tag *and* the paywall dialog, but
+keep it on the legal Terms/Subscription Terms pages and the checkout
+confirmation screen — those are the actual contract/payment-confirmation
+moments, where stating the real charge is expected and appropriate.
+
+- Changed to generic "Subscribe"/"the subscription" language: `app/
+  page.tsx` (homepage "How it works" step + hero subhead), `app/about/
+  page.tsx`, `app/help/page.tsx` (FAQ answer), `app/how-it-works/
+  page.tsx`, `components/properties/ContactOwnerForm.tsx` (hint line),
+  `app/pricing/page.tsx` (the `passColumn` bullet, the big price-tag
+  display — now "Unlimited messaging / for 30 days" instead of a dollar
+  figure, and the Subscribe button's label), and `components/
+  subscriptions/SubscriptionGateDialog.tsx` (same price-tag treatment,
+  plus reworded the agent-fee comparison line so it still makes sense
+  without stating the pass price).
+- **Deliberately left unchanged**: `app/legal/terms/page.tsx`, `app/
+  legal/subscription-terms/page.tsx`, and `app/checkout/mock/page.tsx`
+  (all still state the real `subscriptionPlan.priceUsd`) — confirmed
+  with the user specifically before touching these, since removing the
+  price from a legal contract page or a payment-confirmation screen is a
+  materially different decision than cleaning up marketing copy.
+- **Also deliberately left unchanged**: `components/subscriptions/
+  SavingsCalculator.tsx` (the interactive slider on `/pricing` comparing
+  agent fees to the pass). Its entire purpose is showing the real dollar
+  savings — `formatUsd(passPriceUsd)` is both displayed directly and
+  trivially inferable from the two other numbers the calculator already
+  shows (agent cost and savings), so hiding it would be security-theater
+  obfuscation that breaks the feature's reason for existing, not a
+  meaningful change in what's disclosed. Flagged to the user rather than
+  silently left out of scope.
+- No change to any Server Action, the actual charge amount computed
+  server-side, or `lib/config/brand.ts`'s `subscriptionPlan.priceUsd`
+  itself — this is a copy-only change; money logic is untouched.
+
+**2. Search and display by community, not just city.** `property.
+community` already existed in the schema and was already shown on
+`PropertyCard`/the property detail page (`[community, city, county]`,
+joined) — that part was already done in an earlier wave. What was
+missing: it wasn't searchable. `searchProperties` (`services/
+properties.ts`) only matched the `city` column; a renter searching for a
+real community/neighbourhood name (e.g. "Sinkor") would get no results
+unless that name happened to also be stored as a property's `city`.
+
+- `services/properties.ts`: the `city` search param now matches `city`
+  **or** `community` via `.or("city.ilike...,community.ilike...")` — many
+  listings' `city` is just "Monrovia" for every community, so community
+  is often the more specific, more useful match.
+- `components/properties/SearchFilters.tsx`: the "City" field relabeled
+  "City or community" with an updated placeholder.
+- `components/properties/HeroSearch.tsx`: the location input's
+  (`sr-only`) label updated to match, for consistency.
+- No schema change, no new URL param — reuses the existing `city`
+  search param and input, now matching a broader (and more useful) set
+  of columns.
+
+Both fixes verified together:
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (36/36) all clean.
+- Live Playwright pass against the real Supabase project: confirmed via
+  `/pricing`, `/`, `/about`, `/help`, `/how-it-works` that none of their
+  rendered body text contains "$5", while `/legal/terms` and `/legal/
+  subscription-terms` still do; confirmed the checkout confirmation
+  screen still shows the real charge amount (unchanged code path);
+  confirmed the paywall dialog (triggered by a seeded test renter
+  messaging a seeded listing) renders "Unlimited messaging / for 30
+  days" with no "$5" anywhere in its content. Confirmed community search
+  against the live demo listings: searching "Old Road" (a community)
+  returns only the one Sinkor listing in that community, not the other
+  Sinkor listing in a different community ("Tubman Boulevard"), while
+  searching "Sinkor" (the city) still returns both — regression-checked
+  against the pre-existing city-only behavior. All seeded test data
+  (one renter account, its `property_views` row, which has a
+  no-cascade FK to `auth.users` and had to be deleted explicitly before
+  the user row itself would delete) fully cleaned up afterward.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

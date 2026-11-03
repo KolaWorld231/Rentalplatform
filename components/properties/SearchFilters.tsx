@@ -70,7 +70,12 @@ function FilterFields({
         </select>
       </label>
 
-      <Input label="City" name="city" defaultValue={defaults.city} placeholder="e.g. Monrovia" />
+      <Input
+        label="City or community"
+        name="city"
+        defaultValue={defaults.city}
+        placeholder="e.g. Monrovia or Sinkor"
+      />
 
       <label className="flex flex-col gap-1.5 text-sm font-medium text-charcoal-700">
         Property type

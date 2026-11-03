@@ -9,7 +9,7 @@ export const metadata = { title: "How It Works" };
 
 const renterSteps = [
   { icon: Search, title: "Search for free", body: "Filter by location, price, and property type — no account required to browse." },
-  { icon: MessageCircle, title: "Unlock messaging", body: `Get the ${subscriptionPlan.name} for $${subscriptionPlan.priceUsd} and message as many owners as you want for ${subscriptionPlan.durationDays} days.` },
+  { icon: MessageCircle, title: "Unlock messaging", body: `Subscribe to the ${subscriptionPlan.name} and message as many owners as you want for ${subscriptionPlan.durationDays} days.` },
   { icon: CheckCircle2, title: "Verify before you commit", body: "Check disclosed costs, ask questions, and inspect the property before paying anything." },
 ];
 

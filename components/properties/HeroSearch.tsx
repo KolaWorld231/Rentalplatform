@@ -49,7 +49,7 @@ export function HeroSearch({ counties = [] }: { counties?: string[] }) {
         <div className="flex flex-1 items-center gap-2 px-2">
           <Search className="h-5 w-5 shrink-0 text-charcoal-400" aria-hidden="true" />
           <label htmlFor="hero-city" className="sr-only">
-            City or neighborhood
+            City or community
           </label>
           <input
             id="hero-city"

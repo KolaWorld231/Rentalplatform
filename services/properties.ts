@@ -47,7 +47,11 @@ export async function searchProperties(
     query = query.textSearch("title", params.q, { type: "websearch", config: "english" });
   }
   if (params.county) query = query.eq("county", params.county);
-  if (params.city) query = query.ilike("city", `%${params.city}%`);
+  // "city" doubles as a general location filter: a renter searching for a
+  // community/neighbourhood name (e.g. "Sinkor") expects that to match,
+  // not just the city column -- community is the more specific of the
+  // two, and many listings' city is just "Monrovia" for every community.
+  if (params.city) query = query.or(`city.ilike.%${params.city}%,community.ilike.%${params.city}%`);
   if (params.category) query = query.eq("category", params.category);
   if (params.minPrice !== undefined) query = query.gte("rent_amount", params.minPrice);
   if (params.maxPrice !== undefined) query = query.lte("rent_amount", params.maxPrice);
