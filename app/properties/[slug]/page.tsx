@@ -19,12 +19,14 @@ import {
   formatUsd,
   isRecentlyPublished,
 } from "@/lib/utils/format";
-import { getSimilarProperties, recordPropertyView, type PropertyWithImages } from "@/services/properties";
+import { hasActiveSearchFilters, searchParamsSchema } from "@/lib/validation/property";
+import { getSimilarProperties, recordPropertyView, searchProperties, type PropertyWithImages } from "@/services/properties";
 
 const NEW_LISTING_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 type PropertyDetail = PropertyWithImages & { profiles: { display_name: string } | null };
@@ -57,7 +59,7 @@ const AMENITIES: { key: keyof NonNullable<Awaited<ReturnType<typeof getProperty>
   { key: "has_security", label: "Security", icon: ShieldCheck },
 ];
 
-export default async function PropertyDetailPage({ params }: PageProps) {
+export default async function PropertyDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const property = await getProperty(slug);
   if (!property) notFound();
@@ -80,7 +82,19 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     isFavourited = !!data;
   }
 
-  const similar = await getSimilarProperties(supabase, property);
+  const rawSearchParams = await searchParams;
+  const flatSearchParams = Object.fromEntries(
+    Object.entries(rawSearchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
+  );
+  const parsedSearch = searchParamsSchema.safeParse(flatSearchParams);
+  const fromSearch = parsedSearch.success && hasActiveSearchFilters(parsedSearch.data);
+
+  const similarTitle = fromSearch ? "More from your search" : "Similar properties";
+  const similar = fromSearch
+    ? (await searchProperties(supabase, { ...parsedSearch.data, page: 1 })).properties
+        .filter((p) => p.id !== property.id)
+        .slice(0, 4)
+    : await getSimilarProperties(supabase, property);
   const images = [...property.property_images].sort((a, b) => a.position - b.position);
 
   const upfrontItems = [
@@ -236,7 +250,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
       {similar.length > 0 && (
         <section className="mt-12">
-          <h2 className="font-display text-xl font-semibold text-charcoal-700">Similar properties</h2>
+          <h2 className="font-display text-xl font-semibold text-charcoal-700">{similarTitle}</h2>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {similar.map((p) => (
               <PropertyCard key={p.id} property={p} />

@@ -20,7 +20,7 @@ export default function AboutPage() {
           </p>
           <p>
             Property owners list for free. Renters browse and search for free. To message an owner
-            directly, a renter unlocks a 30-day Direct Access Pass for $5 — one flat cost to contact
+            directly, a renter subscribes to a 30-day Direct Access Pass — one flat cost to contact
             as many owners as they need, instead of paying per viewing.
           </p>
           <p>

@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { PropertyCardSkeleton } from "@/components/ui/Skeleton";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { searchParamsSchema } from "@/lib/validation/property";
+import { searchFilterQueryString, searchParamsSchema } from "@/lib/validation/property";
 import { searchProperties } from "@/services/properties";
 
 export const metadata = { title: "Search Properties" };
@@ -50,6 +50,7 @@ async function SearchResults({
   );
   const parsed = searchParamsSchema.safeParse(flatParams);
   const params = parsed.success ? parsed.data : searchParamsSchema.parse({});
+  const searchQueryString = searchFilterQueryString(params);
 
   const supabase = await createClient();
   const [{ properties, total, page, pageSize }, user] = await Promise.all([
@@ -112,6 +113,7 @@ async function SearchResults({
                     property={property}
                     isFavourited={favouritedIds.has(property.id)}
                     isVerified={verifiedFlags[i]}
+                    searchQuery={searchQueryString}
                   />
                 ))}
               </div>

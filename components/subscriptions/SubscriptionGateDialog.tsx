@@ -36,14 +36,15 @@ export function SubscriptionGateDialog({
         </p>
 
         <div className="w-full rounded-[var(--radius-lg)] bg-ivory-100 p-5 shadow-[var(--shadow-clay-raised)]">
-          <p className="font-display text-3xl font-semibold text-brand-800">
-            ${subscriptionPlan.priceUsd}{" "}
-            <span className="text-base font-normal text-charcoal-400">
-              / {subscriptionPlan.durationDays} days
+          <p className="font-display text-2xl font-semibold text-brand-800">
+            Unlimited messaging
+            <span className="block text-base font-normal text-charcoal-400">
+              for {subscriptionPlan.durationDays} days
             </span>
           </p>
           <p className="mt-1 text-xs text-charcoal-400">
-            vs. $30–40 per viewing through an agent — for every owner you contact.
+            One subscription — cheaper than paying per viewing through an agent, for every owner
+            you contact.
           </p>
           <ul className="mx-auto mt-4 flex max-w-xs flex-col gap-1.5 text-left">
             {benefits.map((b) => (
