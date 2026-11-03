@@ -1650,6 +1650,86 @@ because the live project's phone provider isn't turned on yet.
   erroring in the UI layer; confirmed the phone tab renders correctly on
   `/login` too.
 
+## Dark-mode fix round 2: hardcoded-light panels (post-Milestone-8)
+
+The user sent screenshots from the live preview showing nav links and
+the register page's subhead text invisible/very low-contrast in dark
+mode — a regression the earlier dark-mode fix (PR #3, this document's
+"Dark-mode text contrast fix" entry) didn't catch.
+
+**Root cause**: that earlier fix correctly flips
+`--color-charcoal-700/500/400` for dark mode, which fixes everything
+built on the theme-aware `bg-surface`/`--background` tokens — the vast
+majority of the app, already verified working. But several specific
+components use a **hardcoded, always-light** background class
+(`bg-ivory-100` or `bg-ivory-50`) that never participates in that flip,
+while still using the now-theme-flipping `text-charcoal-*` classes
+inside them — light-on-light in dark mode. Found by grepping every
+`bg-ivory-*` usage and checking which ones pair with `charcoal-*` text:
+`components/layout/Header.tsx`'s sticky header bar and mobile dropdown
+nav (the actual bug in the screenshots), `components/ui/Card.tsx`'s
+`CardClay` (used on `/about`), `components/subscriptions/
+SavingsCalculator.tsx`'s and `SubscriptionGateDialog.tsx`'s inner
+highlight boxes, and `components/properties/HeroSearch.tsx`'s search
+bar.
+
+Also checked and ruled out: `app/layout.tsx`'s `<body className="...
+bg-ivory-100 text-charcoal-700">` looks like the same bug but isn't — a
+plain, unlayered `body { background: var(--background); color:
+var(--foreground); }` rule already exists in `app/globals.css` (not
+inside any `@layer`), and per the CSS cascade-layers spec, unlayered
+rules always beat Tailwind's own layered utility classes regardless of
+specificity, so those two Tailwind classes on `<body>` are dead code,
+not a live bug.
+
+**Why not just flip the `ivory-*` tokens too**, the same mechanism used
+for `charcoal-*`: `ivory-50`/`ivory-100` are dual-purpose in this
+codebase — also used as `text-ivory-50` for white text on dark/colored
+surfaces (the hero, badges, overlays), which must *stay* light in both
+themes. Flipping the shared CSS variable would have fixed the
+backgrounds above but broken every `text-ivory-50`-on-dark-hero usage
+elsewhere.
+
+**Fix, component by component** (confirmed no `dark:` Tailwind variant
+was used anywhere in the codebase yet, and no `@custom-variant`
+override exists, so Tailwind v4's default `dark:` →
+`@media (prefers-color-scheme: dark)` variant was available and unused):
+- `Header.tsx` (sticky bar + mobile nav) and `HeroSearch.tsx` (search
+  bar): swapped the hardcoded `bg-ivory-100`/`bg-ivory-50` for
+  `bg-surface` — `--color-surface` is `#ffffff` in light mode
+  (`ivory-50` *is* `#ffffff`; `ivory-100`'s `#f7f6f6` is visually
+  indistinguishable from it) and already correctly flips to `#1a1a1a` in
+  dark mode. Zero visual change in light mode, correct in dark mode, no
+  new CSS.
+- `CardClay`, `SavingsCalculator`'s and `SubscriptionGateDialog`'s inner
+  highlight boxes: these are nested panels meant to look a shade
+  different from their parent `Card` (not just "the same as
+  everything else"), so swapping to `bg-surface` would have erased that
+  intentional nested contrast in *both* themes. Kept `bg-ivory-100` for
+  light mode, added `dark:bg-[#242424]` for dark mode — one step
+  lighter than `--color-surface`'s dark value, mirroring the same
+  "slightly lighter than Card" relationship `ivory-100` has to Card's
+  white in light mode.
+- No change to `app/globals.css`'s token definitions — this fix is
+  entirely component-level, keeping the dual-purpose `ivory-*` tokens'
+  other (correct) usages untouched.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (41/41) all clean.
+- Live Playwright pass against the real Supabase project with
+  `colorScheme: "dark"` emulation, computing actual WCAG contrast ratios
+  (not just "some color is set") between each fixed element's text and
+  its effective background: mobile nav links 15.27:1, desktop nav (visual
+  screenshot, confirmed legible), `/about`'s `CardClay` paragraph
+  14.39:1, `/pricing`'s savings-calculator label 4.62:1, the hero search
+  input 15.27:1 — all comfortably above the ~2.5:1 floor used as the
+  pass bar (most far exceed WCAG AA's 4.5:1). Also confirmed `colorScheme:
+  "light"` renders pixel-identical to before for the desktop header and
+  the pricing-page highlight box (no regression).
+- Re-pointed the `domilink-preview.vercel.app` Vercel alias to the new
+  deployment after merging, same recurring step as every prior wave this
+  session (this project doesn't auto-promote `main` merges to that
+  domain).
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

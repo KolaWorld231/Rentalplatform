@@ -37,7 +37,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-border bg-ivory-100/95 backdrop-blur transition-shadow duration-200",
+        "sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur transition-shadow duration-200",
         scrolled && "shadow-[var(--shadow-subtle)]",
       )}
     >
@@ -128,7 +128,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
 
       {open && (
         <nav
-          className="animate-dropdown-in border-t border-border bg-ivory-100 px-4 py-4 md:hidden"
+          className="animate-dropdown-in border-t border-border bg-surface px-4 py-4 md:hidden"
           aria-label="Mobile"
         >
           <ul className="flex flex-col gap-3">
