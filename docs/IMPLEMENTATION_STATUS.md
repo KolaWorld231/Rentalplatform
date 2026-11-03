@@ -1551,6 +1551,105 @@ existing category/county similarity only when there's no search context
   end-to-end, with the current listing never appearing in its own
   related list.
 
+## "Choose your intent first" sign-up popup + phone sign-up/sign-in (post-Milestone-8)
+
+Two requests from the user together: a popup asking "Find a property" vs
+"List a property" before the sign-up form appears (rather than only as
+an inline choice on `/register` itself), and phone number sign-up/
+sign-in for markets with low active email usage — this is the phone/SMS
+OTP option researched (not built) in `docs/AUTH_ALTERNATIVES.md`'s
+earlier wave.
+
+**1. Intent-choice popup.** Confirmed scope with the user: every generic
+sign-up entry point gets the popup; links that already declare an intent
+(e.g. "List Your Property — Free" → `/register?intent=owner`) keep going
+straight to the pre-filled form, unchanged.
+
+- **`components/auth/IntentChoiceDialog.tsx`** (new): wraps the existing
+  `Dialog` component, renders a trigger (`children`/`className` passed
+  through to a plain `<button>`) and, on click, a two-card choice —
+  visually matching the same renter/owner card styling already used
+  inline on `/register` — each linking to `/register?intent=renter` or
+  `?intent=owner`.
+- Wired into `components/layout/Header.tsx` (both the desktop and
+  mobile-menu "Get started" buttons) and `app/(auth)/login/page.tsx`'s
+  "Create an account" link. `app/page.tsx` and `app/how-it-works/
+  page.tsx`'s "List Your Property" CTAs are untouched — they already
+  declare `intent=owner` directly.
+- One real bug found and fixed during live verification: the mobile
+  header's "Get started" button initially also called `setOpen(false)`
+  to close the hamburger menu before opening the dialog — since the
+  mobile nav (and the `IntentChoiceDialog` instance inside it) is only
+  rendered via `{open && (...)}`, closing the menu in the same
+  synchronous handler unmounted the dialog before its own `open` state
+  could take effect, so the popup never appeared. Fixed by not closing
+  the mobile menu at all when opening the dialog — the native
+  `<dialog>`'s top-layer rendering already covers it visually, so there
+  was nothing to actually fix by closing it first.
+
+**2. Phone sign-up/sign-in.** Unlike passkeys, this needs no custom
+session-minting trick — `supabase.auth.signInWithOtp({ phone })` /
+`verifyOtp({ phone, token, type: "sms" })` are first-class Supabase Auth
+methods. It does need a real SMS provider (Twilio/etc.) configured on
+the project to actually deliver codes to real numbers, confirmed with
+the user up front — built the same way the payment system was: fully
+wired end-to-end, code-complete and tested, inert for real users only
+because the live project's phone provider isn't turned on yet.
+
+- **`lib/validation/auth.ts`**: `phoneNumberSchema` (E.164 format, e.g.
+  `+231770000000`), `phoneSignupSchema` (displayName + phone + intent),
+  `phoneLoginSchema` (phone only), `phoneOtpSchema` (phone + 6-digit
+  token + mode).
+- **`lib/auth/phone-actions.ts`** (new): `startPhoneSignupAction`
+  (`signInWithOtp` with `shouldCreateUser: true`, stashing
+  `display_name`/`pending_intent` in the auth user's metadata — the
+  `handle_new_user` trigger already reads `display_name` from there, as
+  it does for email signup); `startPhoneLoginAction`
+  (`shouldCreateUser: false`); `verifyPhoneOtpAction` (`verifyOtp`, then
+  grants the `owner` role from `pending_intent` when present — a no-op
+  for a plain login, mirroring `registerAction`'s intent → role logic —
+  and redirects to `/onboarding/welcome` or `/` depending on mode).
+- **`components/auth/PhoneAuthForm.tsx`** (new): shared two-step
+  (phone → code) client component used by both `/register` (phone tab,
+  alongside the existing passkey/password tabs) and `/login` (phone tab,
+  alongside the existing password form and passkey quick-button). Step
+  is derived from `startState.otpSent`, not tracked as its own
+  effect-driven state, matching the `react-hooks/set-state-in-effect`
+  lint rule this project has hit (and fixed the same way) twice before
+  this session.
+- **`lib/auth/field-errors.ts`** (new): `firstFieldErrors` moved out of
+  `lib/auth/actions.ts` into its own plain module — a `"use server"`
+  file may only export async functions, and adding `phone-actions.ts`'s
+  import of this shared helper from the server-actions file itself broke
+  the production build (`next build` failed: "Ecmascript file had an
+  error") the moment it was exported there. Both `lib/auth/actions.ts`
+  and `lib/auth/phone-actions.ts` now import it from the new module.
+- **Tried, and declined, to enable the live project's phone provider**
+  myself via the Management API (to test the real send/verify flow
+  against Supabase's test-OTP numbers) — blocked by the harness's own
+  safety classifier as a security-sensitive change to live auth
+  settings, correctly so. Documented for the user instead: enable it
+  under Supabase Dashboard → Authentication → Providers → Phone, and
+  optionally configure a Test OTP number/code under Authentication →
+  Settings to exercise the flow without a real SMS provider yet.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (41/41 — 5 new phone-schema cases) all clean. The `firstFieldErrors`
+  export-location bug above was caught by `npm run build` specifically —
+  `tsc --noEmit` and `eslint` both passed on the broken version, a
+  reminder that this project's four-command verification sequence
+  (`tsc` → `lint` → `build` → `test`) catches different failure classes.
+- Live Playwright pass against the real Supabase project: confirmed the
+  header's desktop and mobile "Get started" buttons and the login page's
+  "Create an account" link all open the intent popup and correctly
+  navigate to `/register?intent=owner`/`?intent=renter` on choice with
+  that intent pre-selected; confirmed "List Your Property" CTAs remain
+  direct links with no popup; confirmed the phone sign-up form renders,
+  accepts a valid-format number, and fails with a clear, non-crashing
+  error message (since the live project's phone provider is still off) —
+  confirming the wiring reaches Supabase correctly end-to-end rather than
+  erroring in the UI layer; confirmed the phone tab renders correctly on
+  `/login` too.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
@@ -1613,8 +1712,14 @@ credentials or input, not more engineering time against this codebase.
 - **Email/SMS providers**: unconfigured; in-app notifications work without
   them, transactional email/SMS is documented but inactive until credentials
   are supplied.
-- **SMS/WhatsApp provider for low-email-market auth**: see
-  `docs/AUTH_ALTERNATIVES.md` — phone/SMS OTP and WhatsApp OTP are
-  researched and ready to build, blocked on choosing and contracting a
-  provider with confirmed Liberia coverage (same shape of decision as the
-  payment provider above).
+- **SMS/WhatsApp provider for low-email-market auth**: phone sign-up/
+  sign-in is now built and code-complete (`lib/auth/phone-actions.ts`,
+  `components/auth/PhoneAuthForm.tsx`) but **inert** — the live
+  project's phone auth provider is still turned off. Enable it under
+  Supabase Dashboard → Authentication → Providers → Phone (optionally
+  set a Test OTP number/code under Authentication → Settings to try it
+  without a real SMS provider first), then add real SMS provider
+  credentials there when ready — no further code changes needed either
+  time. WhatsApp OTP remains researched-only in
+  `docs/AUTH_ALTERNATIVES.md`, blocked on a Meta Business API setup, a
+  bigger lift than phone/SMS.

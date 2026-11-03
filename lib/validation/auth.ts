@@ -35,3 +35,27 @@ export const passkeyLabelSchema = z.object({
   label: z.string().trim().min(1).max(60).optional(),
 });
 export type PasskeyLabelInput = z.infer<typeof passkeyLabelSchema>;
+
+export const phoneNumberSchema = z
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{6,14}$/, "Enter your phone number in international format, e.g. +231770000000");
+
+export const phoneSignupSchema = z.object({
+  displayName: z.string().trim().min(2, "Enter your name").max(80),
+  phone: phoneNumberSchema,
+  intent: z.enum(["renter", "owner"]),
+});
+export type PhoneSignupInput = z.infer<typeof phoneSignupSchema>;
+
+export const phoneLoginSchema = z.object({
+  phone: phoneNumberSchema,
+});
+export type PhoneLoginInput = z.infer<typeof phoneLoginSchema>;
+
+export const phoneOtpSchema = z.object({
+  phone: phoneNumberSchema,
+  token: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code"),
+  mode: z.enum(["signup", "login"]),
+});
+export type PhoneOtpInput = z.infer<typeof phoneOtpSchema>;

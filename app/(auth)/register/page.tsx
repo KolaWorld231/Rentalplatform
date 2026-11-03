@@ -2,7 +2,7 @@
 
 import { startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
-import { Fingerprint, Home, KeyRound, Search } from "lucide-react";
+import { Fingerprint, Home, KeyRound, Phone, Search } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useActionState, useState } from "react";
 import { type ActionState, registerAction } from "@/lib/auth/actions";
@@ -11,6 +11,7 @@ import { usePasskeySupport } from "@/lib/auth/use-passkey-support";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { PhoneAuthForm } from "@/components/auth/PhoneAuthForm";
 import { cn } from "@/lib/utils/cn";
 import { useSearchParams } from "next/navigation";
 
@@ -24,6 +25,8 @@ export default function RegisterPage() {
   );
 }
 
+type Method = "password" | "passkey" | "phone";
+
 function RegisterForm() {
   const searchParams = useSearchParams();
   const defaultIntent = searchParams.get("intent") === "owner" ? "owner" : "renter";
@@ -32,7 +35,7 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [state, formAction, pending] = useActionState(registerAction, initialState);
   const passkeySupported = usePasskeySupport();
-  const [method, setMethod] = useState<"password" | "passkey">("password");
+  const [method, setMethod] = useState<Method>("password");
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
 
@@ -65,7 +68,8 @@ function RegisterForm() {
     }
   }
 
-  const sharedFieldsValid = displayName.trim().length >= 2 && /\S+@\S+\.\S+/.test(email);
+  const nameValid = displayName.trim().length >= 2;
+  const emailValid = /\S+@\S+\.\S+/.test(email);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
@@ -123,19 +127,25 @@ function RegisterForm() {
           error={state.fieldErrors?.displayName}
           className="mt-4"
         />
-        <Input
-          label="Email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={state.fieldErrors?.email}
-          className="mt-4"
-        />
 
-        {passkeySupported && (
-          <fieldset className="mt-4 grid grid-cols-2 gap-2" aria-label="How to sign up">
+        {method !== "phone" && (
+          <Input
+            label="Email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={state.fieldErrors?.email}
+            className="mt-4"
+          />
+        )}
+
+        <fieldset
+          className={cn("mt-4 grid gap-2", passkeySupported ? "grid-cols-3" : "grid-cols-2")}
+          aria-label="How to sign up"
+        >
+          {passkeySupported && (
             <button
               type="button"
               onClick={() => setMethod("passkey")}
@@ -148,22 +158,34 @@ function RegisterForm() {
               <Fingerprint className="h-4 w-4" aria-hidden="true" />
               Passkey
             </button>
-            <button
-              type="button"
-              onClick={() => setMethod("password")}
-              aria-pressed={method === "password"}
-              className={cn(
-                "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-                method === "password" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
-              )}
-            >
-              <KeyRound className="h-4 w-4" aria-hidden="true" />
-              Password
-            </button>
-          </fieldset>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={() => setMethod("password")}
+            aria-pressed={method === "password"}
+            className={cn(
+              "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
+              method === "password" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+            )}
+          >
+            <KeyRound className="h-4 w-4" aria-hidden="true" />
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => setMethod("phone")}
+            aria-pressed={method === "phone"}
+            className={cn(
+              "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
+              method === "phone" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+            )}
+          >
+            <Phone className="h-4 w-4" aria-hidden="true" />
+            Phone
+          </button>
+        </fieldset>
 
-        {passkeySupported && method === "passkey" ? (
+        {method === "passkey" && (
           <div className="mt-4 flex flex-col gap-3">
             <p className="text-xs text-charcoal-500">
               Use your device&apos;s fingerprint, face, or screen lock instead of a password.
@@ -176,7 +198,7 @@ function RegisterForm() {
             <Button
               type="button"
               loading={passkeyPending}
-              disabled={!sharedFieldsValid}
+              disabled={!nameValid || !emailValid}
               onClick={handlePasskeySignup}
               className="w-full"
             >
@@ -184,7 +206,15 @@ function RegisterForm() {
               Continue with a passkey
             </Button>
           </div>
-        ) : (
+        )}
+
+        {method === "phone" && (
+          <div className="mt-4">
+            <PhoneAuthForm mode="signup" displayName={displayName} intent={intent} />
+          </div>
+        )}
+
+        {method === "password" && (
           <form action={formAction} className="mt-4 flex flex-col gap-4">
             <input type="hidden" name="intent" value={intent} />
             <input type="hidden" name="displayName" value={displayName} />
@@ -205,7 +235,7 @@ function RegisterForm() {
               </p>
             )}
 
-            <Button type="submit" loading={pending} disabled={!sharedFieldsValid} className="w-full">
+            <Button type="submit" loading={pending} disabled={!nameValid || !emailValid} className="w-full">
               Create account
             </Button>
           </form>
