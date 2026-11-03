@@ -55,6 +55,27 @@ export const searchParamsSchema = z.object({
 });
 export type SearchParamsInput = z.infer<typeof searchParamsSchema>;
 
+const SEARCH_FILTER_KEYS = ["q", "county", "city", "category", "minPrice", "maxPrice", "bedrooms", "furnished"] as const;
+
+/** The filter-only (no page/sort) subset of a parsed search, as a query
+ * string -- carried from /search result cards into a property's detail
+ * page link so "More from your search" there can reuse the same filters. */
+export function searchFilterQueryString(params: SearchParamsInput): string {
+  const query = new URLSearchParams();
+  for (const key of SEARCH_FILTER_KEYS) {
+    const value = params[key];
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
+  return query.toString();
+}
+
+/** True when `params` reflects an actual applied search (not just page/sort
+ * defaults) -- used to decide whether a property detail page should show
+ * "More from your search" instead of generic category/county similarity. */
+export function hasActiveSearchFilters(params: SearchParamsInput): boolean {
+  return SEARCH_FILTER_KEYS.some((key) => params[key] !== undefined && params[key] !== "");
+}
+
 export const reportPropertySchema = z.object({
   reason: z.enum([
     "fake_listing",

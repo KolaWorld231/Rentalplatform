@@ -1497,6 +1497,60 @@ Both fixes verified together:
   no-cascade FK to `auth.users` and had to be deleted explicitly before
   the user row itself would delete) fully cleaned up afterward.
 
+## "More from your search" on the property detail page (post-Milestone-8)
+
+The user pointed out a property detail page (e.g. the Paynesville house
+listing) had no related-listings section visible below it, and asked for
+one reflecting the visitor's search. A "Similar properties" section
+already existed (`getSimilarProperties` in `services/properties.ts`,
+matching same county + same category) but is hidden when there are zero
+matches — exactly what was happening for that particular listing, since
+it was the only `house`-category listing among the demo data.
+
+Rather than just loosen the similarity heuristic, this carries the
+visitor's actual search filters through to the detail page so the
+section can be literally "more from your search," falling back to the
+existing category/county similarity only when there's no search context
+(e.g. arriving from the homepage's "Recently listed" grid).
+
+- **`lib/validation/property.ts`**: two new helpers alongside
+  `searchParamsSchema` — `searchFilterQueryString(params)` (the
+  filter-only subset — `q`/`county`/`city`/`category`/`minPrice`/
+  `maxPrice`/`bedrooms`/`furnished`, excluding `page`/`sort` — as a query
+  string) and `hasActiveSearchFilters(params)` (true when any of those
+  are actually set, not just defaults).
+- **`components/properties/PropertyCard.tsx`**: new optional
+  `searchQuery` prop, appended to both of its `<Link>` hrefs
+  (`/properties/${slug}?${searchQuery}`) when provided.
+- **`app/search/page.tsx`**: passes `searchFilterQueryString(params)` to
+  every `PropertyCard` in the results grid, so clicking into a listing
+  carries the exact filters that produced it.
+- **`app/properties/[slug]/page.tsx`**: now accepts `searchParams`; when
+  they reflect an active search (`hasActiveSearchFilters`), calls the
+  same `searchProperties` the `/search` page uses with those filters,
+  excludes the current property, and shows up to 4 results under "More
+  from your search." Falls back to the pre-existing
+  `getSimilarProperties`/"Similar properties" behavior when there's no
+  search context at all — unchanged for the homepage/favourites/
+  dashboard cases, where `PropertyCard` is rendered without a
+  `searchQuery`.
+- No schema change, no new Server Action, no change to `searchProperties`
+  itself — purely plumbing the existing search filters through an
+  existing link and an existing query function.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (36/36) all clean.
+- Live Playwright pass against the real Supabase project and its demo
+  listings: confirmed the Paynesville house listing still shows no
+  "Similar properties" section when visited directly (unchanged
+  pre-existing behavior — genuinely zero same-category matches);
+  confirmed visiting it with `?county=Montserrado` in the URL shows
+  "More from your search" with the three other Montserrado demo
+  listings, excluding itself; confirmed clicking its card from an actual
+  `/search?county=Montserrado` results page carries that filter into the
+  detail page URL and renders the same "More from your search" section
+  end-to-end, with the current listing never appearing in its own
+  related list.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,

@@ -19,11 +19,16 @@ export function PropertyCard({
   property,
   isFavourited = false,
   isVerified = false,
+  searchQuery,
 }: {
   property: PropertyWithCover;
   isFavourited?: boolean;
   /** True when the owner's identity or this property's documents are verified (real DB-backed signal only). */
   isVerified?: boolean;
+  /** The current /search query string (e.g. "county=Montserrado&city=Sinkor"),
+   * carried into the detail page link so "More from your search" there can
+   * reuse the same filters instead of falling back to generic similarity. */
+  searchQuery?: string;
 }) {
   const cover = property.property_images.find((img) => img.is_cover) ?? property.property_images[0];
   const orderedPaths = cover
@@ -31,10 +36,11 @@ export function PropertyCard({
     : property.property_images.map((img) => img.storage_path);
   const availability = AVAILABILITY_LABEL[property.availability_status];
   const isNew = isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS);
+  const href = `/properties/${property.slug}${searchQuery ? `?${searchQuery}` : ""}`;
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-raised)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] active:translate-y-0 active:shadow-[var(--shadow-clay-inset)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
-      <Link href={`/properties/${property.slug}`} className="focus-ring block">
+      <Link href={href} className="focus-ring block">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-sage-200">
           <PropertyCardMedia storagePaths={orderedPaths} alt={property.title} />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
@@ -68,7 +74,7 @@ export function PropertyCard({
         <FavouriteButton propertyId={property.id} initialFavourited={isFavourited} />
       </div>
 
-      <Link href={`/properties/${property.slug}`} className="focus-ring flex flex-1 flex-col gap-1.5 p-4">
+      <Link href={href} className="focus-ring flex flex-1 flex-col gap-1.5 p-4">
         <p className="font-display text-lg font-semibold text-charcoal-700">
           {formatUsd(property.rent_amount)}{" "}
           <span className="text-sm font-normal text-charcoal-400">
