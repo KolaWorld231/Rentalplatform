@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/Button";
+import { IntentChoiceDialog } from "@/components/auth/IntentChoiceDialog";
 import { brand } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
 
@@ -108,9 +109,9 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
               <Link href="/login" className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
                 Log in
               </Link>
-              <Link href="/register" className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
+              <IntentChoiceDialog className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
                 Get started
-              </Link>
+              </IntentChoiceDialog>
             </>
           )}
         </div>
@@ -163,9 +164,9 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
                   <Link href="/login" onClick={() => setOpen(false)} className={cn(buttonVariants({ variant: "secondary" }), "flex-1")}>
                     Log in
                   </Link>
-                  <Link href="/register" onClick={() => setOpen(false)} className={cn(buttonVariants({ variant: "primary" }), "flex-1")}>
+                  <IntentChoiceDialog className={cn(buttonVariants({ variant: "primary" }), "flex-1")}>
                     Get started
-                  </Link>
+                  </IntentChoiceDialog>
                 </>
               )}
             </li>

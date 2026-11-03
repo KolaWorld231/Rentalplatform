@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { firstFieldErrors } from "@/lib/auth/field-errors";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import {
@@ -13,15 +14,6 @@ import {
 export interface ActionState {
   error?: string;
   fieldErrors?: Record<string, string>;
-}
-
-function firstFieldErrors(error: { issues: { path: PropertyKey[]; message: string }[] }) {
-  const out: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const key = String(issue.path[0]);
-    if (!out[key]) out[key] = issue.message;
-  }
-  return out;
 }
 
 export async function registerAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

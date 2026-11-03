@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { passkeySignupSchema, registerSchema } from "@/lib/validation/auth";
+import { passkeySignupSchema, phoneNumberSchema, phoneSignupSchema, registerSchema } from "@/lib/validation/auth";
 import { propertyFormSchema, searchParamsSchema } from "@/lib/validation/property";
 
 describe("registerSchema", () => {
@@ -68,6 +68,40 @@ describe("passkeySignupSchema", () => {
       displayName: "Jane Doe",
       email: "jane@example.com",
       intent: "admin",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("phoneNumberSchema", () => {
+  it("accepts a valid E.164 number", () => {
+    expect(phoneNumberSchema.safeParse("+231770000000").success).toBe(true);
+  });
+
+  it("rejects a number without a country code", () => {
+    expect(phoneNumberSchema.safeParse("0770000000").success).toBe(false);
+  });
+
+  it("rejects a non-numeric value", () => {
+    expect(phoneNumberSchema.safeParse("+231abc0000").success).toBe(false);
+  });
+});
+
+describe("phoneSignupSchema", () => {
+  it("accepts a valid phone sign-up", () => {
+    const result = phoneSignupSchema.safeParse({
+      displayName: "Jane Doe",
+      phone: "+231770000000",
+      intent: "renter",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid phone number", () => {
+    const result = phoneSignupSchema.safeParse({
+      displayName: "Jane Doe",
+      phone: "not-a-phone",
+      intent: "renter",
     });
     expect(result.success).toBe(false);
   });
