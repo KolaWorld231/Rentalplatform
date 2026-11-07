@@ -1730,6 +1730,85 @@ override exists, so Tailwind v4's default `dark:` →
   session (this project doesn't auto-promote `main` merges to that
   domain).
 
+## Native mobile app — Foundation milestone (post-Milestone-8)
+
+The user asked for a native iOS/Android app alongside the web product.
+They attached a pasted prompt plus `MASTER_PROJECT_SPEC.md`/`DESIGN.md`
+describing a from-scratch "Crimson Direct" design system and a
+pnpm/Turborepo monorepo rebuild — confirmed via `AskUserQuestion`
+(twice) that the actual scope is narrower: reuse this repo's *existing*
+Claymorphism design tokens and *existing* Supabase backend, no monorepo
+conversion, no richer utility/amenity schema fields, mobile app as a
+standalone project in a new `mobile/` folder (not a workspace). The
+full mobile-app plan (milestones, scope decisions, and the specific
+mockup content this project will *not* ship — fabricated stats, "Safe
+Escrow," unverified security badges, phone numbers exposed platform-
+wide — all flagged against `CLAUDE.md` rule #9 and `docs/SECURITY.md`'s
+actual contact-privacy rule) is recorded in full detail in the plan file
+from that planning session.
+
+This entry covers the **Foundation** milestone only (milestone 1 of 8):
+
+- New `mobile/` Expo project (Expo Router, TypeScript strict,
+  NativeWind) — see `mobile/README.md` for setup and the "keeping in
+  sync with web" rules, since there's deliberately no shared code
+  package between the two apps.
+- `mobile/tailwind.config.js` hand-ported from `app/globals.css`'s
+  actual color/radius values (Bonfire Red `forest-*`, `ivory-*`,
+  `clay-*`, `charcoal-*`, `success/warning/error/info-*`) — not the
+  spec docs' Crimson `#9E1032` palette.
+- Fonts: `@expo-google-fonts/manrope` + `@expo-google-fonts/plus-
+  jakarta-sans`, matching the web app's `next/font` pairing exactly.
+- `mobile/lib/supabase.ts`: `@supabase/supabase-js` pointed at the same
+  live project, anon key only (never the service-role key in a mobile
+  bundle), session persisted via `@react-native-async-storage/async-
+  storage` (not `expo-secure-store` — its ~2KB per-key limit on some
+  platforms is too small for a full session payload; this is Supabase's
+  own documented React Native pattern).
+- `mobile/lib/database.types.ts`: hand-ported subset of `types/
+  database.ts` (just `profiles`/`user_roles` so far — extended table-by-
+  table as later milestones need them, same "no `supabase gen types` in
+  CI yet" reasoning as the web types file).
+- Tab navigation (Home/Search/Saved/Messages) mirroring the web header's
+  own four tabs; every screen besides Home is a placeholder stating
+  which later milestone implements it.
+- **Real bugs hit and fixed while standing this up** (all upstream
+  tooling/config issues, not application-logic bugs):
+  - `babel-preset-expo` and `react-native-reanimated/plugin` were
+    present only nested inside `expo`'s own `node_modules` (not hoisted
+    to the project root), so Babel's config-file-relative module
+    resolution couldn't find them from `mobile/babel.config.js` even
+    though `npm ls` showed them as installed — fixed by installing both
+    as direct top-level dependencies so npm hoists them.
+  - `npx expo-doctor` caught a missing peer dependency
+    (`react-native-worklets`, required by `react-native-reanimated`)
+    and a major-version mismatch (`@react-native-async-storage/async-
+    storage` resolved to `3.1.1` against SDK 58's expected `2.2.0`) —
+    both fixed (`npx expo install react-native-worklets` and `npx expo
+    install --fix`); `expo-doctor` now reports 20/20 checks passing.
+  - Running the app with `--web` (used only as a fast smoke-test loop in
+    this sandbox, which has no iOS/Android simulator available) hits an
+    uncaught error from `react-native-css-interop`'s web runtime: an
+    internal `MutationObserver` callback calls `colorScheme.set()`
+    unconditionally once it detects `darkMode: "media"`, but that same
+    method throws precisely when `darkMode === "media"` — an upstream
+    library inconsistency in the DOM-only code path, confirmed by
+    reading `node_modules/react-native-css-interop/dist/runtime/web/
+    color-scheme.js` directly. This code path only exists when
+    `globalThis.window` is present (i.e., only on web); it does not run
+    on iOS/Android. Confirmed the real target platforms are unaffected
+    by building actual bundles for both — `npx expo export --platform
+    ios` and `--platform android` both completed successfully (3835
+    modules, iOS/Android `.hbc` bundles produced, no errors) — so this
+    is logged as a known web-smoke-test-only quirk, not a blocker for
+    the app's actual platforms.
+- `npx tsc --noEmit` and `npx expo lint` both clean.
+
+Remaining 7 milestones (Auth, Browse & search, Direct Access Pass,
+Messaging, Verification & trust, Owner mode, Polish & release
+readiness) are tracked in the plan file referenced above, not yet
+started.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
