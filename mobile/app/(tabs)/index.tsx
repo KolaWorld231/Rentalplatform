@@ -27,6 +27,9 @@ export default function HomeScreen() {
             <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">
               Signed in as {user.email ?? user.phone}
             </Text>
+            <Link href="/verification" asChild>
+              <Button variant="secondary">Verification center</Button>
+            </Link>
             <Button variant="secondary" onPress={() => logoutAction()}>
               Log out
             </Button>
@@ -79,7 +82,7 @@ export default function HomeScreen() {
 
       <Card className="p-4">
         <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
-          Messaging and owner mode land in later milestones.
+          Owner mode lands in a later milestone.
         </Text>
       </Card>
     </ScrollView>

@@ -2034,9 +2034,61 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   warning), and `npx expo export --platform ios/android` (both bundle
   cleanly) all pass.
 
-Remaining 3 milestones (Verification & trust, Owner mode, Polish &
-release readiness) are tracked in the plan file referenced above, not
-yet started.
+### Verification & trust milestone (milestone 6 of 8)
+
+- **No new RPC needed** — same reasoning as Messaging: every write
+  (`identity_verification_requests`/`property_verification_requests`
+  self-insert, `private_verification_documents` self-insert, the
+  private `verification-documents` Storage bucket's own object-level
+  RLS) is already scoped to the caller by plain RLS policies on the
+  web app's own M6 migration, so mobile's anon client can make them
+  directly — nothing to duplicate in SQL.
+- `mobile/lib/verification/service.ts`: `submitIdentityVerification`/
+  `submitPropertyVerification` (hand-ported from `app/dashboard/
+  verification/actions.ts`), `uploadVerificationDocument`, and
+  `isIdentityVerified`/`isPropertyVerified` (the same anon-callable
+  `is_identity_verified`/`is_property_verified` RPCs web already
+  uses). Upload reads the captured photo as base64
+  (`expo-file-system`'s legacy API) and decodes it to an `ArrayBuffer`
+  (`base64-arraybuffer`, a new dependency) before calling
+  `storage.upload()` — React Native has no `fetch(uri).blob()` path
+  reliable enough for this across Expo versions, so this is the
+  documented Supabase-on-React-Native pattern, not a web port.
+- `app/verification.tsx` (new route): identity verification card
+  (submit → camera capture via `expo-image-picker`, a new dependency →
+  status), and one card per owned property reusing the same submit/
+  capture flow — mirrors `app/dashboard/verification/page.tsx`'s
+  structure. Same disclosure line as web: "not a guarantee of legal
+  ownership." Home screen links to it for signed-in users.
+- `components/verification/VerificationBadge.tsx`: hand-ported badge,
+  shown on the property detail screen next to the price once
+  `isIdentityVerified`/`isPropertyVerified` independently confirm
+  `verified` — never derived from anything client-supplied, same rule
+  as web's version.
+- No document *viewer* was built on mobile this milestone (web's
+  signed-URL `DocumentLink` flow) — storage RLS already lets the
+  uploader (or a moderator/admin) `.download()` their own documents
+  directly with the anon client, confirmed below, but the mobile UI
+  for actually viewing a downloaded photo is deferred; listing the
+  document count, as web's own uploader does, was judged sufficient
+  for this milestone.
+- **Live-verified** against the real Supabase project: confirmed a
+  real identity verification request can be submitted and starts
+  `submitted`, confirmed the anon client can upload real file bytes
+  to the private bucket and record the document row, confirmed a
+  stranger can read neither the document's metadata (RLS) nor
+  download the file itself (storage RLS — Supabase returns "object
+  not found" rather than a permission error, which is itself the
+  correct anti-enumeration behavior, not a bug), confirmed
+  `is_identity_verified` reads `false` before a moderator verifies the
+  request and `true` immediately after. Test accounts, document, and
+  request rows deleted after.
+- `npx tsc --noEmit` and `npx expo lint` (0 errors, same pre-existing
+  warning) pass; `npx expo export --platform ios/android` both bundle
+  cleanly.
+
+Remaining 2 milestones (Owner mode, Polish & release readiness) are
+tracked in the plan file referenced above, not yet started.
 
 ## Overall production-readiness summary
 

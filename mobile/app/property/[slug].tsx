@@ -11,6 +11,8 @@ import { formatCategory, formatRentalFrequency, formatUsd } from "../../lib/form
 import { startOrContinueConversation } from "../../lib/messaging/service";
 import { getPropertyBySlug, getSimilarProperties, toggleFavourite, getFavouritedPropertyIds } from "../../lib/properties/service";
 import { propertyImageUrl } from "../../lib/storage";
+import { isIdentityVerified, isPropertyVerified } from "../../lib/verification/service";
+import { VerificationBadge } from "../../components/verification/VerificationBadge";
 
 const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning" | "has_parking" | "has_security"; label: string }[] = [
   { key: "has_electricity", label: "Electricity" },
@@ -35,6 +37,16 @@ export default function PropertyDetailScreen() {
     queryKey: ["favourite-ids", user?.id],
     enabled: !!user,
     queryFn: () => getFavouritedPropertyIds(user!.id),
+  });
+  const identityVerified = useQuery({
+    queryKey: ["identity-verified", property.data?.owner_id],
+    enabled: !!property.data,
+    queryFn: () => isIdentityVerified(property.data!.owner_id),
+  });
+  const propertyVerified = useQuery({
+    queryKey: ["property-verified", property.data?.id],
+    enabled: !!property.data,
+    queryFn: () => isPropertyVerified(property.data!.id),
   });
   const [togglingFavourite, setTogglingFavourite] = useState(false);
   const [messageDraft, setMessageDraft] = useState("");
@@ -141,6 +153,12 @@ export default function PropertyDetailScreen() {
         </View>
 
         <Card className="gap-1 p-4">
+          {(identityVerified.data || propertyVerified.data) && (
+            <View className="mb-2 flex-row flex-wrap gap-2">
+              {identityVerified.data && <VerificationBadge kind="identity" />}
+              {propertyVerified.data && <VerificationBadge kind="property" />}
+            </View>
+          )}
           <Text className="font-display-bold text-2xl text-forest-700 dark:text-forest-500">
             {formatUsd(p.rent_amount)}
             <Text className="font-sans text-base text-charcoal-400"> {formatRentalFrequency(p.rental_frequency)}</Text>
