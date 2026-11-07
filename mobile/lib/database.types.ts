@@ -150,6 +150,28 @@ export type Subscription = {
   updated_at: string;
 };
 
+export type ConversationStatus = "active" | "archived" | "blocked";
+
+export type Conversation = {
+  id: string;
+  property_id: string;
+  renter_id: string;
+  owner_id: string;
+  status: ConversationStatus;
+  renter_last_read_at: string | null;
+  owner_last_read_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Message = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  sent_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -169,6 +191,8 @@ export type Database = {
       property_images: TableDef<PropertyImage, Partial<PropertyImage>>;
       property_favourites: TableDef<PropertyFavourite, Pick<PropertyFavourite, "user_id" | "property_id"> & Partial<PropertyFavourite>>;
       subscriptions: TableDef<Subscription, Partial<Subscription>>;
+      conversations: TableDef<Conversation, Pick<Conversation, "property_id" | "renter_id" | "owner_id"> & Partial<Conversation>>;
+      messages: TableDef<Message, Pick<Message, "conversation_id" | "sender_id" | "body"> & Partial<Message>>;
     };
     Views: Record<string, never>;
     Functions: {

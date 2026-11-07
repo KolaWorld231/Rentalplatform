@@ -1978,9 +1978,65 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   source table, then re-applied and re-verified clean. Test account,
   subscription, transaction, and webhook event rows deleted after.
 
-Remaining 4 milestones (Messaging, Verification & trust, Owner mode,
-Polish & release readiness) are tracked in the plan file referenced
-above, not yet started.
+### Messaging milestone (milestone 5 of 8)
+
+- **No new RPC needed** — unlike Auth and Direct Access Pass, the
+  subscription gate for starting a new conversation is enforced
+  entirely by a plain RLS `INSERT` policy on `conversations`
+  (`conversations_insert_renter`, from the web app's own M5 migration
+  comment: "Postgres evaluates the INSERT policy's WITH CHECK against
+  the proposed row, so this is exactly as trustworthy as a SECURITY
+  DEFINER function would be, with less code"). That means it's exactly
+  as trustworthy called from mobile's anon client as from the web's
+  Server Action — nothing to duplicate in SQL this time.
+- `mobile/lib/messaging/service.ts`: `startOrContinueConversation`,
+  `sendMessage`, `markConversationRead`, `getConversationsForUser`,
+  `getConversationDetail`, `getMessages` — hand-ported from
+  `services/messaging.ts` and `components/messaging/
+  ConversationList.tsx`, same query shapes, called directly from
+  screens.
+- `app/(tabs)/messages.tsx`: real inbox — `Avatar`, property cover
+  thumbnail, unread indicator (same "last-read vs. updated-at"
+  comparison as web), empty state with a link to Search.
+- `app/messages/[id].tsx` (new route): message bubbles (sender's own on
+  the right, counterpart's with an `Avatar` on the left, consecutive-
+  message grouping skipped for this first cut), a composer, and a
+  Supabase Realtime subscription on `postgres_changes` INSERT for the
+  conversation's messages — confirmed actually firing against the live
+  project (see below), closing the one thing the web app's own
+  `RealtimeMessageListener` comment flagged as "not independently
+  verified in this sandboxed environment."
+- `components/ui/Avatar.tsx`: hand-ported hash-based initials avatar,
+  same color rotation as web's.
+- Property detail screen (`app/property/[slug].tsx`): the "Message
+  owner (coming soon)" placeholder from the Browse & search milestone
+  is now a real contact form — hidden entirely for the listing's own
+  owner, logged-out users get a "Log in to message the owner" prompt,
+  and a `subscription_required` result from
+  `startOrContinueConversation` routes straight to `/pricing` — the
+  actual paywall moment the plan described, now wired to a real
+  screen instead of a placeholder.
+- **Live-verified** against the real Supabase project with seeded
+  owner/renter/stranger accounts and a real listing: confirmed an
+  unsubscribed renter is blocked from starting a conversation (RLS
+  `42501`), confirmed an owner is blocked from messaging themselves
+  about their own listing (the `enforce_conversation_owner` trigger),
+  confirmed a subscribed renter can start one and `owner_id` is
+  server-derived from the property (never the client-sent value),
+  confirmed both participants can read/reply and a non-participant
+  cannot (RLS), confirmed `markConversationRead`'s update succeeds,
+  and confirmed a Realtime `INSERT` subscription genuinely fires when
+  a new message arrives (the first attempt raced the subscription's
+  own `SUBSCRIBED` callback and under-reported a false negative;
+  waiting for that callback first showed it firing correctly). All
+  test accounts, the listing, and subscription rows deleted after.
+- `npx tsc --noEmit`, `npx expo lint` (0 errors, same pre-existing
+  warning), and `npx expo export --platform ios/android` (both bundle
+  cleanly) all pass.
+
+Remaining 3 milestones (Verification & trust, Owner mode, Polish &
+release readiness) are tracked in the plan file referenced above, not
+yet started.
 
 ## Overall production-readiness summary
 

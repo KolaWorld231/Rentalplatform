@@ -1,13 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Link, Stack, router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { PropertyCard } from "../../components/properties/PropertyCard";
 import { useSession } from "../../lib/auth/session";
 import { formatCategory, formatRentalFrequency, formatUsd } from "../../lib/format";
+import { startOrContinueConversation } from "../../lib/messaging/service";
 import { getPropertyBySlug, getSimilarProperties, toggleFavourite, getFavouritedPropertyIds } from "../../lib/properties/service";
 import { propertyImageUrl } from "../../lib/storage";
 
@@ -36,6 +37,9 @@ export default function PropertyDetailScreen() {
     queryFn: () => getFavouritedPropertyIds(user!.id),
   });
   const [togglingFavourite, setTogglingFavourite] = useState(false);
+  const [messageDraft, setMessageDraft] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
 
   if (property.isLoading) {
     return (
@@ -71,6 +75,30 @@ export default function PropertyDetailScreen() {
     await queryClient.invalidateQueries({ queryKey: ["favourite-ids", user.id] });
     setTogglingFavourite(false);
   }
+
+  async function onSendMessage() {
+    if (!user || !messageDraft.trim()) return;
+    setContactError(null);
+    setSendingMessage(true);
+    const result = await startOrContinueConversation({ propertyId: p.id, renterId: user.id, firstMessage: messageDraft.trim() });
+    setSendingMessage(false);
+    if (!result.ok) {
+      if (result.reason === "subscription_required") {
+        router.push("/pricing");
+        return;
+      }
+      if (result.reason === "own_property") {
+        setContactError("You can't message yourself about your own listing.");
+        return;
+      }
+      setContactError("Couldn't send your message. Try again.");
+      return;
+    }
+    setMessageDraft("");
+    router.push(`/messages/${result.conversationId}`);
+  }
+
+  const isOwnListing = user?.id === p.owner_id;
 
   return (
     <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900">
@@ -130,10 +158,35 @@ export default function PropertyDetailScreen() {
               </View>
             </View>
           )}
-          <Button variant="clay" className="mt-4" disabled>
-            Message owner (coming soon)
-          </Button>
         </Card>
+
+        {!isOwnListing && (
+          <Card className="gap-2 p-4">
+            <Text className="font-sans-semibold text-sm text-charcoal-700 dark:text-ivory-100">Contact the owner</Text>
+            {user ? (
+              <>
+                <TextInput
+                  value={messageDraft}
+                  onChangeText={setMessageDraft}
+                  placeholder="Hi, I'm interested in this property. Is it still available?"
+                  placeholderTextColor="#737373"
+                  multiline
+                  numberOfLines={3}
+                  className="rounded-md border border-border bg-surface p-3 text-sm text-charcoal-700 dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100"
+                />
+                {contactError && <Text className="text-sm text-error-500">{contactError}</Text>}
+                <Button variant="clay" loading={sendingMessage} onPress={onSendMessage} disabled={!messageDraft.trim()}>
+                  Send message
+                </Button>
+                <Text className="text-xs text-charcoal-400">Subscribe once, message unlimited owners. No per-property fee.</Text>
+              </>
+            ) : (
+              <Link href="/(auth)/login" asChild>
+                <Button variant="clay">Log in to message the owner</Button>
+              </Link>
+            )}
+          </Card>
+        )}
 
         <View className="gap-2">
           <Text className="font-display-bold text-lg text-charcoal-700 dark:text-ivory-100">About this property</Text>

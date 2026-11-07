@@ -36,6 +36,16 @@ export function isRecentlyPublished(iso: string | null, withinMs: number): boole
   return Date.now() - new Date(iso).getTime() < withinMs;
 }
 
+/** For a date that already happened (message sent, listing created, etc). */
+export function formatRelativeDate(iso: string): string {
+  const date = new Date(iso);
+  const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days} days ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 /** For a date that hasn't happened yet (subscription expiry). */
 export function formatExpiryDate(iso: string): string {
   const date = new Date(iso);
