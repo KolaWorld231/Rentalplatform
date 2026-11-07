@@ -2152,8 +2152,77 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   warning) pass; `npx expo export --platform ios/android` both bundle
   cleanly.
 
-Remaining milestone (Polish & release readiness) is tracked in the
-plan file referenced above, not yet started.
+### Polish & release readiness milestone (milestone 8 of 8)
+
+- **Accessibility pass**: `components/ui/Button.tsx`'s `sm` size was
+  36px tall (`h-9`) — below both Apple HIG's 44pt and Material's 48dp
+  minimum touch target — bumped to `h-11` (44px); every screen using
+  `size="sm"` (owner status controls, property-verification cards)
+  picks this up automatically, no per-call change needed. Added
+  `accessibilityRole="button"` + `accessibilityState` to `Button`
+  itself; the icon-only favourite toggle on the property detail screen
+  (previously a bare ♥/♡ glyph with no label) got
+  `accessibilityLabel`/`accessibilityRole`/`accessibilityState` and a
+  44×44 hit area; `components/ui/Input.tsx` now passes its visible
+  `label` through as `accessibilityLabel` (React Native has no
+  `<label for>` equivalent — visual proximity alone doesn't reach a
+  screen reader); `components/ui/Avatar.tsx` (purely decorative next to
+  a name that's already read) is now hidden from screen readers
+  (`accessibilityElementsHidden`/`importantForAccessibility`) instead
+  of being announced as a redundant, unlabeled initial.
+- **App icon/splash**: the Android adaptive icon background and the
+  splash screen (previously Expo's default light blue, `#E6F4FE`, and
+  an unconfigured default splash) now use the brand's actual primary
+  color (`#a00c30`, the same `forest-800`/`brand-800` token web uses)
+  with a dark-mode variant (`#1a1a1a`, matching `--color-surface`'s
+  dark value) — one cohesive visual language from first launch, per
+  `CLAUDE.md` rule #10, not just inside the app.
+- **`mobile/eas.json`** (new): `development`/`preview`/`production`
+  build profiles — `development` for an internal dev-client build,
+  `preview` pointed at `domilink-preview.vercel.app` (the same preview
+  deployment used throughout this session) for internal testing
+  builds, `production` with `autoIncrement` for store submission.
+  Running an actual EAS build was not attempted — it requires an Expo/
+  EAS account and Apple/Google signing credentials this environment
+  doesn't have (same "needs the project owner's real credentials"
+  category as the payment provider and SMS provider gaps below).
+- **Explicitly flagged, not resolved**: three items below moved to
+  "Known production blockers" rather than guessed at, per the plan's
+  own instruction not to resolve them here:
+  1. The $5 Direct Access Pass currently checks out via an in-app
+     browser handoff to the web checkout flow (Milestone 4). **Apple
+     App Store Review Guideline 3.1.1 and Google Play's Payments
+     Policy generally require unlocking in-app digital content/
+     services through their own in-app purchase systems**, not an
+     external payment page — this app's current approach is a
+     plausible app-store rejection risk, not merely a style choice.
+     Resolving it means either integrating `expo-in-app-purchases`/
+     StoreKit/Billing (a real scope addition, and the $5 price point
+     + any store cut becomes a business-model question) or getting a
+     documented basis for an exception (e.g. Apple's "reader app"
+     exception does not obviously apply to a messaging-unlock
+     service) — a product/legal decision, not something to guess at
+     in code.
+  2. App-store listing assets (screenshots, feature graphic, store
+     description/keywords) don't exist — these need real device
+     screenshots and copy decisions, not fabricated placeholders.
+  3. A real low-end-device performance pass (the plan's own
+     "low-bandwidth/low-end-device" framing for the Liberia market)
+     was not performed — this sandbox has no iOS/Android
+     simulator or physical device, only `expo export`'s bundle-level
+     smoke test (confirmed clean for every milestone this session).
+     A real pass needs an actual device or at minimum an Android
+     emulator with throttled CPU/network.
+- `npx tsc --noEmit`, `npx expo lint` (0 errors, same pre-existing
+  warning), `npx expo export --platform ios/android` (both bundle
+  cleanly), and `npx expo-doctor` (20/20) all pass.
+
+All 8 mobile milestones are now built and, where the underlying write
+path allows it from a sandboxed environment with no app-store/EAS
+credentials, live-verified against the real Supabase project. The
+three items flagged immediately above are genuine decisions for the
+project owner — see "Known production blockers" below, now including
+the mobile-specific ones.
 
 ## Overall production-readiness summary
 
@@ -2228,3 +2297,24 @@ credentials or input, not more engineering time against this codebase.
   time. WhatsApp OTP remains researched-only in
   `docs/AUTH_ALTERNATIVES.md`, blocked on a Meta Business API setup, a
   bigger lift than phone/SMS.
+- **Mobile app-store in-app-purchase policy decision**: the mobile
+  app's Direct Access Pass checkout (Milestone 4) opens an in-app
+  browser to the same web checkout flow the Next.js app uses. Apple
+  App Store Review Guideline 3.1.1 and Google Play's Payments Policy
+  generally require digital content/services unlocked *inside* an app
+  to go through the platform's own in-app purchase system — this is a
+  real submission-rejection risk for the current approach, not a style
+  preference. Needs a product/legal decision: integrate platform IAP
+  (`expo-in-app-purchases`/StoreKit/Billing — a real scope addition,
+  and the $5 price plus the store's cut becomes a business-model
+  question) or establish a documented basis for an exception before
+  ever submitting to either store. Not resolved by this codebase.
+- **Mobile app-store listing assets**: no screenshots, feature
+  graphic, or store description/keywords exist yet — needs real
+  device screenshots and marketing copy decisions from the project
+  owner, not fabricated placeholders.
+- **Mobile EAS build/signing credentials**: no Expo/EAS account or
+  Apple/Google signing credentials exist in this environment, so no
+  EAS build was actually run — `mobile/eas.json`'s three profiles
+  (development/preview/production) are configured and ready, but
+  untested end-to-end pending those credentials.

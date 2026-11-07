@@ -146,7 +146,15 @@ export default function PropertyDetailScreen() {
             </Text>
           </View>
           {user && (
-            <Pressable onPress={onToggleFavourite} disabled={togglingFavourite} className="rounded-full border border-border p-2 dark:border-charcoal-500">
+            <Pressable
+              onPress={onToggleFavourite}
+              disabled={togglingFavourite}
+              accessibilityRole="button"
+              accessibilityLabel={isFavourited ? "Remove from saved" : "Save this property"}
+              accessibilityState={{ selected: isFavourited }}
+              hitSlop={8}
+              className="h-11 w-11 items-center justify-center rounded-full border border-border dark:border-charcoal-500"
+            >
               <Text className={isFavourited ? "text-clay-500" : "text-charcoal-500 dark:text-charcoal-400"}>{isFavourited ? "♥" : "♡"}</Text>
             </Pressable>
           )}

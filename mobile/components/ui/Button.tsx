@@ -20,8 +20,10 @@ const VARIANT_TEXT_CLASSES: Record<Variant, string> = {
   danger: "text-ivory-50",
 };
 
+// Minimum touch target: 44pt (Apple HIG) / 48dp (Material) -- "sm" was
+// h-9 (36px), below both; bumped to h-11 (44px) for every shipped usage.
 const SIZE_CLASSES: Record<Size, string> = {
-  sm: "h-9 px-3",
+  sm: "h-11 px-3",
   md: "h-12 px-5",
   lg: "h-14 px-6",
 };
@@ -38,6 +40,8 @@ export function Button({ variant = "primary", size = "md", loading, disabled, ch
   return (
     <Pressable
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       className={cn(
         "flex-row items-center justify-center gap-2 rounded-full",
         VARIANT_CLASSES[variant],

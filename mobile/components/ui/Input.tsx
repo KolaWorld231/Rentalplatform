@@ -13,6 +13,8 @@ export function Input({ label, error, hint, className, ...props }: InputProps) {
       {label && <Text className="text-sm font-medium text-charcoal-700 dark:text-ivory-100">{label}</Text>}
       <TextInput
         placeholderTextColor="#737373"
+        accessibilityLabel={label ?? props.placeholder}
+        accessibilityHint={hint}
         className={cn(
           "h-12 rounded-md border border-border bg-surface px-3.5 text-base text-charcoal-700",
           "dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100",

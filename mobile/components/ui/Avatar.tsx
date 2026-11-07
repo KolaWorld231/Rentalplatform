@@ -23,7 +23,11 @@ export function Avatar({ name, size = "md" }: { name: string | null | undefined;
   const idx = indexFor(label);
 
   return (
-    <View className={cn("items-center justify-center rounded-full", size === "sm" ? "h-7 w-7" : "h-9 w-9", PALETTE[idx])}>
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      className={cn("items-center justify-center rounded-full", size === "sm" ? "h-7 w-7" : "h-9 w-9", PALETTE[idx])}
+    >
       <Text className={cn("font-display-bold", size === "sm" ? "text-xs" : "text-sm", PALETTE_TEXT[idx])}>{initial}</Text>
     </View>
   );
