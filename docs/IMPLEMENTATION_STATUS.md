@@ -1916,9 +1916,59 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   warning noted under Auth above), and `npx expo export --platform
   ios/android` (both bundle cleanly) all pass.
 
-Remaining 5 milestones (Direct Access Pass, Messaging, Verification &
-trust, Owner mode, Polish & release readiness) are tracked in the plan
-file referenced above, not yet started.
+### Direct Access Pass milestone (milestone 4 of 8)
+
+- **New migration**, written, **pending the project owner's
+  authorization to apply** (same `[Production Deploy]` guardrail hit
+  for the Auth milestone's RPC, each database write needs its own
+  approval): `supabase/migrations/20261107000200_mobile_checkout_rpc.sql`
+  adds `start_mobile_checkout()`, a `SECURITY DEFINER` RPC that creates
+  the same `pending_payment` `subscriptions` row and `initiated`
+  `payment_transactions` row the web's `startCheckout()` does — the
+  one write mobile has no service-role layer for, since
+  `subscriptions` deliberately has no client INSERT policy at all (see
+  the M4 web migration's comment: only a server-verified payment may
+  activate one). `auth.uid()` is read from the caller's JWT, never an
+  argument, so it can only ever start a checkout for the caller
+  themselves. Hard-codes `provider = 'mock'`, matching the web app's
+  current dev-only `getPaymentProvider()` default — **when a real
+  payment provider is chosen, this function needs updating alongside
+  it**, tracked as the same pre-existing credential-blocked item in
+  `docs/PAYMENTS.md`, not a new gap.
+- `mobile/lib/subscriptions/service.ts`: `getActiveSubscription`/
+  `getSubscriptionHistory` read directly via the anon client (allowed
+  by the existing `subscriptions_select_self` RLS policy — no RPC
+  needed for reads), and `startMobileCheckout()` calls the new RPC
+  then builds the exact same mock-checkout URL
+  `MockPaymentProvider.createCheckout()` builds on web. Everything
+  after that handoff — the checkout page, webhook signature
+  verification, idempotent processing, and
+  `confirm_payment_and_activate_subscription` — is the web app's
+  existing, already-tested code; nothing about activation is
+  duplicated on mobile, only the "start a pending checkout for myself"
+  write.
+- `app/pricing.tsx` (new route): plan price/benefits (ported from
+  `lib/config/brand.ts`'s `subscriptionPlan`), active-subscription
+  status with its real expiry date, and a checkout button that opens
+  the handoff URL in an in-app browser (`expo-web-browser`) — never a
+  client-trusted "success" state; the screen only shows "active" once
+  `getActiveSubscription` reads it back as such after the browser
+  closes. Home screen links to it.
+- No changes to the payment provider, webhook route, or
+  `confirm_payment_and_activate_subscription` — this milestone only
+  adds the one missing mobile-side write primitive plus a native UI
+  around the existing, unchanged activation flow.
+- `npx tsc --noEmit` and `npx expo lint` (0 errors, same pre-existing
+  warning) pass; `npx expo export --platform ios/android` both bundle
+  cleanly. **Live end-to-end verification of the RPC itself (start a
+  checkout, hand off to the mock checkout page, confirm the webhook
+  activates it) is blocked until the migration above is applied** —
+  flagged for the project owner the same way the Auth milestone's RPC
+  was.
+
+Remaining 4 milestones (Messaging, Verification & trust, Owner mode,
+Polish & release readiness) are tracked in the plan file referenced
+above, not yet started.
 
 ## Overall production-readiness summary
 

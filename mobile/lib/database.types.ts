@@ -129,6 +129,27 @@ export type PropertyFavourite = {
   created_at: string;
 };
 
+export type SubscriptionStatus =
+  | "pending_payment"
+  | "active"
+  | "expired"
+  | "cancelled"
+  | "payment_failed"
+  | "refunded"
+  | "suspended";
+
+export type Subscription = {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  activated_at: string | null;
+  expires_at: string | null;
+  payment_transaction_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -147,12 +168,24 @@ export type Database = {
       properties: TableDef<Property, Partial<Property>>;
       property_images: TableDef<PropertyImage, Partial<PropertyImage>>;
       property_favourites: TableDef<PropertyFavourite, Pick<PropertyFavourite, "user_id" | "property_id"> & Partial<PropertyFavourite>>;
+      subscriptions: TableDef<Subscription, Partial<Subscription>>;
     };
     Views: Record<string, never>;
     Functions: {
       grant_owner_role_to_self: {
         Args: Record<string, never>;
         Returns: void;
+      };
+      start_mobile_checkout: {
+        Args: Record<string, never>;
+        Returns: {
+          transaction_id: string;
+          internal_reference: string;
+          subscription_id: string;
+          amount: number;
+          plan_name: string;
+          duration_days: number;
+        }[];
       };
     };
     Enums: {
