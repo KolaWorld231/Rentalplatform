@@ -1865,9 +1865,59 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   regression), and `npx expo export --platform ios/android` (both
   platforms bundle cleanly) all pass.
 
-Remaining 6 milestones (Browse & search, Direct Access Pass, Messaging,
-Verification & trust, Owner mode, Polish & release readiness) are
-tracked in the plan file referenced above, not yet started.
+### Browse & search milestone (milestone 3 of 8)
+
+- `mobile/lib/properties/service.ts`: `searchProperties`,
+  `getRecentlyListed`, `getPropertyBySlug`, `getSimilarProperties`,
+  `getFavouritedPropertyIds`/`getFavouritedProperties`, and
+  `toggleFavourite` — hand-ported from `services/properties.ts` and
+  `app/favourites/actions.ts`, same query shapes and RLS-backed
+  authorization boundary, called directly from screens (no Server
+  Action layer on mobile, per `CLAUDE.md` rule #7).
+- `mobile/lib/database.types.ts` extended with `properties`,
+  `property_images`, `property_favourites` (hand-ported from
+  `types/database.ts`); `mobile/lib/format.ts`/`mobile/lib/storage.ts`
+  port the `formatUsd`/`formatCategory`/`isRecentlyPublished` helpers
+  and the public property-image URL builder.
+- `components/properties/PropertyCard.tsx`: cover photo (`expo-image`),
+  price, title, location, category, and a real "New" badge
+  (`isRecentlyPublished`, same 72-hour window as web) — never a
+  fabricated badge, per rule #9.
+- Home tab: real "Recently listed" horizontal list (replaces the
+  Foundation milestone's placeholder text) via `getRecentlyListed`.
+- Search tab: full rebuild — free-text title search, category/county
+  filter chips, a sort control (newest/price low-high/price high-low,
+  same `sort` param `searchProperties` already supported), a real
+  result count, two-column results grid, and prev/next pagination with
+  "Page X of Y" (mirrors web wave-6's search redesign).
+- `app/property/[slug].tsx` (new route, outside the tab group): photo
+  strip, price + disclosed move-in cost breakdown (advance rent/
+  deposit/other fees, same shape as web), amenity chips from the
+  existing simple boolean fields (no new utility/amenity schema, per
+  the plan's explicit scope decision), favourite toggle, and a
+  "Similar properties" row. "Message owner" is shown but disabled with
+  "(coming soon)" — real messaging is Milestone 5; never a fake-working
+  button.
+- Saved tab: real favourites grid for a signed-in user (reusing
+  `PropertyCard`), with a "Log in to save properties" prompt when
+  signed out — replaces the Foundation milestone's placeholder.
+- No RLS/schema changes — this milestone only adds mobile read paths
+  (plus the already-existing `property_favourites` insert/delete a
+  signed-in user is allowed to do on their own rows) against tables and
+  policies Milestone 3 of the *web* app already created and tested.
+- **Live-verified** against the real Supabase project with a Node
+  script seeding one real listing + one test account: confirmed the
+  anon client's search-by-county query finds it, the by-slug detail
+  lookup works, the similar-properties query runs cleanly, and the
+  full favourite → list → un-favourite round trip succeeds under RLS
+  for the owning user. Listing and account deleted after.
+- `npx tsc --noEmit`, `npx expo lint` (0 errors, same one pre-existing
+  warning noted under Auth above), and `npx expo export --platform
+  ios/android` (both bundle cleanly) all pass.
+
+Remaining 5 milestones (Direct Access Pass, Messaging, Verification &
+trust, Owner mode, Polish & release readiness) are tracked in the plan
+file referenced above, not yet started.
 
 ## Overall production-readiness summary
 
