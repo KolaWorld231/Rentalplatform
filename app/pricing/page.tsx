@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveSubscription } from "@/lib/subscriptions/service";
 import { formatExpiryDate } from "@/lib/utils/format";
+import { getPaymentProvider } from "@/lib/payments";
 import { startCheckoutAction } from "../checkout/actions";
 
 export const metadata = { title: "Pricing" };
@@ -39,6 +40,7 @@ export default async function PricingPage({
     const supabase = await createClient();
     active = await getActiveSubscription(supabase, user.id);
   }
+  const requiresPayerPhone = getPaymentProvider().requiresPayerPhone;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
@@ -62,6 +64,11 @@ export default async function PricingPage({
       {error === "checkout_failed" && (
         <p className="mt-6 rounded-[var(--radius-md)] bg-error-100 px-4 py-3 text-sm text-error-500">
           Couldn&apos;t start checkout. Please try again.
+        </p>
+      )}
+      {error === "phone_required" && (
+        <p className="mt-6 rounded-[var(--radius-md)] bg-error-100 px-4 py-3 text-sm text-error-500">
+          Enter the mobile money phone number you want to pay with below.
         </p>
       )}
 
@@ -115,7 +122,22 @@ export default async function PricingPage({
             </p>
           </div>
         ) : (
-          <form action={startCheckoutAction}>
+          <form action={startCheckoutAction} className="flex flex-col items-center gap-3">
+            {requiresPayerPhone && (
+              <div className="w-full max-w-xs text-left">
+                <label htmlFor="phone" className="text-sm font-medium text-charcoal-700">
+                  Mobile money phone number
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  placeholder="0770 000 000"
+                  className="focus-ring mt-1 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3.5 py-2.5 text-sm shadow-[var(--shadow-clay-inset)]"
+                />
+              </div>
+            )}
             <Button
               type="submit"
               variant="clay"

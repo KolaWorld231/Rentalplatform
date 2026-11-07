@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "DomiLink",
+    "slug": "domilink-mobile",
+    "scheme": "domilink",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.domilink.mobile"
+    },
+    "android": {
+      "package": "com.domilink.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#a00c30",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-image",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#a00c30",
+          "dark": {
+            "backgroundColor": "#1a1a1a"
+          }
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "extra": {
+      "router": {}
+    }
+  }
+}
