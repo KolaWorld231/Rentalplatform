@@ -1821,22 +1821,23 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   page's pattern), wired to the real session via
   `mobile/lib/auth/session.tsx`'s `SessionProvider`. Home screen now
   shows real signed-in/signed-out state instead of a placeholder.
-- **New migration**, written but **not yet applied to the live
-  project**: `supabase/migrations/20261107000100_self_service_owner_role.sql`
+- **New migration**: `supabase/migrations/20261107000100_self_service_owner_role.sql`
   adds `grant_owner_role_to_self()`, a `SECURITY DEFINER` RPC that lets
   a user grant themselves the `owner` role (and only `owner`, never
   `moderator`/`admin`) by reading `auth.uid()` from their own JWT —
   mobile's equivalent of the web's service-role-backed intent→role
   logic in `registerAction`, since mobile only ever holds the anon
-  key. **Applying this migration to the live, hosted project was
-  blocked by Claude Code's auto-mode safety classifier** (reason:
-  `[Production Deploy]`) — a deliberate guardrail, not a bug. It needs
-  the project owner to either run the migration SQL themselves via the
-  Supabase Dashboard's SQL editor, or explicitly authorize applying it
-  via the Management API. Until then, the owner-intent mobile signup
-  path fails gracefully with "Your account was created, but we
-  couldn't set up owner access. Try again from your profile." — the
-  renter-intent path is fully unaffected (no RPC dependency).
+  key. Applying it to the live, hosted project was initially blocked
+  by Claude Code's auto-mode safety classifier (reason:
+  `[Production Deploy]`) — a deliberate guardrail, not a bug — and
+  applied via the Supabase Management API once the project owner
+  explicitly authorized it. **Now applied and live-verified**:
+  confirmed the owner-intent RPC call succeeds and grants exactly
+  `owner` (alongside the trigger-granted `renter`), confirmed the
+  function accepts no arguments at all (so there is no way for a
+  caller to target any user but themselves), and confirmed a second
+  call is a safe no-op (`on conflict do nothing`). Test accounts
+  deleted after.
 - **Live-verified** against the real Supabase project with a Node
   script exercising the actual auth logic directly (not through a
   browser — see below): confirmed `auth.admin.createUser` + the
