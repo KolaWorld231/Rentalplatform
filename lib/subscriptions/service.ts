@@ -40,12 +40,21 @@ export async function getSubscriptionHistory(
  * Starts a checkout: creates a `pending_payment` subscription row and an
  * `initiated` payment transaction row (both via the service-role client,
  * since `subscriptions` has no client-writable INSERT policy at all —
- * see the M4 migration), then asks the configured payment provider for a
- * checkout URL. Nothing here marks anything as paid; that only happens
- * in the webhook handler after independent verification.
+ * see the M4 migration), then asks the configured payment provider to
+ * start the payment. The result is either a redirect URL (card-style
+ * providers, the mock provider) or a `pending` reference (MTN MoMo's
+ * push-payment flow — see `app/checkout/momo/pending/page.tsx`). Nothing
+ * here marks anything as paid; that only happens after independent
+ * verification, via the webhook handler or `checkMomoPaymentStatusAction`'s
+ * poll, both of which funnel through `processVerifiedPaymentEvent`.
  */
-export async function startCheckout(userId: string, returnUrl: string) {
+export async function startCheckout(userId: string, returnUrl: string, payerPhone?: string) {
   const admin = createServiceRoleClient();
+  const provider = getPaymentProvider();
+
+  if (provider.requiresPayerPhone && !payerPhone) {
+    throw new Error("A mobile money phone number is required for this payment method.");
+  }
 
   const { data: plan, error: planError } = await admin
     .from("subscription_plans")
@@ -61,8 +70,6 @@ export async function startCheckout(userId: string, returnUrl: string) {
     .select("id")
     .single();
   if (subError || !subscription) throw new Error("Couldn't start checkout.");
-
-  const provider = getPaymentProvider();
 
   const { data: transaction, error: txnError } = await admin
     .from("payment_transactions")
@@ -84,6 +91,7 @@ export async function startCheckout(userId: string, returnUrl: string) {
     amountUsd: Number(plan.price_usd),
     userId,
     returnUrl,
+    payerPhone,
   });
 
   return checkout;

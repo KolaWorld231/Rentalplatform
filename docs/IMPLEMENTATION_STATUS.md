@@ -2318,3 +2318,102 @@ credentials or input, not more engineering time against this codebase.
   EAS build was actually run — `mobile/eas.json`'s three profiles
   (development/preview/production) are configured and ready, but
   untested end-to-end pending those credentials.
+- **MTN MoMo production credentials**: `lib/payments/providers/mtn-momo.ts`
+  is built and live-sync'd between web and mobile (see the dated entry
+  below), but no real MTN MoMo subscription key/API user/API key exist
+  yet — these are self-provisioned sandbox credentials (sign up at
+  momodeveloper.mtn.com), not a code change, so they need the project
+  owner to actually create the account.
+
+## MTN MoMo payment sync between web and mobile (post-Milestone-8)
+
+The user asked to sync the MTN Mobile Money payment gateway and
+checkout initiation between the web app and the mobile app — no real
+provider existed before this (`PAYMENTS_PROVIDER` only ever supported
+`mock`). Confirmed via research (not assumed) before building: Liberia
+is a live MTN MoMo production market, MTN's sandbox is self-
+provisioned (no business registration needed) but only accepts EUR
+and its callbacks are known unreliable — both facts shaped the design
+below. See `docs/PAYMENTS.md` for the full architecture; summary here:
+
+- **`PaymentProvider` interface redesigned** (`lib/payments/types.ts`):
+  `CheckoutResult` is now a union (`{ kind: "redirect" }` vs. `{ kind:
+  "pending" }`) since MoMo's RequestToPay is a push flow with no
+  checkout page to redirect to; added `requiresPayerPhone`, an optional
+  `checkStatus(reference)` for polling, and `CheckoutParams.payerPhone`.
+  `MockPaymentProvider` updated to the new shape (`kind: "redirect"`,
+  everything else unchanged) — a real, non-cosmetic interface change,
+  not additive-only.
+- **New `lib/payments/providers/mtn-momo.ts`**: implements MTN's
+  Collection API (OAuth token fetch/cache, `RequestToPay`, status
+  polling, phone-number normalization to Liberia's MSISDN format).
+  `verifyWebhook` never trusts a callback's status directly (sandbox
+  callbacks are unreliable) — it only reads which reference to check,
+  then calls `checkStatus` for the real, independently-verified
+  result. `normalizeLiberianMsisdn` is exported standalone
+  specifically so it's unit-testable without credentials — see
+  `tests/unit/mtn-momo-provider.test.ts` (8 new tests, all passing;
+  total unit suite now 49/49).
+- **Activation logic extracted** into `lib/payments/service.ts`'s
+  `processVerifiedPaymentEvent` (pulled out of the webhook route,
+  behavior-preserving) so a provider's own status poll resolves a
+  payment through the *exact same* idempotent, amount-verified code a
+  real webhook delivery uses — never a second, drifting copy.
+  `app/api/payments/webhook/route.ts` is now a thin wrapper around it.
+- **Web**: `/pricing` shows a phone-number field only when
+  `getPaymentProvider().requiresPayerPhone` is true;
+  `startCheckoutAction` passes it through and branches on the new
+  result union — `redirect`-style providers behave exactly as before,
+  `pending` now sends the renter to new
+  `app/checkout/momo/pending/page.tsx`, which polls
+  `checkMomoPaymentStatusAction` (`app/checkout/momo/actions.ts`) every
+  few seconds via a new client component, `MomoPendingStatus`.
+- **Mobile parity, the actual ask**: mobile cannot call a real
+  provider's `createCheckout` itself (MTN's subscription key must
+  never reach a client bundle) — new, bearer-token-authenticated
+  `app/api/mobile/checkout/route.ts` and `.../status/route.ts` call the
+  **exact same** `startCheckout()`/`processVerifiedPaymentEvent()` the
+  web app uses, validated via `supabase.auth.getUser(accessToken)`
+  against the service-role client. `mobile/app/pricing.tsx` now has a
+  phone field and a "check your phone" polling state, mirroring the
+  web pending page. **This supersedes the Foundation-milestone
+  `start_mobile_checkout()` RPC**, which only ever worked for the mock
+  provider (hardcoded `provider = 'mock'`, DB-rows-only — it had no way
+  to call a real provider's API at all); mobile no longer calls it. The
+  RPC is still deployed but unused — dropping it is a separate,
+  low-priority migration, not required for correctness.
+- **Fixed, unrelated to payments but found while touching this area**:
+  the root `eslint.config.mjs` was unintentionally linting `mobile/`
+  through flat-config resolution walking up from `mobile/` (which had
+  no config of its own) — `npm run lint` at the repo root was failing
+  on `mobile/metro.config.js`/`tailwind.config.js`'s CommonJS
+  `require()`s, a pre-existing gap since Milestone 1, not something
+  this round of changes caused. Fixed properly, not worked around:
+  `mobile/` now has its own `eslint.config.js` (`eslint-config-expo`,
+  pinned to `eslint@^9` to match the root's version — a fresh
+  `eslint@^10` install was briefly tried and broke `eslint-plugin-react`
+  internals, so it's intentionally pinned, not arbitrary), and the
+  root config now explicitly excludes `mobile/**`.
+- **Live-verified** against the real Supabase project with a local
+  Next.js dev server standing in for the deployed web app: confirmed
+  the new `/api/mobile/checkout` route rejects a missing or garbage
+  bearer token with 401, confirmed it starts a real checkout via the
+  mock provider and the redirect URL matches the actual created
+  transaction, confirmed the refactored webhook route still correctly
+  activates a subscription through `processVerifiedPaymentEvent`,
+  confirmed the new `/api/mobile/checkout/status` route correctly
+  reports `confirmed` by reading the already-activated ledger (without
+  needing `provider.checkStatus`, which the mock provider doesn't
+  implement), and confirmed the subscription reads back as active via
+  the anon client. **Live end-to-end verification against MTN's real
+  sandbox API (an actual `RequestToPay` push, phone approval, and
+  `checkStatus` poll) could not be done — no MTN MoMo subscription
+  key/API credentials exist yet** (see "Known production blockers"
+  above); the provider code follows MTN's documented API shape
+  (cross-checked against MTN's own guidance and multiple independent
+  third-party integration guides, not assumed) but is unverified
+  against the live API.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and
+  `npm run test` (49/49) all pass on the web app; `npx tsc --noEmit`,
+  `npx expo lint`, and `npx expo export --platform ios/android` all
+  pass on mobile.

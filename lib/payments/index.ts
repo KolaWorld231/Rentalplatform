@@ -1,6 +1,7 @@
 import "server-only";
 import type { PaymentProvider } from "./types";
 import { MockPaymentProvider } from "./providers/mock";
+import { MtnMomoProvider } from "./providers/mtn-momo";
 
 export function getPaymentProvider(): PaymentProvider {
   const providerName = process.env.PAYMENTS_PROVIDER ?? "mock";
@@ -12,6 +13,10 @@ export function getPaymentProvider(): PaymentProvider {
       );
     }
     return new MockPaymentProvider();
+  }
+
+  if (providerName === "mtn_momo") {
+    return new MtnMomoProvider();
   }
 
   throw new Error(

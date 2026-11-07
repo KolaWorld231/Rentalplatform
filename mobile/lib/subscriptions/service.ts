@@ -2,17 +2,17 @@
 // and the same "only a server-verified payment activates a subscription"
 // rule, kept in sync by hand (see mobile/README.md).
 //
-// startMobileCheckout() is mobile's equivalent of the web's
-// startCheckout() Server Action. `subscriptions` has no client INSERT
-// policy at all, so the actual row-creation happens inside the
-// start_mobile_checkout() SECURITY DEFINER RPC (see
-// supabase/migrations/20261107000200_mobile_checkout_rpc.sql) -- this
-// function then builds the exact same checkout handoff URL the web
-// MockPaymentProvider.createCheckout() builds, and the mobile app opens
-// it in an in-app browser. Everything after that (the checkout page,
-// webhook verification, confirm_payment_and_activate_subscription) is
-// the web app's existing, already-tested code -- nothing is duplicated
-// there, only the "create a pending checkout for myself" write.
+// startMobileCheckout() calls the web app's own authenticated
+// /api/mobile/checkout route rather than doing the work itself: a real
+// payment provider's createCheckout (MTN MoMo's RequestToPay) needs a
+// secret subscription key that must never reach a client bundle, so
+// mobile has no way to call it directly -- this is the exact gap mobile
+// has no service-role layer for. That route reuses the web's own
+// startCheckout() business logic (lib/subscriptions/service.ts)
+// unchanged; nothing about checkout initiation is duplicated here. This
+// superseded the Foundation-era start_mobile_checkout() RPC, which only
+// ever worked for the mock provider (hardcoded provider = 'mock') -- see
+// docs/IMPLEMENTATION_STATUS.md.
 import { supabase } from "../supabase";
 import type { Subscription } from "../database.types";
 
@@ -35,25 +35,43 @@ export async function getSubscriptionHistory(userId: string): Promise<Subscripti
 }
 
 /**
- * The web app's own deployed origin -- the mock checkout page and the
- * payments webhook it posts to both live there (mobile has no server of
- * its own). Set EXPO_PUBLIC_APP_URL to the deployed web app's URL; only
- * falls back to localhost for local development against `npm run dev`.
+ * The web app's own deployed origin -- its API routes and the mock
+ * checkout page both live there (mobile has no server of its own). Set
+ * EXPO_PUBLIC_APP_URL to the deployed web app's URL; only falls back to
+ * localhost for local development against `npm run dev`.
  */
 function webAppOrigin(): string {
   return process.env.EXPO_PUBLIC_APP_URL ?? "http://localhost:3000";
 }
 
-export async function startMobileCheckout(): Promise<{ checkoutUrl: string }> {
-  const { data, error } = await supabase.rpc("start_mobile_checkout");
-  if (error || !data || data.length === 0) {
-    throw new Error(error?.message ?? "Couldn't start checkout.");
-  }
-  const row = data[0];
+export type MobileCheckoutResult = { kind: "redirect"; redirectUrl: string } | { kind: "pending"; reference: string };
 
-  const url = new URL("/checkout/mock", webAppOrigin());
-  url.searchParams.set("txn", row.transaction_id);
-  url.searchParams.set("ref", row.internal_reference);
-  url.searchParams.set("amount", row.amount.toFixed(2));
-  return { checkoutUrl: url.toString() };
+export async function startMobileCheckout(accessToken: string, payerPhone?: string): Promise<MobileCheckoutResult> {
+  const res = await fetch(`${webAppOrigin()}/api/mobile/checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ payerPhone }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Couldn't start checkout.");
+  return data as MobileCheckoutResult;
+}
+
+export type MobilePollResult = { status: "pending" | "confirmed" | "failed" | "error"; error?: string };
+
+/**
+ * Mobile's equivalent of the web pending page's polling (see
+ * components/subscriptions/MomoPendingStatus.tsx) -- MTN's sandbox
+ * callbacks are known unreliable, so this is how a push payment (MoMo)
+ * actually resolves on mobile too.
+ */
+export async function checkMobileMomoStatus(accessToken: string, reference: string): Promise<MobilePollResult> {
+  const res = await fetch(`${webAppOrigin()}/api/mobile/checkout/status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ reference }),
+  });
+  const data = await res.json();
+  if (!res.ok) return { status: "error", error: data.error ?? "Couldn't check payment status." };
+  return data as MobilePollResult;
 }

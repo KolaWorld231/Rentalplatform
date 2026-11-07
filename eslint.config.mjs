@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // mobile/ is a separate Expo project with its own package.json,
+    // TypeScript config, and lint setup (run via `npx expo lint` from
+    // inside mobile/) -- it was never meant to be linted by the web
+    // app's Next.js-flavored config, which flags mobile's CommonJS
+    // config files (metro.config.js, tailwind.config.js) as errors.
+    "mobile/**",
   ]),
 ]);
 
