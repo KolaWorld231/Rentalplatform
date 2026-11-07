@@ -36,6 +36,14 @@ export function isRecentlyPublished(iso: string | null, withinMs: number): boole
   return Date.now() - new Date(iso).getTime() < withinMs;
 }
 
+export const AVAILABILITY_STALE_AFTER_DAYS = 14;
+
+export function isAvailabilityStale(lastConfirmed: string | null): boolean {
+  if (!lastConfirmed) return true;
+  const days = Math.floor((Date.now() - new Date(lastConfirmed).getTime()) / 86_400_000);
+  return days >= AVAILABILITY_STALE_AFTER_DAYS;
+}
+
 /** For a date that already happened (message sent, listing created, etc). */
 export function formatRelativeDate(iso: string): string {
   const date = new Date(iso);

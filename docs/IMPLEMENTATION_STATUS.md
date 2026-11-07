@@ -2087,8 +2087,73 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   warning) pass; `npx expo export --platform ios/android` both bundle
   cleanly.
 
-Remaining 2 milestones (Owner mode, Polish & release readiness) are
-tracked in the plan file referenced above, not yet started.
+### Owner mode milestone (milestone 7 of 8)
+
+- **No new RPC needed** beyond the Auth milestone's existing
+  `grant_owner_role_to_self` — listing create/update, status/
+  availability changes, and photo upload/delete/cover-select are all
+  plain RLS-scoped writes on the web app's own M3 migration
+  (`properties_insert_owner` requires `has_role('owner')`;
+  `properties_update_owner`/`property_images_write_owner` scope to
+  `owner_id`/`manager_id = auth.uid()`), so mobile's anon client makes
+  them directly, same as Messaging and Verification.
+- `mobile/lib/owner/service.ts`: `getMyProperties`/`getMyProperty`,
+  `createProperty`/`updateProperty`, `setListingStatus`/
+  `setAvailability`/`confirmAvailability`, `uploadPropertyPhoto`/
+  `deletePropertyPhoto`/`setCoverPhoto`, and `becomeOwner` (wraps the
+  existing RPC) — hand-ported from `app/dashboard/properties/
+  actions.ts` and `services/properties.ts`'s `slugify`.
+- `mobile/lib/validation/property-form.ts`: a mobile-friendly subset of
+  `propertyFormSchema` — the same fields, but numeric inputs are
+  plain `z.number()`/`z.number().nullable()` rather than
+  `z.coerce.number()`/a `preprocess`+`transform` chain, since
+  `@hookform/resolvers/zod` infers those chains as `unknown` through
+  `Resolver<...>`'s generic on this project's zod/RHF versions — a
+  real type-inference bug caught by `tsc`, not a style choice;
+  conversion from text-input strings happens at each field's
+  `onChangeText` instead.
+- `components/properties/PropertyFormFields.tsx`: shared form fields
+  (description, category/usage-type/rental-frequency/county as
+  horizontal chip-pickers — there's no native `<select>` in React
+  Native — amenity toggle chips, numeric fields) used by both the new
+  listing screen and the edit screen, so the two forms can't drift.
+- `app/owner/index.tsx`: a renter who hasn't listed yet sees a
+  "Property owners list for free — always" prompt with a
+  `becomeOwner()` button (the plan's own scope note: owners never pay
+  — this just lets a renter *become* one, reusing the Auth milestone's
+  self-service RPC rather than inventing a second path into the
+  `owner` role); an existing owner sees a stat strip (published/total/
+  views, same numbers as web's dashboard), a stale-availability
+  nudge (reusing `isAvailabilityStale`, same 14-day constant as web),
+  and their listings.
+- `app/owner/new.tsx` / `app/owner/[id].tsx`: create and edit screens.
+  Edit adds photo management (camera-roll upload via
+  `expo-image-picker`, set cover, delete) and the same three status-
+  control groups as web's wave-6 redesign — Visibility (Publish/
+  Unpublish), Availability (Mark rented/available) plus a "Reconfirm
+  availability now" action, and Archive set apart as a lower-emphasis
+  `ghost` action in its own bordered sub-row.
+- Admin/moderation stays web-only, as the plan always said — no mobile
+  admin screens in this milestone.
+- **Live-verified** against the real Supabase project: confirmed a
+  plain renter is blocked from inserting a property (RLS requires
+  `has_role('owner')`), confirmed `becomeOwner` grants it and the
+  insert then succeeds, confirmed a new listing starts as `draft`
+  (never auto-published), confirmed update/publish/availability/
+  reconfirm all succeed for the owner, confirmed a real photo upload
+  to the public `property-images` bucket and its `property_images`
+  row both succeed, confirmed the published listing is visible via
+  the same query shape `searchProperties` uses, and confirmed a
+  stranger's update against the same row silently affects zero rows
+  under RLS rather than erroring (the correct Postgres RLS behavior,
+  not a bug). Test accounts, the listing, and the photo deleted
+  after.
+- `npx tsc --noEmit` and `npx expo lint` (0 errors, same pre-existing
+  warning) pass; `npx expo export --platform ios/android` both bundle
+  cleanly.
+
+Remaining milestone (Polish & release readiness) is tracked in the
+plan file referenced above, not yet started.
 
 ## Overall production-readiness summary
 

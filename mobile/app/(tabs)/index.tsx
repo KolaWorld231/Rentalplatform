@@ -27,6 +27,9 @@ export default function HomeScreen() {
             <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">
               Signed in as {user.email ?? user.phone}
             </Text>
+            <Link href="/owner" asChild>
+              <Button variant="secondary">Owner mode</Button>
+            </Link>
             <Link href="/verification" asChild>
               <Button variant="secondary">Verification center</Button>
             </Link>
