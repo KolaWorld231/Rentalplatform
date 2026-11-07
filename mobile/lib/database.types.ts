@@ -43,7 +43,12 @@ export type Database = {
       user_roles: TableDef<UserRole, Pick<UserRole, "user_id" | "role"> & Partial<UserRole>>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      grant_owner_role_to_self: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
+    };
     Enums: {
       account_status: AccountStatus;
       app_role: AppRole;
