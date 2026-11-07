@@ -1918,9 +1918,9 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
 
 ### Direct Access Pass milestone (milestone 4 of 8)
 
-- **New migration**, written, **pending the project owner's
-  authorization to apply** (same `[Production Deploy]` guardrail hit
-  for the Auth milestone's RPC, each database write needs its own
+- **New migration**, applied to the live project with the project
+  owner's explicit authorization (same `[Production Deploy]` guardrail
+  hit for the Auth milestone's RPC — each database write needs its own
   approval): `supabase/migrations/20261107000200_mobile_checkout_rpc.sql`
   adds `start_mobile_checkout()`, a `SECURITY DEFINER` RPC that creates
   the same `pending_payment` `subscriptions` row and `initiated`
@@ -1960,11 +1960,23 @@ This entry covers the **Foundation** milestone only (milestone 1 of 8):
   around the existing, unchanged activation flow.
 - `npx tsc --noEmit` and `npx expo lint` (0 errors, same pre-existing
   warning) pass; `npx expo export --platform ios/android` both bundle
-  cleanly. **Live end-to-end verification of the RPC itself (start a
-  checkout, hand off to the mock checkout page, confirm the webhook
-  activates it) is blocked until the migration above is applied** —
-  flagged for the project owner the same way the Auth milestone's RPC
-  was.
+  cleanly. **Live-verified end-to-end** against the real Supabase
+  project with a local Next.js dev server standing in for the deployed
+  web app (same backend either way): called `start_mobile_checkout`,
+  confirmed the resulting `subscriptions`/`payment_transactions` rows
+  are `pending_payment`/`initiated` and owned by the caller, confirmed
+  the exact handoff URL mobile builds loads the real mock checkout
+  page, posted the same payload the page's "Simulate successful
+  payment" button sends to the real webhook endpoint, and confirmed
+  the subscription reads back as `active` with a real `expires_at` via
+  the anon client afterward. One SQL bug was caught by this: the
+  function's `RETURNS TABLE` columns (`duration_days`,
+  `internal_reference`) collided with identically-named columns in
+  plain `select`/`returning` clauses inside the function body (each
+  output column becomes an implicit plpgsql variable, so the bare
+  column name was ambiguous) — fixed by qualifying both with their
+  source table, then re-applied and re-verified clean. Test account,
+  subscription, transaction, and webhook event rows deleted after.
 
 Remaining 4 milestones (Messaging, Verification & trust, Owner mode,
 Polish & release readiness) are tracked in the plan file referenced

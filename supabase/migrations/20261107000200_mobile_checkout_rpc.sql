@@ -29,10 +29,14 @@ declare
   v_transaction_id uuid;
   v_internal_reference uuid;
 begin
-  select id, name, price_usd, duration_days into v_plan
-  from public.subscription_plans
-  where is_active
-  order by created_at desc
+  -- Table columns qualified with the `sp` alias: `duration_days` is also
+  -- this function's own OUT parameter name (RETURNS TABLE makes every
+  -- output column an implicit plpgsql variable), so the bare column name
+  -- is ambiguous here otherwise.
+  select sp.id, sp.name, sp.price_usd, sp.duration_days into v_plan
+  from public.subscription_plans sp
+  where sp.is_active
+  order by sp.created_at desc
   limit 1;
 
   if v_plan.id is null then
@@ -43,9 +47,11 @@ begin
   values (auth.uid(), v_plan.id, 'pending_payment')
   returning id into v_subscription_id;
 
+  -- Same ambiguity as above: `internal_reference` is also an OUT
+  -- parameter name, so the RETURNING column must be table-qualified.
   insert into public.payment_transactions (user_id, subscription_id, provider, amount, currency, status)
   values (auth.uid(), v_subscription_id, 'mock', v_plan.price_usd, 'USD', 'initiated')
-  returning id, internal_reference into v_transaction_id, v_internal_reference;
+  returning payment_transactions.id, payment_transactions.internal_reference into v_transaction_id, v_internal_reference;
 
   return query
     select v_transaction_id, v_internal_reference, v_subscription_id, v_plan.price_usd, v_plan.name, v_plan.duration_days;
