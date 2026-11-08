@@ -2876,3 +2876,34 @@ was the only occurrence of the bug.
   (60/60) all clean.
 - Test owner/renter accounts, listing, conversation, and messages all
   deleted after the authenticated-page screenshot pass.
+
+## Full-site console/hydration sweep + `property_views` cascade fix
+
+After the `/login` hydration fix, swept every route in the app (every
+public page, every `/dashboard`/`/admin` page, `/messages/[id]`,
+`/properties/[slug]`, `/account`, `/favourites`, `/notifications`) at
+desktop and mobile widths, as an unauthenticated visitor and as a
+seeded admin/owner/renter, capturing real browser `pageerror` and
+console-error events rather than just checking HTTP status — the same
+method that caught the hydration bug. **Every route came back clean**:
+no console errors, no hydration warnings, `npm run build` with no
+warnings either.
+
+Found one more real (if minor) issue while cleaning up the sweep's
+test accounts afterward: deleting a test user failed with a foreign
+key violation on `property_views_viewer_id_fkey`. Checking every
+foreign key in the schema that references `auth.users`, this was the
+only one with no `on delete` behavior at all (defaults to `RESTRICT`)
+that wasn't a deliberate restrict (audit logs, verification reviewer/
+manager references correctly block deletion so history isn't silently
+destroyed) — `property_views` is pure view-count analytics with no
+reason to block deleting the user who generated a row. Added
+`supabase/migrations/20261108000400_property_views_cascade.sql`
+(`on delete cascade`), applied to the live project and confirmed via
+`pg_constraint`. This also means the demo-listings removal instructions
+in this file's earlier dated entry no longer have a latent gap if that
+account ever accumulates view rows.
+
+- `npx tsc --noEmit`, `npm run lint`, `npm run test` (60/60) all clean.
+- All sweep test accounts (admin/owner/renter, listing, conversation,
+  messages) deleted after, this time without the FK error.
