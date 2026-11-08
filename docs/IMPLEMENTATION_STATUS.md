@@ -2794,3 +2794,42 @@ more real issues this way, both fixed:
 No code change was needed for either fix — one was a missing Vercel
 env var, the other was live data hygiene — so there's nothing to
 redeploy beyond what already shipped above.
+
+## Design critique pass: auth panel + pricing comparison balance
+
+The user asked for a design critique with fixes applied. Screenshotted
+the live preview site at desktop and mobile widths
+(`/`, `/search`, `/pricing`, `/properties/[slug]`, `/login`,
+`/register`, `/how-it-works`) and reviewed against
+`docs/DESIGN_SYSTEM.md`. Most surfaces are solid and consistent after
+this session's many prior redesign waves; two real, fixable visual-
+hierarchy issues stood out on desktop:
+
+1. **`app/(auth)/layout.tsx`'s brand panel** (`/login`, `/register`)
+   used `justify-between` to pin the tagline block to the top and the
+   trust-bullet list to the bottom, with nothing filling the middle —
+   on a `lg:` viewport this left a large, unbalanced void of flat
+   brand-red in the middle of the panel that read as unfinished rather
+   than intentional. Fixed by centering the two blocks as one grouped
+   composition (`justify-center`) with a thin divider between them
+   (`border-t border-ivory-50/15`, the same divider treatment the
+   homepage hero already uses above its stat strip) — now reads as a
+   single deliberate block instead of two orphaned ones.
+2. **`/pricing`'s two-column comparison** (`app/pricing/page.tsx`): the
+   "Direct Access Pass" card opens with a large price-weight headline
+   (`font-display text-3xl`) before its bullet list; the "Paying an
+   agent" card had no equivalent and was just a label + bullets,
+   so the grid's row-stretch left it with a conspicuous dead gap at
+   the bottom and a visually lopsided first impression (one side looks
+   like a real comparison, the other like an afterthought). Fixed by
+   giving the agent column the same typographic weight
+   (`$30–40`, struck through, `per property, every time`) — fills the
+   space meaningfully *and* strengthens the actual comparison, since
+   both cards now lead with a price the eye can compare at a glance.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean.
+- Live-verified locally (`npm run dev` + Playwright) at both 1440px
+  and 390px: `/login`'s panel now centers as one block with no large
+  dead space; `/pricing`'s agent card now carries a matching price
+  headline; confirmed zero regression on mobile (the brand panel is
+  `hidden` below `lg:` so it was never affected there).
