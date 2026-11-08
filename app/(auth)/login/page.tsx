@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound, Phone } from "lucide-react";
+import { KeyRound, MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { IntentChoiceDialog } from "@/components/auth/IntentChoiceDialog";
 import { PasskeyLoginButton } from "@/components/auth/PasskeyLoginButton";
 import { PhoneAuthForm } from "@/components/auth/PhoneAuthForm";
+import { WhatsAppAuthForm } from "@/components/auth/WhatsAppAuthForm";
 import { usePasskeySupport } from "@/lib/auth/use-passkey-support";
 import { cn } from "@/lib/utils/cn";
 
@@ -30,7 +31,7 @@ function LoginForm() {
   const resetSuccess = searchParams.get("reset") === "success";
   const [state, formAction, pending] = useActionState(loginAction, initialState);
   const passkeySupported = usePasskeySupport();
-  const [method, setMethod] = useState<"password" | "phone">("password");
+  const [method, setMethod] = useState<"password" | "phone" | "whatsapp">("password");
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
@@ -57,7 +58,7 @@ function LoginForm() {
           </>
         )}
 
-        <fieldset className="grid grid-cols-2 gap-2" aria-label="How to log in">
+        <fieldset className="grid grid-cols-3 gap-2" aria-label="How to log in">
           <button
             type="button"
             onClick={() => setMethod("password")}
@@ -82,11 +83,27 @@ function LoginForm() {
             <Phone className="h-4 w-4" aria-hidden="true" />
             Phone
           </button>
+          <button
+            type="button"
+            onClick={() => setMethod("whatsapp")}
+            aria-pressed={method === "whatsapp"}
+            className={cn(
+              "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
+              method === "whatsapp" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+            )}
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            WhatsApp
+          </button>
         </fieldset>
 
         {method === "phone" ? (
           <div className="mt-4">
             <PhoneAuthForm mode="login" />
+          </div>
+        ) : method === "whatsapp" ? (
+          <div className="mt-4">
+            <WhatsAppAuthForm mode="login" />
           </div>
         ) : (
           <form action={formAction} className="mt-4 flex flex-col gap-4">

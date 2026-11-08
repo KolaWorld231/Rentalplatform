@@ -57,41 +57,81 @@ new UI on `/login` and `/register` alongside the password and passkey
 options. Rate limiting: Supabase's own built-in auth rate limiting
 applies here automatically, unlike the custom passkey endpoints.
 
-## Option 2 — WhatsApp OTP
+## Option 2 — WhatsApp OTP — **built**
 
 **Likely the best fit for actual usage patterns in Liberia**, given high
-WhatsApp penetration relative to email — but not Supabase-native, so a
-meaningfully bigger lift than phone/SMS OTP.
+WhatsApp penetration relative to email — not Supabase-native, so a
+meaningfully bigger lift than phone/SMS OTP, but now fully implemented
+on both web and mobile. See `docs/IMPLEMENTATION_STATUS.md` for the
+dated entry with exactly what was verified.
 
-**What it needs**:
-- A **Meta WhatsApp Business Cloud API** account (or a BSP — Business
-  Solution Provider — reseller of it), including business verification
-  and an approved message template for the OTP (Meta requires
-  pre-approved templates for business-initiated conversations).
-- A custom Edge Function or Route Handler that: generates a short numeric
-  code, stores a hashed version + expiry server-side (a small new table,
-  same shape as `webauthn_challenges`), sends it via the WhatsApp Cloud
-  API, and verifies it against the stored hash on submission.
-- The same session-minting pattern this change introduces for passkeys
-  (`admin.generateLink({ type: "magiclink" })` → `verifyOtp` with the
-  resulting `hashed_token`) to turn a verified WhatsApp code into a real
-  Supabase session, since WhatsApp isn't a Supabase Auth provider.
+**What it needed, and what's still a real blocker**: a **Meta WhatsApp
+Business Cloud API** account (or a BSP reseller of it), including
+business verification and an approved message template for the OTP
+(Meta requires pre-approved templates for business-initiated
+conversations). **This part is not resolved** — no credentials exist
+yet, same "needs the project owner's real account" category as the
+payment provider research. `.env.example`'s `WHATSAPP_*` vars document
+exactly what's needed; `lib/auth/whatsapp-cloud-api.ts` throws a clear
+error rather than fabricating a send when they're unset.
 
-**Tradeoff to flag explicitly**: Meta's template-approval process and
-Business verification can take days to weeks and is sometimes rejected on
-first submission — this should be started early if it's wanted, not
-treated as a quick addition.
+**What's actually built** (`lib/auth/whatsapp-otp.ts`,
+`lib/auth/whatsapp-actions.ts`, `lib/auth/otp-code.ts`,
+`supabase/migrations/20261108000200_whatsapp_otp.sql`,
+`components/auth/WhatsAppAuthForm.tsx` on web and its mobile
+equivalent):
+- Generates a 6-digit code with `crypto.randomInt`, stores only its
+  salted SHA-256 hash (`whatsapp_otp_challenges`, same
+  service-role-only shape as `webauthn_challenges`), with a 10-minute
+  TTL, a 5-attempt cap, and per-phone rate limiting on starting a new
+  challenge.
+- Signup still collects an email once, purely as the underlying
+  Supabase Auth identifier (same convention the passkey work already
+  established) — never asked for again; every later sign-in is phone
+  number + WhatsApp code only. `profiles.phone`/`phone_verified_at`
+  (previously unused columns) are now the real phone→account lookup
+  for returning users.
+- The same `admin.generateLink` + `verifyOtp` session-minting trick
+  the passkey work introduced, extracted to a shared
+  `lib/auth/session-mint.ts` so both factors use one copy of it — plus
+  a mobile variant that returns raw session tokens instead of writing
+  cookies, since there's no cookie jar in a Route Handler mobile calls.
+- Mobile reuses 100% of the server-side logic via two unauthenticated-
+  by-design routes (`app/api/mobile/whatsapp-otp/{start,verify}`) —
+  there's no session yet at the point of requesting/verifying a code,
+  so no bearer token is possible or needed; the routes aren't a second
+  implementation, just a JSON-in/JSON-out wrapper around the same
+  functions web's Server Actions call.
 
-## Option 3 — "Remember this device" long-lived sessions
+## Option 3 — "Remember this device" long-lived sessions — **tuned**
 
 Not a new sign-in method — a way to make whichever method is in place
-need to happen less often. Supabase session refresh tokens already
-support long-lived sessions by configuration (how long a refresh token
-stays valid before requiring a fresh login); tuning this down the amount
-of friction for a low-connectivity, low-email user without any new
-infrastructure. Pair this with passkeys (already shipped) or phone OTP
-(Option 1) for the lowest-friction combination: authenticate once, rarely
-again on a trusted device.
+need to happen less often. Checked the live project's actual Auth
+config (Supabase Management API's `/config/auth`, not assumed) before
+changing anything:
+
+- `sessions_inactivity_timeout` and `sessions_timebox` were **already
+  both disabled** on this project — no absolute session expiry and no
+  inactivity-based forced logout exist already. This is the thing that
+  actually keeps a session alive indefinitely (as long as the client
+  refreshes periodically, which both web's and mobile's Supabase
+  clients already do automatically) — nothing needed changing here.
+- `jwt_exp` (the access token's own lifetime) was the default 3600s (1
+  hour) — bumped to 14400s (4 hours), applied to the live project via
+  the Management API and mirrored in `supabase/config.toml` for local
+  dev. This doesn't change how long a session *lasts* (that's the
+  refresh token, unaffected) — it reduces how often the client needs a
+  refresh round-trip at all, which matters specifically for
+  intermittent/low-bandwidth mobile connectivity: fewer refresh
+  attempts means fewer chances for one to fail at a bad moment, and
+  less data used on token refreshes.
+- Live-verified: logged a real test user in against the live project
+  and decoded the returned access token's own `exp`/`iat` claims to
+  confirm its lifetime is genuinely 14400s now, not the old 3600s.
+
+Pair this with passkeys (already shipped) or WhatsApp/phone OTP
+(Options 1-2) for the lowest-friction combination: authenticate once,
+rarely again on a trusted device.
 
 ## Option 4 — USSD
 
@@ -116,16 +156,17 @@ option.
 
 ## Summary — what's actually recommended, in order
 
-1. **Passkeys** (this change) — already removes "remembering a password"
-   as a barrier, no new provider dependency.
-2. **Phone/SMS OTP** — the next highest-leverage addition, natively
-   supported by Supabase, blocked only on choosing and contracting an SMS
-   provider with confirmed Liberia coverage.
-3. **WhatsApp OTP** — likely the best match for actual local usage
-   patterns, but a real lift (Meta Business API, template approval,
-   custom verification code) — worth doing once Option 1 is live and
-   there's appetite for the extra integration work.
-4. **Long-lived sessions** — a cheap, immediate friction-reducer to apply
-   regardless of which identity method is used.
+1. **Passkeys** — built. Already removes "remembering a password" as a
+   barrier, no new provider dependency.
+2. **WhatsApp OTP** — built (code-complete, live-verified end-to-end
+   except the actual message send). Blocked only on the project owner
+   setting up a Meta WhatsApp Business Cloud API account and getting
+   an OTP template approved — see Option 2 above and `.env.example`.
+3. **Phone/SMS OTP** — code-complete (`lib/auth/phone-actions.ts`),
+   inert pending the live project's SMS provider being configured —
+   see `docs/IMPLEMENTATION_STATUS.md`'s production blockers.
+4. **Long-lived sessions** — tuned. No inactivity timeout/timebox
+   existed already; access-token lifetime bumped from 1 to 4 hours,
+   applied to the live project and verified.
 5. **USSD / agent-assisted onboarding** — longer-term, non-technical,
    partnership-dependent; noted for completeness, not a near-term build.

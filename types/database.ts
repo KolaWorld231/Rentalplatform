@@ -331,7 +331,16 @@ export type NotificationPreferences = {
   user_id: string;
   email_enabled: boolean;
   in_app_enabled: boolean;
+  push_enabled: boolean;
   updated_at: string;
+};
+
+export type PushToken = {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: "ios" | "android";
+  created_at: string;
 };
 
 export type AdminAuditLog = {
@@ -393,6 +402,19 @@ export type WebAuthnChallenge = {
   purpose: WebAuthnChallengePurpose;
   challenge: string;
   metadata: Record<string, unknown>;
+  expires_at: string;
+  created_at: string;
+};
+
+export type WhatsAppOtpPurpose = "signup" | "login";
+
+export type WhatsAppOtpChallenge = {
+  id: string;
+  phone: string;
+  code_hash: string;
+  purpose: WhatsAppOtpPurpose;
+  metadata: Record<string, unknown>;
+  attempts: number;
   expires_at: string;
   created_at: string;
 };
@@ -471,6 +493,7 @@ export type Database = {
         NotificationPreferences,
         Partial<NotificationPreferences> & Pick<NotificationPreferences, "user_id">
       >;
+      push_tokens: TableDef<PushToken, Partial<PushToken> & Pick<PushToken, "user_id" | "token" | "platform">>;
       admin_audit_logs: TableDef<
         AdminAuditLog,
         Partial<AdminAuditLog> & Pick<AdminAuditLog, "actor_id" | "action" | "target_table" | "target_id">
@@ -486,6 +509,10 @@ export type Database = {
       webauthn_challenges: TableDef<
         WebAuthnChallenge,
         Partial<WebAuthnChallenge> & Pick<WebAuthnChallenge, "purpose" | "challenge" | "expires_at">
+      >;
+      whatsapp_otp_challenges: TableDef<
+        WhatsAppOtpChallenge,
+        Partial<WhatsAppOtpChallenge> & Pick<WhatsAppOtpChallenge, "phone" | "code_hash" | "purpose" | "expires_at">
       >;
     };
     Views: Record<string, never>;

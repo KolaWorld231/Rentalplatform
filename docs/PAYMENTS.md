@@ -11,20 +11,35 @@ manual. See `CLAUDE.md` for the full non-negotiable rule set.
 ## Architecture
 
 ```
-Renter clicks "Subscribe"
-  → startCheckoutAction (Server Action, lib/subscriptions/service.ts)
+Renter clicks "Subscribe" (web) / taps "Get the Direct Access Pass" (mobile)
+  → startCheckout() (lib/subscriptions/service.ts) -- web calls it
+    directly from a Server Action; mobile calls it via the authenticated
+    app/api/mobile/checkout/route.ts, same function either way
     → creates subscriptions row (status: pending_payment) [service_role]
     → creates payment_transactions row (status: initiated) [service_role]
-    → provider.createCheckout(...) → { redirectUrl }
-  → browser redirected to the provider's checkout page
+    → provider.createCheckout(...) → CheckoutResult, one of:
+      - { kind: "redirect", redirectUrl } -- card-style/mock: browser
+        navigates to the provider's checkout page
+      - { kind: "pending", reference } -- MTN MoMo: no page to redirect
+        to, a USSD prompt already went to the payer's phone; web shows
+        /checkout/momo/pending, mobile shows its own pending state, both
+        POLL from here (see below), since MoMo's callbacks can't be
+        trusted
 
-Provider confirms payment → calls our webhook
-  → app/api/payments/webhook/route.ts
-    → provider.verifyWebhook(rawBody, headers) → VerifiedWebhookEvent | null
+Resolution reaches processVerifiedPaymentEvent (lib/payments/service.ts)
+one of two ways -- the SAME function either way, never duplicated:
+  (a) Provider calls our webhook → app/api/payments/webhook/route.ts
+      → provider.verifyWebhook(rawBody, headers) → VerifiedWebhookEvent | null
+  (b) Our own poll (app/checkout/momo/actions.ts on web,
+      app/api/mobile/checkout/status/route.ts for mobile) calls
+      provider.checkStatus(reference) → VerifiedWebhookEvent | null
+      directly, independent of any callback
+
+  processVerifiedPaymentEvent then:
     → look up payment_transactions by internal_reference
     → reject if amount/currency mismatch
     → INSERT payment_webhook_events (unique on provider+event_id) — THE
-      idempotency gate. A duplicate delivery hits a unique-constraint
+      idempotency gate. A duplicate delivery/poll hits a unique-constraint
       violation and is acknowledged without re-processing.
     → if confirmed: supabase.rpc('confirm_payment_and_activate_subscription')
       — a SECURITY DEFINER Postgres function, executable only by
@@ -80,16 +95,88 @@ tested here. Safety rails:
 ## Adding a real provider
 
 Implement `PaymentProvider` (`lib/payments/types.ts`):
-- `createCheckout(params)` — start a payment, return a redirect URL.
+- `createCheckout(params)` — start a payment. Returns one of two shapes
+  (`CheckoutResult` is a union, not a single `redirectUrl` field): `{
+  kind: "redirect", redirectUrl }` for a hosted checkout page (card
+  processors, the mock provider), or `{ kind: "pending", reference }`
+  for a push-payment provider (MTN MoMo's RequestToPay) that has no page
+  to redirect to — see "MTN MoMo (push-payment) integration" below.
 - `verifyWebhook({ rawBody, headers })` — **independently verify**
   authenticity (signature check against the provider's documented scheme,
   or an API callback to confirm the event) and return a normalized
   `VerifiedWebhookEvent`, or `null` if verification fails. Returning
   non-null is what the webhook route treats as "safe to act on" — get
   this wrong and you've broken the whole security model.
+- `checkStatus(reference)` (optional) — only needed by a push-payment
+  provider whose callbacks can't be trusted; polls the provider directly
+  and returns `null` while still pending.
+- `requiresPayerPhone: boolean` — true if `createCheckout` needs
+  `CheckoutParams.payerPhone`. The pricing page (and mobile's) only shows
+  a phone field when this is true.
 
 Then register it in `getPaymentProvider()` and set `PAYMENTS_PROVIDER` /
 provider-specific env vars (see `.env.example`).
+
+Whatever a provider's write path needs, it must go through
+`lib/payments/service.ts`'s `processVerifiedPaymentEvent(event,
+providerName)` — the one and only activation code path (idempotent,
+amount-checked, `confirm_payment_and_activate_subscription`-calling).
+The webhook route calls it after `verifyWebhook` succeeds; a polling
+flow (see below) calls it after `checkStatus` resolves. Never write a
+second copy of this logic for a new provider.
+
+## MTN MoMo (push-payment) integration
+
+`lib/payments/providers/mtn-momo.ts` implements MTN Mobile Money's
+Collection API (`PAYMENTS_PROVIDER=mtn_momo`). Unlike a card processor,
+MoMo is a **push** flow: there's no hosted checkout page. The payer's
+phone number is collected in our own UI, `RequestToPay` sends a USSD
+prompt directly to their phone, and the flow resolves only once they
+approve + enter their PIN.
+
+- **Sandbox credentials are self-provisioned**, no business registration
+  needed: sign up at momodeveloper.mtn.com, subscribe to the free
+  "Collection" product for a subscription key, then create an API user +
+  API key against the sandbox (`POST /v1_0/apiuser`, then
+  `/v1_0/apiuser/{id}/apikey`) — see `.env.example`'s `MTN_MOMO_*` vars.
+- **Sandbox callbacks are known unreliable** (confirmed against MTN's own
+  developer-community posts and third-party integration guides, not
+  assumed) — so `verifyWebhook` never trusts a callback's status
+  directly; it only reads which reference to check, then calls
+  `checkStatus` for the real, independently-verified result. The primary
+  path is **polling**, not callbacks:
+  - Web: after `startCheckout` returns `{ kind: "pending" }`, the renter
+    is redirected to `/checkout/momo/pending`, which polls
+    `checkMomoPaymentStatusAction` (`app/checkout/momo/actions.ts`) every
+    few seconds.
+  - Mobile: the same poll, via the authenticated
+    `POST /api/mobile/checkout/status` route (see "Mobile parity" below).
+- **Liberia is a confirmed live MoMo production market** (per MTN's own
+  community posts, not assumed), but the sandbox only accepts **EUR** and
+  a generic `X-Target-Environment: sandbox` — Liberia's real production
+  `X-Target-Environment` value and actual settlement currency (almost
+  certainly LRD, not USD) are **not yet resolved**, same "needs the
+  project owner's real credentials/research" category as the rest of
+  this file. `payment_transactions.currency` always records the business
+  currency (USD); `MTN_MOMO_CURRENCY` only controls what's sent to MTN's
+  API, and never corrupts the ledger.
+
+## Mobile parity
+
+Mobile has no server-role layer, so it can't call a real provider's
+`createCheckout` directly (MTN's subscription key must never reach a
+client bundle). `app/api/mobile/checkout/route.ts` is a thin,
+bearer-token-authenticated route that calls the **exact same**
+`startCheckout()` the web Server Action calls — not a reimplementation.
+`app/api/mobile/checkout/status/route.ts` is the equivalent for polling.
+Both validate the caller via `supabase.auth.getUser(accessToken)` against
+the service-role client before doing anything. This superseded the
+Foundation-milestone `start_mobile_checkout()` RPC, which only ever
+worked for the mock provider (it hardcoded `provider = 'mock'` and could
+only create database rows, never call a real provider's API) — see
+`docs/IMPLEMENTATION_STATUS.md`. That RPC is still deployed but unused;
+dropping it is a separate, low-priority migration, not required for
+correctness.
 
 ### Liberia-specific provider research (not yet resolved)
 

@@ -163,7 +163,14 @@ site_url = "http://127.0.0.1:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = ["https://127.0.0.1:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
-jwt_expiry = 3600
+# Bumped to 4 hours: fewer silent refresh round-trips for low-connectivity
+# mobile use (Liberia's low-bandwidth context, docs/AUTH_ALTERNATIVES.md
+# Option 3) without weakening session continuity itself -- that already
+# comes from the refresh token, which has no inactivity timeout or
+# timebox on this project (sessions_inactivity_timeout/sessions_timebox
+# are both disabled). Kept in sync with the live project's same setting
+# (applied via the Management API) so local dev matches production.
+jwt_expiry = 14400
 # JWT issuer URL. If not set, defaults to auth.external_url.
 # jwt_issuer = ""
 # Path to JWT signing key. DO NOT commit your signing keys file to git.

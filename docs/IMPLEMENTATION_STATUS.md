@@ -1730,6 +1730,500 @@ override exists, so Tailwind v4's default `dark:` →
   session (this project doesn't auto-promote `main` merges to that
   domain).
 
+## Native mobile app — Foundation milestone (post-Milestone-8)
+
+The user asked for a native iOS/Android app alongside the web product.
+They attached a pasted prompt plus `MASTER_PROJECT_SPEC.md`/`DESIGN.md`
+describing a from-scratch "Crimson Direct" design system and a
+pnpm/Turborepo monorepo rebuild — confirmed via `AskUserQuestion`
+(twice) that the actual scope is narrower: reuse this repo's *existing*
+Claymorphism design tokens and *existing* Supabase backend, no monorepo
+conversion, no richer utility/amenity schema fields, mobile app as a
+standalone project in a new `mobile/` folder (not a workspace). The
+full mobile-app plan (milestones, scope decisions, and the specific
+mockup content this project will *not* ship — fabricated stats, "Safe
+Escrow," unverified security badges, phone numbers exposed platform-
+wide — all flagged against `CLAUDE.md` rule #9 and `docs/SECURITY.md`'s
+actual contact-privacy rule) is recorded in full detail in the plan file
+from that planning session.
+
+This entry covers the **Foundation** milestone only (milestone 1 of 8):
+
+- New `mobile/` Expo project (Expo Router, TypeScript strict,
+  NativeWind) — see `mobile/README.md` for setup and the "keeping in
+  sync with web" rules, since there's deliberately no shared code
+  package between the two apps.
+- `mobile/tailwind.config.js` hand-ported from `app/globals.css`'s
+  actual color/radius values (Bonfire Red `forest-*`, `ivory-*`,
+  `clay-*`, `charcoal-*`, `success/warning/error/info-*`) — not the
+  spec docs' Crimson `#9E1032` palette.
+- Fonts: `@expo-google-fonts/manrope` + `@expo-google-fonts/plus-
+  jakarta-sans`, matching the web app's `next/font` pairing exactly.
+- `mobile/lib/supabase.ts`: `@supabase/supabase-js` pointed at the same
+  live project, anon key only (never the service-role key in a mobile
+  bundle), session persisted via `@react-native-async-storage/async-
+  storage` (not `expo-secure-store` — its ~2KB per-key limit on some
+  platforms is too small for a full session payload; this is Supabase's
+  own documented React Native pattern).
+- `mobile/lib/database.types.ts`: hand-ported subset of `types/
+  database.ts` (just `profiles`/`user_roles` so far — extended table-by-
+  table as later milestones need them, same "no `supabase gen types` in
+  CI yet" reasoning as the web types file).
+- Tab navigation (Home/Search/Saved/Messages) mirroring the web header's
+  own four tabs; every screen besides Home is a placeholder stating
+  which later milestone implements it.
+- **Real bugs hit and fixed while standing this up** (all upstream
+  tooling/config issues, not application-logic bugs):
+  - `babel-preset-expo` and `react-native-reanimated/plugin` were
+    present only nested inside `expo`'s own `node_modules` (not hoisted
+    to the project root), so Babel's config-file-relative module
+    resolution couldn't find them from `mobile/babel.config.js` even
+    though `npm ls` showed them as installed — fixed by installing both
+    as direct top-level dependencies so npm hoists them.
+  - `npx expo-doctor` caught a missing peer dependency
+    (`react-native-worklets`, required by `react-native-reanimated`)
+    and a major-version mismatch (`@react-native-async-storage/async-
+    storage` resolved to `3.1.1` against SDK 58's expected `2.2.0`) —
+    both fixed (`npx expo install react-native-worklets` and `npx expo
+    install --fix`); `expo-doctor` now reports 20/20 checks passing.
+  - Running the app with `--web` (used only as a fast smoke-test loop in
+    this sandbox, which has no iOS/Android simulator available) hits an
+    uncaught error from `react-native-css-interop`'s web runtime: an
+    internal `MutationObserver` callback calls `colorScheme.set()`
+    unconditionally once it detects `darkMode: "media"`, but that same
+    method throws precisely when `darkMode === "media"` — an upstream
+    library inconsistency in the DOM-only code path, confirmed by
+    reading `node_modules/react-native-css-interop/dist/runtime/web/
+    color-scheme.js` directly. This code path only exists when
+    `globalThis.window` is present (i.e., only on web); it does not run
+    on iOS/Android. Confirmed the real target platforms are unaffected
+    by building actual bundles for both — `npx expo export --platform
+    ios` and `--platform android` both completed successfully (3835
+    modules, iOS/Android `.hbc` bundles produced, no errors) — so this
+    is logged as a known web-smoke-test-only quirk, not a blocker for
+    the app's actual platforms.
+- `npx tsc --noEmit` and `npx expo lint` both clean.
+
+### Auth milestone (milestone 2 of 8)
+
+- `mobile/lib/validation/auth.ts`: `registerSchema`/`loginSchema` hand-
+  ported from `lib/validation/auth.ts` (same rules, kept in sync by
+  hand per `mobile/README.md`).
+- `mobile/lib/auth/actions.ts`: `registerAction`/`loginAction`/
+  `logoutAction`, calling `supabase.auth.signUp`/`signInWithPassword`/
+  `signOut` directly (mobile has no Next.js Server Action layer, so the
+  anon-key client call plus RLS is the enforcement boundary — same as
+  every other mobile data access, per `CLAUDE.md` rule #7).
+  `registerAction`'s owner-intent branch calls a new RPC,
+  `grant_owner_role_to_self` (see below).
+- `mobile/app/(auth)/{login,register}.tsx`: React Hook Form + Zod,
+  renter/owner intent cards on register (mirrors the web register
+  page's pattern), wired to the real session via
+  `mobile/lib/auth/session.tsx`'s `SessionProvider`. Home screen now
+  shows real signed-in/signed-out state instead of a placeholder.
+- **New migration**: `supabase/migrations/20261107000100_self_service_owner_role.sql`
+  adds `grant_owner_role_to_self()`, a `SECURITY DEFINER` RPC that lets
+  a user grant themselves the `owner` role (and only `owner`, never
+  `moderator`/`admin`) by reading `auth.uid()` from their own JWT —
+  mobile's equivalent of the web's service-role-backed intent→role
+  logic in `registerAction`, since mobile only ever holds the anon
+  key. Applying it to the live, hosted project was initially blocked
+  by Claude Code's auto-mode safety classifier (reason:
+  `[Production Deploy]`) — a deliberate guardrail, not a bug — and
+  applied via the Supabase Management API once the project owner
+  explicitly authorized it. **Now applied and live-verified**:
+  confirmed the owner-intent RPC call succeeds and grants exactly
+  `owner` (alongside the trigger-granted `renter`), confirmed the
+  function accepts no arguments at all (so there is no way for a
+  caller to target any user but themselves), and confirmed a second
+  call is a safe no-op (`on conflict do nothing`). Test accounts
+  deleted after.
+- **Live-verified** against the real Supabase project with a Node
+  script exercising the actual auth logic directly (not through a
+  browser — see below): confirmed `auth.admin.createUser` + the
+  existing `handle_new_user` trigger together produce the right
+  `profiles`/`user_roles` rows for a renter sign-up, confirmed
+  `loginAction`'s `signInWithPassword` call succeeds for correct
+  credentials and fails with the expected error for a wrong password,
+  and confirmed the owner-intent RPC call fails with exactly the
+  "could not find the function" error `registerAction`'s error-handling
+  branch is built to catch — i.e., the undeployed migration is
+  confirmed to be the *only* missing piece, not a code bug. Test
+  accounts deleted after.
+  - Browser-based (Playwright) UI verification of the actual register/
+    login screens was attempted first but abandoned: the web-only
+    `react-native-css-interop` quirk already logged under Foundation
+    above re-surfaced as a small bottom-screen error toast that
+    intercepted pointer events, and forcing interactions through it
+    left React Hook Form's state out of sync with the DOM. Since this
+    is a known, web-smoke-test-only artifact unrelated to app logic
+    (confirmed harmless to iOS/Android via `expo export` under
+    Foundation above), verification was redirected to exercising the
+    real `@supabase/supabase-js` calls directly instead, which is a
+    more direct test of the business logic anyway.
+- `npx tsc --noEmit`, `npx expo lint` (0 errors, one pre-existing
+  React-Compiler incompatible-library warning on `watch()`, not a
+  regression), and `npx expo export --platform ios/android` (both
+  platforms bundle cleanly) all pass.
+
+### Browse & search milestone (milestone 3 of 8)
+
+- `mobile/lib/properties/service.ts`: `searchProperties`,
+  `getRecentlyListed`, `getPropertyBySlug`, `getSimilarProperties`,
+  `getFavouritedPropertyIds`/`getFavouritedProperties`, and
+  `toggleFavourite` — hand-ported from `services/properties.ts` and
+  `app/favourites/actions.ts`, same query shapes and RLS-backed
+  authorization boundary, called directly from screens (no Server
+  Action layer on mobile, per `CLAUDE.md` rule #7).
+- `mobile/lib/database.types.ts` extended with `properties`,
+  `property_images`, `property_favourites` (hand-ported from
+  `types/database.ts`); `mobile/lib/format.ts`/`mobile/lib/storage.ts`
+  port the `formatUsd`/`formatCategory`/`isRecentlyPublished` helpers
+  and the public property-image URL builder.
+- `components/properties/PropertyCard.tsx`: cover photo (`expo-image`),
+  price, title, location, category, and a real "New" badge
+  (`isRecentlyPublished`, same 72-hour window as web) — never a
+  fabricated badge, per rule #9.
+- Home tab: real "Recently listed" horizontal list (replaces the
+  Foundation milestone's placeholder text) via `getRecentlyListed`.
+- Search tab: full rebuild — free-text title search, category/county
+  filter chips, a sort control (newest/price low-high/price high-low,
+  same `sort` param `searchProperties` already supported), a real
+  result count, two-column results grid, and prev/next pagination with
+  "Page X of Y" (mirrors web wave-6's search redesign).
+- `app/property/[slug].tsx` (new route, outside the tab group): photo
+  strip, price + disclosed move-in cost breakdown (advance rent/
+  deposit/other fees, same shape as web), amenity chips from the
+  existing simple boolean fields (no new utility/amenity schema, per
+  the plan's explicit scope decision), favourite toggle, and a
+  "Similar properties" row. "Message owner" is shown but disabled with
+  "(coming soon)" — real messaging is Milestone 5; never a fake-working
+  button.
+- Saved tab: real favourites grid for a signed-in user (reusing
+  `PropertyCard`), with a "Log in to save properties" prompt when
+  signed out — replaces the Foundation milestone's placeholder.
+- No RLS/schema changes — this milestone only adds mobile read paths
+  (plus the already-existing `property_favourites` insert/delete a
+  signed-in user is allowed to do on their own rows) against tables and
+  policies Milestone 3 of the *web* app already created and tested.
+- **Live-verified** against the real Supabase project with a Node
+  script seeding one real listing + one test account: confirmed the
+  anon client's search-by-county query finds it, the by-slug detail
+  lookup works, the similar-properties query runs cleanly, and the
+  full favourite → list → un-favourite round trip succeeds under RLS
+  for the owning user. Listing and account deleted after.
+- `npx tsc --noEmit`, `npx expo lint` (0 errors, same one pre-existing
+  warning noted under Auth above), and `npx expo export --platform
+  ios/android` (both bundle cleanly) all pass.
+
+### Direct Access Pass milestone (milestone 4 of 8)
+
+- **New migration**, applied to the live project with the project
+  owner's explicit authorization (same `[Production Deploy]` guardrail
+  hit for the Auth milestone's RPC — each database write needs its own
+  approval): `supabase/migrations/20261107000200_mobile_checkout_rpc.sql`
+  adds `start_mobile_checkout()`, a `SECURITY DEFINER` RPC that creates
+  the same `pending_payment` `subscriptions` row and `initiated`
+  `payment_transactions` row the web's `startCheckout()` does — the
+  one write mobile has no service-role layer for, since
+  `subscriptions` deliberately has no client INSERT policy at all (see
+  the M4 web migration's comment: only a server-verified payment may
+  activate one). `auth.uid()` is read from the caller's JWT, never an
+  argument, so it can only ever start a checkout for the caller
+  themselves. Hard-codes `provider = 'mock'`, matching the web app's
+  current dev-only `getPaymentProvider()` default — **when a real
+  payment provider is chosen, this function needs updating alongside
+  it**, tracked as the same pre-existing credential-blocked item in
+  `docs/PAYMENTS.md`, not a new gap.
+- `mobile/lib/subscriptions/service.ts`: `getActiveSubscription`/
+  `getSubscriptionHistory` read directly via the anon client (allowed
+  by the existing `subscriptions_select_self` RLS policy — no RPC
+  needed for reads), and `startMobileCheckout()` calls the new RPC
+  then builds the exact same mock-checkout URL
+  `MockPaymentProvider.createCheckout()` builds on web. Everything
+  after that handoff — the checkout page, webhook signature
+  verification, idempotent processing, and
+  `confirm_payment_and_activate_subscription` — is the web app's
+  existing, already-tested code; nothing about activation is
+  duplicated on mobile, only the "start a pending checkout for myself"
+  write.
+- `app/pricing.tsx` (new route): plan price/benefits (ported from
+  `lib/config/brand.ts`'s `subscriptionPlan`), active-subscription
+  status with its real expiry date, and a checkout button that opens
+  the handoff URL in an in-app browser (`expo-web-browser`) — never a
+  client-trusted "success" state; the screen only shows "active" once
+  `getActiveSubscription` reads it back as such after the browser
+  closes. Home screen links to it.
+- No changes to the payment provider, webhook route, or
+  `confirm_payment_and_activate_subscription` — this milestone only
+  adds the one missing mobile-side write primitive plus a native UI
+  around the existing, unchanged activation flow.
+- `npx tsc --noEmit` and `npx expo lint` (0 errors, same pre-existing
+  warning) pass; `npx expo export --platform ios/android` both bundle
+  cleanly. **Live-verified end-to-end** against the real Supabase
+  project with a local Next.js dev server standing in for the deployed
+  web app (same backend either way): called `start_mobile_checkout`,
+  confirmed the resulting `subscriptions`/`payment_transactions` rows
+  are `pending_payment`/`initiated` and owned by the caller, confirmed
+  the exact handoff URL mobile builds loads the real mock checkout
+  page, posted the same payload the page's "Simulate successful
+  payment" button sends to the real webhook endpoint, and confirmed
+  the subscription reads back as `active` with a real `expires_at` via
+  the anon client afterward. One SQL bug was caught by this: the
+  function's `RETURNS TABLE` columns (`duration_days`,
+  `internal_reference`) collided with identically-named columns in
+  plain `select`/`returning` clauses inside the function body (each
+  output column becomes an implicit plpgsql variable, so the bare
+  column name was ambiguous) — fixed by qualifying both with their
+  source table, then re-applied and re-verified clean. Test account,
+  subscription, transaction, and webhook event rows deleted after.
+
+### Messaging milestone (milestone 5 of 8)
+
+- **No new RPC needed** — unlike Auth and Direct Access Pass, the
+  subscription gate for starting a new conversation is enforced
+  entirely by a plain RLS `INSERT` policy on `conversations`
+  (`conversations_insert_renter`, from the web app's own M5 migration
+  comment: "Postgres evaluates the INSERT policy's WITH CHECK against
+  the proposed row, so this is exactly as trustworthy as a SECURITY
+  DEFINER function would be, with less code"). That means it's exactly
+  as trustworthy called from mobile's anon client as from the web's
+  Server Action — nothing to duplicate in SQL this time.
+- `mobile/lib/messaging/service.ts`: `startOrContinueConversation`,
+  `sendMessage`, `markConversationRead`, `getConversationsForUser`,
+  `getConversationDetail`, `getMessages` — hand-ported from
+  `services/messaging.ts` and `components/messaging/
+  ConversationList.tsx`, same query shapes, called directly from
+  screens.
+- `app/(tabs)/messages.tsx`: real inbox — `Avatar`, property cover
+  thumbnail, unread indicator (same "last-read vs. updated-at"
+  comparison as web), empty state with a link to Search.
+- `app/messages/[id].tsx` (new route): message bubbles (sender's own on
+  the right, counterpart's with an `Avatar` on the left, consecutive-
+  message grouping skipped for this first cut), a composer, and a
+  Supabase Realtime subscription on `postgres_changes` INSERT for the
+  conversation's messages — confirmed actually firing against the live
+  project (see below), closing the one thing the web app's own
+  `RealtimeMessageListener` comment flagged as "not independently
+  verified in this sandboxed environment."
+- `components/ui/Avatar.tsx`: hand-ported hash-based initials avatar,
+  same color rotation as web's.
+- Property detail screen (`app/property/[slug].tsx`): the "Message
+  owner (coming soon)" placeholder from the Browse & search milestone
+  is now a real contact form — hidden entirely for the listing's own
+  owner, logged-out users get a "Log in to message the owner" prompt,
+  and a `subscription_required` result from
+  `startOrContinueConversation` routes straight to `/pricing` — the
+  actual paywall moment the plan described, now wired to a real
+  screen instead of a placeholder.
+- **Live-verified** against the real Supabase project with seeded
+  owner/renter/stranger accounts and a real listing: confirmed an
+  unsubscribed renter is blocked from starting a conversation (RLS
+  `42501`), confirmed an owner is blocked from messaging themselves
+  about their own listing (the `enforce_conversation_owner` trigger),
+  confirmed a subscribed renter can start one and `owner_id` is
+  server-derived from the property (never the client-sent value),
+  confirmed both participants can read/reply and a non-participant
+  cannot (RLS), confirmed `markConversationRead`'s update succeeds,
+  and confirmed a Realtime `INSERT` subscription genuinely fires when
+  a new message arrives (the first attempt raced the subscription's
+  own `SUBSCRIBED` callback and under-reported a false negative;
+  waiting for that callback first showed it firing correctly). All
+  test accounts, the listing, and subscription rows deleted after.
+- `npx tsc --noEmit`, `npx expo lint` (0 errors, same pre-existing
+  warning), and `npx expo export --platform ios/android` (both bundle
+  cleanly) all pass.
+
+### Verification & trust milestone (milestone 6 of 8)
+
+- **No new RPC needed** — same reasoning as Messaging: every write
+  (`identity_verification_requests`/`property_verification_requests`
+  self-insert, `private_verification_documents` self-insert, the
+  private `verification-documents` Storage bucket's own object-level
+  RLS) is already scoped to the caller by plain RLS policies on the
+  web app's own M6 migration, so mobile's anon client can make them
+  directly — nothing to duplicate in SQL.
+- `mobile/lib/verification/service.ts`: `submitIdentityVerification`/
+  `submitPropertyVerification` (hand-ported from `app/dashboard/
+  verification/actions.ts`), `uploadVerificationDocument`, and
+  `isIdentityVerified`/`isPropertyVerified` (the same anon-callable
+  `is_identity_verified`/`is_property_verified` RPCs web already
+  uses). Upload reads the captured photo as base64
+  (`expo-file-system`'s legacy API) and decodes it to an `ArrayBuffer`
+  (`base64-arraybuffer`, a new dependency) before calling
+  `storage.upload()` — React Native has no `fetch(uri).blob()` path
+  reliable enough for this across Expo versions, so this is the
+  documented Supabase-on-React-Native pattern, not a web port.
+- `app/verification.tsx` (new route): identity verification card
+  (submit → camera capture via `expo-image-picker`, a new dependency →
+  status), and one card per owned property reusing the same submit/
+  capture flow — mirrors `app/dashboard/verification/page.tsx`'s
+  structure. Same disclosure line as web: "not a guarantee of legal
+  ownership." Home screen links to it for signed-in users.
+- `components/verification/VerificationBadge.tsx`: hand-ported badge,
+  shown on the property detail screen next to the price once
+  `isIdentityVerified`/`isPropertyVerified` independently confirm
+  `verified` — never derived from anything client-supplied, same rule
+  as web's version.
+- No document *viewer* was built on mobile this milestone (web's
+  signed-URL `DocumentLink` flow) — storage RLS already lets the
+  uploader (or a moderator/admin) `.download()` their own documents
+  directly with the anon client, confirmed below, but the mobile UI
+  for actually viewing a downloaded photo is deferred; listing the
+  document count, as web's own uploader does, was judged sufficient
+  for this milestone.
+- **Live-verified** against the real Supabase project: confirmed a
+  real identity verification request can be submitted and starts
+  `submitted`, confirmed the anon client can upload real file bytes
+  to the private bucket and record the document row, confirmed a
+  stranger can read neither the document's metadata (RLS) nor
+  download the file itself (storage RLS — Supabase returns "object
+  not found" rather than a permission error, which is itself the
+  correct anti-enumeration behavior, not a bug), confirmed
+  `is_identity_verified` reads `false` before a moderator verifies the
+  request and `true` immediately after. Test accounts, document, and
+  request rows deleted after.
+- `npx tsc --noEmit` and `npx expo lint` (0 errors, same pre-existing
+  warning) pass; `npx expo export --platform ios/android` both bundle
+  cleanly.
+
+### Owner mode milestone (milestone 7 of 8)
+
+- **No new RPC needed** beyond the Auth milestone's existing
+  `grant_owner_role_to_self` — listing create/update, status/
+  availability changes, and photo upload/delete/cover-select are all
+  plain RLS-scoped writes on the web app's own M3 migration
+  (`properties_insert_owner` requires `has_role('owner')`;
+  `properties_update_owner`/`property_images_write_owner` scope to
+  `owner_id`/`manager_id = auth.uid()`), so mobile's anon client makes
+  them directly, same as Messaging and Verification.
+- `mobile/lib/owner/service.ts`: `getMyProperties`/`getMyProperty`,
+  `createProperty`/`updateProperty`, `setListingStatus`/
+  `setAvailability`/`confirmAvailability`, `uploadPropertyPhoto`/
+  `deletePropertyPhoto`/`setCoverPhoto`, and `becomeOwner` (wraps the
+  existing RPC) — hand-ported from `app/dashboard/properties/
+  actions.ts` and `services/properties.ts`'s `slugify`.
+- `mobile/lib/validation/property-form.ts`: a mobile-friendly subset of
+  `propertyFormSchema` — the same fields, but numeric inputs are
+  plain `z.number()`/`z.number().nullable()` rather than
+  `z.coerce.number()`/a `preprocess`+`transform` chain, since
+  `@hookform/resolvers/zod` infers those chains as `unknown` through
+  `Resolver<...>`'s generic on this project's zod/RHF versions — a
+  real type-inference bug caught by `tsc`, not a style choice;
+  conversion from text-input strings happens at each field's
+  `onChangeText` instead.
+- `components/properties/PropertyFormFields.tsx`: shared form fields
+  (description, category/usage-type/rental-frequency/county as
+  horizontal chip-pickers — there's no native `<select>` in React
+  Native — amenity toggle chips, numeric fields) used by both the new
+  listing screen and the edit screen, so the two forms can't drift.
+- `app/owner/index.tsx`: a renter who hasn't listed yet sees a
+  "Property owners list for free — always" prompt with a
+  `becomeOwner()` button (the plan's own scope note: owners never pay
+  — this just lets a renter *become* one, reusing the Auth milestone's
+  self-service RPC rather than inventing a second path into the
+  `owner` role); an existing owner sees a stat strip (published/total/
+  views, same numbers as web's dashboard), a stale-availability
+  nudge (reusing `isAvailabilityStale`, same 14-day constant as web),
+  and their listings.
+- `app/owner/new.tsx` / `app/owner/[id].tsx`: create and edit screens.
+  Edit adds photo management (camera-roll upload via
+  `expo-image-picker`, set cover, delete) and the same three status-
+  control groups as web's wave-6 redesign — Visibility (Publish/
+  Unpublish), Availability (Mark rented/available) plus a "Reconfirm
+  availability now" action, and Archive set apart as a lower-emphasis
+  `ghost` action in its own bordered sub-row.
+- Admin/moderation stays web-only, as the plan always said — no mobile
+  admin screens in this milestone.
+- **Live-verified** against the real Supabase project: confirmed a
+  plain renter is blocked from inserting a property (RLS requires
+  `has_role('owner')`), confirmed `becomeOwner` grants it and the
+  insert then succeeds, confirmed a new listing starts as `draft`
+  (never auto-published), confirmed update/publish/availability/
+  reconfirm all succeed for the owner, confirmed a real photo upload
+  to the public `property-images` bucket and its `property_images`
+  row both succeed, confirmed the published listing is visible via
+  the same query shape `searchProperties` uses, and confirmed a
+  stranger's update against the same row silently affects zero rows
+  under RLS rather than erroring (the correct Postgres RLS behavior,
+  not a bug). Test accounts, the listing, and the photo deleted
+  after.
+- `npx tsc --noEmit` and `npx expo lint` (0 errors, same pre-existing
+  warning) pass; `npx expo export --platform ios/android` both bundle
+  cleanly.
+
+### Polish & release readiness milestone (milestone 8 of 8)
+
+- **Accessibility pass**: `components/ui/Button.tsx`'s `sm` size was
+  36px tall (`h-9`) — below both Apple HIG's 44pt and Material's 48dp
+  minimum touch target — bumped to `h-11` (44px); every screen using
+  `size="sm"` (owner status controls, property-verification cards)
+  picks this up automatically, no per-call change needed. Added
+  `accessibilityRole="button"` + `accessibilityState` to `Button`
+  itself; the icon-only favourite toggle on the property detail screen
+  (previously a bare ♥/♡ glyph with no label) got
+  `accessibilityLabel`/`accessibilityRole`/`accessibilityState` and a
+  44×44 hit area; `components/ui/Input.tsx` now passes its visible
+  `label` through as `accessibilityLabel` (React Native has no
+  `<label for>` equivalent — visual proximity alone doesn't reach a
+  screen reader); `components/ui/Avatar.tsx` (purely decorative next to
+  a name that's already read) is now hidden from screen readers
+  (`accessibilityElementsHidden`/`importantForAccessibility`) instead
+  of being announced as a redundant, unlabeled initial.
+- **App icon/splash**: the Android adaptive icon background and the
+  splash screen (previously Expo's default light blue, `#E6F4FE`, and
+  an unconfigured default splash) now use the brand's actual primary
+  color (`#a00c30`, the same `forest-800`/`brand-800` token web uses)
+  with a dark-mode variant (`#1a1a1a`, matching `--color-surface`'s
+  dark value) — one cohesive visual language from first launch, per
+  `CLAUDE.md` rule #10, not just inside the app.
+- **`mobile/eas.json`** (new): `development`/`preview`/`production`
+  build profiles — `development` for an internal dev-client build,
+  `preview` pointed at `domilink-preview.vercel.app` (the same preview
+  deployment used throughout this session) for internal testing
+  builds, `production` with `autoIncrement` for store submission.
+  Running an actual EAS build was not attempted — it requires an Expo/
+  EAS account and Apple/Google signing credentials this environment
+  doesn't have (same "needs the project owner's real credentials"
+  category as the payment provider and SMS provider gaps below).
+- **Explicitly flagged, not resolved**: three items below moved to
+  "Known production blockers" rather than guessed at, per the plan's
+  own instruction not to resolve them here:
+  1. The $5 Direct Access Pass currently checks out via an in-app
+     browser handoff to the web checkout flow (Milestone 4). **Apple
+     App Store Review Guideline 3.1.1 and Google Play's Payments
+     Policy generally require unlocking in-app digital content/
+     services through their own in-app purchase systems**, not an
+     external payment page — this app's current approach is a
+     plausible app-store rejection risk, not merely a style choice.
+     Resolving it means either integrating `expo-in-app-purchases`/
+     StoreKit/Billing (a real scope addition, and the $5 price point
+     + any store cut becomes a business-model question) or getting a
+     documented basis for an exception (e.g. Apple's "reader app"
+     exception does not obviously apply to a messaging-unlock
+     service) — a product/legal decision, not something to guess at
+     in code.
+  2. App-store listing assets (screenshots, feature graphic, store
+     description/keywords) don't exist — these need real device
+     screenshots and copy decisions, not fabricated placeholders.
+  3. A real low-end-device performance pass (the plan's own
+     "low-bandwidth/low-end-device" framing for the Liberia market)
+     was not performed — this sandbox has no iOS/Android
+     simulator or physical device, only `expo export`'s bundle-level
+     smoke test (confirmed clean for every milestone this session).
+     A real pass needs an actual device or at minimum an Android
+     emulator with throttled CPU/network.
+- `npx tsc --noEmit`, `npx expo lint` (0 errors, same pre-existing
+  warning), `npx expo export --platform ios/android` (both bundle
+  cleanly), and `npx expo-doctor` (20/20) all pass.
+
+All 8 mobile milestones are now built and, where the underlying write
+path allows it from a sandboxed environment with no app-store/EAS
+credentials, live-verified against the real Supabase project. The
+three items flagged immediately above are genuine decisions for the
+project owner — see "Known production blockers" below, now including
+the mobile-specific ones.
+
 ## Overall production-readiness summary
 
 All 8 milestones are functionally complete: free browsing and listing,
@@ -1800,6 +2294,329 @@ credentials or input, not more engineering time against this codebase.
   set a Test OTP number/code under Authentication → Settings to try it
   without a real SMS provider first), then add real SMS provider
   credentials there when ready — no further code changes needed either
-  time. WhatsApp OTP remains researched-only in
-  `docs/AUTH_ALTERNATIVES.md`, blocked on a Meta Business API setup, a
-  bigger lift than phone/SMS.
+  time.
+- **Meta WhatsApp Business Cloud API credentials**: WhatsApp OTP
+  sign-up/sign-in is now built and code-complete
+  (`lib/auth/whatsapp-otp.ts`, `components/auth/WhatsAppAuthForm.tsx`
+  on web and mobile) and live-verified end-to-end except the actual
+  message send — the same shape as the phone/SMS gap above. Needs the
+  project owner to set up a Meta WhatsApp Business Cloud API account
+  and get an "Authentication" category OTP template approved (a
+  business-side process that can take days to weeks, not a code
+  change), then set `WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_ACCESS_TOKEN`/
+  `WHATSAPP_OTP_TEMPLATE_NAME` in `.env.example` — see
+  `docs/AUTH_ALTERNATIVES.md`'s Option 2.
+- **Mobile app-store in-app-purchase policy decision**: the mobile
+  app's Direct Access Pass checkout (Milestone 4) opens an in-app
+  browser to the same web checkout flow the Next.js app uses. Apple
+  App Store Review Guideline 3.1.1 and Google Play's Payments Policy
+  generally require digital content/services unlocked *inside* an app
+  to go through the platform's own in-app purchase system — this is a
+  real submission-rejection risk for the current approach, not a style
+  preference. Needs a product/legal decision: integrate platform IAP
+  (`expo-in-app-purchases`/StoreKit/Billing — a real scope addition,
+  and the $5 price plus the store's cut becomes a business-model
+  question) or establish a documented basis for an exception before
+  ever submitting to either store. Not resolved by this codebase.
+- **Mobile app-store listing assets**: no screenshots, feature
+  graphic, or store description/keywords exist yet — needs real
+  device screenshots and marketing copy decisions from the project
+  owner, not fabricated placeholders.
+- **Mobile EAS build/signing credentials**: no Expo/EAS account or
+  Apple/Google signing credentials exist in this environment, so no
+  EAS build was actually run — `mobile/eas.json`'s three profiles
+  (development/preview/production) are configured and ready, but
+  untested end-to-end pending those credentials.
+- **MTN MoMo production credentials**: `lib/payments/providers/mtn-momo.ts`
+  is built and live-sync'd between web and mobile (see the dated entry
+  below), but no real MTN MoMo subscription key/API user/API key exist
+  yet — these are self-provisioned sandbox credentials (sign up at
+  momodeveloper.mtn.com), not a code change, so they need the project
+  owner to actually create the account.
+
+## MTN MoMo payment sync between web and mobile (post-Milestone-8)
+
+The user asked to sync the MTN Mobile Money payment gateway and
+checkout initiation between the web app and the mobile app — no real
+provider existed before this (`PAYMENTS_PROVIDER` only ever supported
+`mock`). Confirmed via research (not assumed) before building: Liberia
+is a live MTN MoMo production market, MTN's sandbox is self-
+provisioned (no business registration needed) but only accepts EUR
+and its callbacks are known unreliable — both facts shaped the design
+below. See `docs/PAYMENTS.md` for the full architecture; summary here:
+
+- **`PaymentProvider` interface redesigned** (`lib/payments/types.ts`):
+  `CheckoutResult` is now a union (`{ kind: "redirect" }` vs. `{ kind:
+  "pending" }`) since MoMo's RequestToPay is a push flow with no
+  checkout page to redirect to; added `requiresPayerPhone`, an optional
+  `checkStatus(reference)` for polling, and `CheckoutParams.payerPhone`.
+  `MockPaymentProvider` updated to the new shape (`kind: "redirect"`,
+  everything else unchanged) — a real, non-cosmetic interface change,
+  not additive-only.
+- **New `lib/payments/providers/mtn-momo.ts`**: implements MTN's
+  Collection API (OAuth token fetch/cache, `RequestToPay`, status
+  polling, phone-number normalization to Liberia's MSISDN format).
+  `verifyWebhook` never trusts a callback's status directly (sandbox
+  callbacks are unreliable) — it only reads which reference to check,
+  then calls `checkStatus` for the real, independently-verified
+  result. `normalizeLiberianMsisdn` is exported standalone
+  specifically so it's unit-testable without credentials — see
+  `tests/unit/mtn-momo-provider.test.ts` (8 new tests, all passing;
+  total unit suite now 49/49).
+- **Activation logic extracted** into `lib/payments/service.ts`'s
+  `processVerifiedPaymentEvent` (pulled out of the webhook route,
+  behavior-preserving) so a provider's own status poll resolves a
+  payment through the *exact same* idempotent, amount-verified code a
+  real webhook delivery uses — never a second, drifting copy.
+  `app/api/payments/webhook/route.ts` is now a thin wrapper around it.
+- **Web**: `/pricing` shows a phone-number field only when
+  `getPaymentProvider().requiresPayerPhone` is true;
+  `startCheckoutAction` passes it through and branches on the new
+  result union — `redirect`-style providers behave exactly as before,
+  `pending` now sends the renter to new
+  `app/checkout/momo/pending/page.tsx`, which polls
+  `checkMomoPaymentStatusAction` (`app/checkout/momo/actions.ts`) every
+  few seconds via a new client component, `MomoPendingStatus`.
+- **Mobile parity, the actual ask**: mobile cannot call a real
+  provider's `createCheckout` itself (MTN's subscription key must
+  never reach a client bundle) — new, bearer-token-authenticated
+  `app/api/mobile/checkout/route.ts` and `.../status/route.ts` call the
+  **exact same** `startCheckout()`/`processVerifiedPaymentEvent()` the
+  web app uses, validated via `supabase.auth.getUser(accessToken)`
+  against the service-role client. `mobile/app/pricing.tsx` now has a
+  phone field and a "check your phone" polling state, mirroring the
+  web pending page. **This supersedes the Foundation-milestone
+  `start_mobile_checkout()` RPC**, which only ever worked for the mock
+  provider (hardcoded `provider = 'mock'`, DB-rows-only — it had no way
+  to call a real provider's API at all); mobile no longer calls it. The
+  RPC is still deployed but unused — dropping it is a separate,
+  low-priority migration, not required for correctness.
+- **Fixed, unrelated to payments but found while touching this area**:
+  the root `eslint.config.mjs` was unintentionally linting `mobile/`
+  through flat-config resolution walking up from `mobile/` (which had
+  no config of its own) — `npm run lint` at the repo root was failing
+  on `mobile/metro.config.js`/`tailwind.config.js`'s CommonJS
+  `require()`s, a pre-existing gap since Milestone 1, not something
+  this round of changes caused. Fixed properly, not worked around:
+  `mobile/` now has its own `eslint.config.js` (`eslint-config-expo`,
+  pinned to `eslint@^9` to match the root's version — a fresh
+  `eslint@^10` install was briefly tried and broke `eslint-plugin-react`
+  internals, so it's intentionally pinned, not arbitrary), and the
+  root config now explicitly excludes `mobile/**`.
+- **Live-verified** against the real Supabase project with a local
+  Next.js dev server standing in for the deployed web app: confirmed
+  the new `/api/mobile/checkout` route rejects a missing or garbage
+  bearer token with 401, confirmed it starts a real checkout via the
+  mock provider and the redirect URL matches the actual created
+  transaction, confirmed the refactored webhook route still correctly
+  activates a subscription through `processVerifiedPaymentEvent`,
+  confirmed the new `/api/mobile/checkout/status` route correctly
+  reports `confirmed` by reading the already-activated ledger (without
+  needing `provider.checkStatus`, which the mock provider doesn't
+  implement), and confirmed the subscription reads back as active via
+  the anon client. **Live end-to-end verification against MTN's real
+  sandbox API (an actual `RequestToPay` push, phone approval, and
+  `checkStatus` poll) could not be done — no MTN MoMo subscription
+  key/API credentials exist yet** (see "Known production blockers"
+  above); the provider code follows MTN's documented API shape
+  (cross-checked against MTN's own guidance and multiple independent
+  third-party integration guides, not assumed) but is unverified
+  against the live API.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and
+  `npm run test` (49/49) all pass on the web app; `npx tsc --noEmit`,
+  `npx expo lint`, and `npx expo export --platform ios/android` all
+  pass on mobile.
+
+## Push notifications (post-Milestone-8)
+
+While the MTN MoMo sandbox integration is blocked on MTN support (see
+above), the user asked to keep building — chose push notifications
+for new messages and subscription activation on mobile from a short
+list of options.
+
+- **New migration**: `supabase/migrations/20261108000100_push_tokens.sql`
+  adds `push_tokens` (self-owned, RLS select/insert/delete) and a
+  `register_push_token(p_token, p_platform)` SECURITY DEFINER RPC —
+  needed because the natural "upsert on conflict" for a device token
+  re-registering under a different account (logout/login as someone
+  else on a shared device) would need an RLS `UPDATE` policy
+  permissive enough to let any authenticated user touch any row by
+  token, which is a real privacy leak (a stranger's messages could
+  keep pushing to a device they no longer use). The RPC reads
+  `auth.uid()` from the caller's own JWT, so it can only ever
+  (re)assign a token to the caller themselves — same pattern as
+  `grant_owner_role_to_self`. Also adds `push_enabled` to the existing
+  `notification_preferences` table.
+- **`lib/notifications/push.ts`** (new): `sendPushNotification`,
+  calling Expo's push API (`https://exp.host/--/api/v2/push/send`)
+  directly for every registered token on an account — no separate
+  APNs/FCM setup needed since both Expo Go and a built app register an
+  Expo push token. Checks `push_enabled` first; never throws into its
+  caller on a delivery failure (push is additive, never something a
+  core flow depends on, per the mobile plan's own framing).
+- **`lib/admin/audit.ts`'s `notifyUser()` now sends both** — the one
+  entry point every notification already went through (admin actions,
+  the payments webhook's `processVerifiedPaymentEvent`) now gets push
+  delivery for free, with zero changes at any of those call sites.
+  This means subscription-activation push was already wired the
+  moment `notifyUser` changed — no new call site needed for it.
+- **Found and fixed a real, pre-existing gap while wiring this up**:
+  `new_message` has existed in the `notification_type` enum since
+  Milestone 7, but nothing ever actually called `notifyUser` for a new
+  message — not on web, either. New `lib/notifications/messages.ts`'s
+  `notifyMessageRecipient(conversationId, senderId)` is now called
+  from `app/messages/actions.ts`'s `startConversationAction` and
+  `sendMessageAction` (web) and a new, bearer-token-authenticated
+  `app/api/mobile/messages/notify/route.ts` (mobile, which has no
+  service-role layer to call `notifyUser` from directly — same
+  "thin authenticated route reusing the exact web logic" pattern as
+  the Direct Access Pass milestone's `/api/mobile/checkout`). One
+  function, one notification shape, regardless of which client sent
+  the message.
+- **Mobile**: `mobile/lib/notifications/service.ts`
+  (`registerForPushNotifications`, called from a new
+  `NotificationsBootstrap` component mounted once at the root layout
+  whenever a user is signed in) requests permission, sets the Android
+  notification channel, and calls `register_push_token`. A
+  notification-tap listener in the same component navigates to the
+  notification's `link` field — the identical field web's own
+  notification bell already uses, so a `/messages/{id}` or `/pricing`
+  link means the same thing on either client. `logoutAction` now
+  best-effort deletes this device's token before signing out, so a
+  shared device stops receiving an account's pushes once they log out
+  of it.
+- `mobile/app.json` gained the `expo-notifications` config plugin
+  (brand-colored Android notification icon); `expo-device` and
+  `expo-notifications` are new dependencies.
+- **Live-verified** against the real Supabase project: confirmed
+  `register_push_token` succeeds and the row is owned by the
+  registering user, confirmed re-registering the *same* token under a
+  *different* user correctly reassigns it (not a stray duplicate),
+  confirmed a stranger cannot read another user's `push_tokens` via
+  RLS, confirmed sending a message via the mobile notify endpoint
+  produces exactly one real `new_message` notification row for the
+  recipient with the correct `link` and a body naming the real
+  property title, and confirmed a missing bearer token is rejected
+  with 401. (Actual push *delivery* to a real device was not tested —
+  that needs a real build on a physical device/simulator, which this
+  sandbox doesn't have; the in-app notification row, which is the
+  reliable, testable half of `notifyUser`, is fully verified.) Test
+  accounts, listing, conversation, notifications, and the push token
+  deleted after.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (49/49) on web; `npx tsc --noEmit`, `npx expo lint`, `npx expo
+  export --platform ios/android`, `npx expo-doctor` (20/20) on mobile
+  — all pass.
+
+## WhatsApp OTP sign-up/sign-in (post-Milestone-8)
+
+Still waiting on MTN support, so the user asked to keep building —
+chose WhatsApp OTP, the "bigger lift" option from
+`docs/AUTH_ALTERNATIVES.md`'s Option 2, researched but not built
+during the earlier passkey work. Built fully on both web and mobile;
+see `docs/AUTH_ALTERNATIVES.md`'s updated Option 2 section for the
+architecture summary.
+
+- **New migration**: `supabase/migrations/20261108000200_whatsapp_otp.sql`
+  adds `whatsapp_otp_challenges` — same service-role-only shape as
+  `webauthn_challenges` (no policies granted to anon/authenticated at
+  all, so RLS denies every client access by default). Only a salted
+  SHA-256 hash of the 6-digit code is ever stored, never the code
+  itself.
+- **`lib/auth/otp-code.ts`** (new, unit-tested): code generation
+  (`crypto.randomInt`, not `Math.random`), salted hashing, and a
+  `crypto.timingSafeEqual`-based comparison — the hash comparison
+  itself is a real, if minor, security detail worth getting right
+  given it guards an account takeover path, not just a style
+  preference.
+- **`lib/auth/session-mint.ts`** (new): extracted the passkey work's
+  `mintSessionForEmail` (the `admin.generateLink` + `verifyOtp` trick
+  for turning a verified non-Supabase-native factor into a real
+  session) out of `webauthn-actions.ts` so WhatsApp OTP reuses the
+  exact same code, not a second copy of it — a small, behavior-
+  preserving refactor. Added `mintSessionTokensForEmail`, the mobile
+  variant that returns raw tokens instead of writing cookies (no
+  cookie jar inside a Route Handler mobile calls with no existing
+  session).
+- **Account identity**: signup still collects an email once, purely
+  as the underlying Supabase Auth identifier (same convention the
+  passkey work established — never typed again at sign-in). Every
+  later sign-in is phone + WhatsApp code only.
+  `profiles.phone`/`phone_verified_at` — unused columns since they
+  were added in Milestone 2, confirmed unused again when researching
+  the native phone/SMS OTP work — are now the real phone→account
+  lookup for returning users, set on successful signup verification.
+- **`lib/auth/whatsapp-otp.ts`** (new): the core logic
+  (`startWhatsAppSignup`/`startWhatsAppLogin`/`verifyWhatsAppOtp`) as
+  plain functions taking typed input and returning structured
+  results — no `FormData`, no `redirect()` — so both web's Server
+  Actions (`lib/auth/whatsapp-actions.ts`) and mobile's authenticated-
+  by-design-not-needed routes (`app/api/mobile/whatsapp-otp/{start,
+  verify}/route.ts` — there's no session yet at the point of
+  requesting/verifying a code, so no bearer token applies) call the
+  identical code. A failed send (certain right now, with no real
+  Meta credentials configured) deletes its own challenge row rather
+  than leaving an orphan that would both mislead a later lookup and
+  wrongly count against that phone's rate limit.
+- **`lib/auth/whatsapp-cloud-api.ts`** (new): the Meta WhatsApp
+  Business Cloud API client, scoped to exactly OTP delivery. Throws a
+  clear, specific error when its env vars aren't configured rather
+  than fabricating a send — same "never fabricate success" rule
+  `CLAUDE.md` applies to payments, applied here too.
+- **UI**: `components/auth/WhatsAppAuthForm.tsx` (web) and its mobile
+  equivalent, both a two-step phone→code flow matching the existing
+  `PhoneAuthForm`'s pattern exactly; both `/login` and `/register`
+  (web) and mobile's login/register screens gained a WhatsApp method
+  toggle alongside the existing options.
+- **Live-verified** against the real Supabase project (14 checks, via
+  the real HTTP routes against a running dev server — not reimplemented
+  logic in a test script): confirmed starting signup fails gracefully
+  with the real "no credentials configured" error and leaves no
+  orphaned challenge row, confirmed a wrong code is rejected and
+  increments the attempts counter, confirmed the correct code creates
+  a real Supabase Auth user, sets `profiles.phone`/`phone_verified_at`,
+  grants the `owner` role when that was the declared intent, mints a
+  session whose access token actually resolves via `getUser`, and
+  deletes the consumed challenge row; confirmed an expired challenge
+  is rejected even with the right code; confirmed logging in by phone
+  for the now-existing account resolves to the exact same user;
+  confirmed a login attempt for an unknown phone number fails with
+  the same generic message a real send failure would (no account-
+  existence enumeration). The one thing not verified — actual message
+  delivery via the real Meta Cloud API — needs the project owner's
+  WhatsApp Business account; everything else in the flow is both
+  built and proven correct against the live database. Test account
+  and all challenge rows deleted after.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (55/55, +6 new OTP unit tests) on web; `npx tsc --noEmit`, `npx
+  expo lint`, `npx expo export --platform ios/android`, `npx
+  expo-doctor` (20/20) on mobile — all pass.
+
+## Long-lived sessions tuned (post-Milestone-8)
+
+Still waiting on MTN, so the user asked to keep building again — chose
+`docs/AUTH_ALTERNATIVES.md`'s Option 3, a cheap, no-new-code friction
+reducer for low-connectivity mobile use. Config only, no app code
+changed.
+
+- Checked the live project's actual Auth configuration first (via
+  Supabase's Management API, `GET /config/auth`), rather than assuming:
+  `sessions_inactivity_timeout` and `sessions_timebox` were already
+  both disabled — there was never an absolute session expiry or an
+  inactivity-based forced logout on this project. That already-correct
+  state is the real reason a session can last indefinitely (as long as
+  the client refreshes periodically, which both clients' Supabase
+  clients already do automatically) — nothing to fix there.
+- The one real lever was `jwt_exp` (the access token's own lifetime),
+  the default 3600s (1 hour). Bumped to 14400s (4 hours) on the live
+  project via the Management API, and mirrored in
+  `supabase/config.toml` (`jwt_expiry`) so local dev matches
+  production. This doesn't change how long a session survives — the
+  refresh token does that, untouched — it reduces how often the
+  client needs a refresh round-trip at all, which matters specifically
+  for Liberia's low-bandwidth mobile context: fewer refresh attempts
+  means fewer chances for one to fail at a bad connectivity moment.
+- **Live-verified**: signed a real test user in against the live
+  project and decoded the returned access token's own `exp`/`iat`
+  claims, confirming its lifetime is genuinely 14400s now. Test
+  account deleted after.

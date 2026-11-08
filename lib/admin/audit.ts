@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { sendPushNotification } from "@/lib/notifications/push";
 import type { NotificationType } from "@/types/database";
 
 /**
@@ -27,6 +28,13 @@ export async function recordAdminAction(params: {
   });
 }
 
+/**
+ * The one entry point for notifying a user, in-app AND push, from
+ * anywhere in the app (web Server Actions, the payments webhook, and
+ * mobile via the authenticated routes under app/api/mobile/*). Every
+ * caller gets both for free -- push is purely additive here, never a
+ * second thing callers need to remember to wire up.
+ */
 export async function notifyUser(params: {
   userId: string;
   type: NotificationType;
@@ -42,4 +50,5 @@ export async function notifyUser(params: {
     body: params.body ?? null,
     link: params.link ?? null,
   });
+  await sendPushNotification(params.userId, { title: params.title, body: params.body, link: params.link });
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
+import { notifyMessageRecipient } from "@/lib/notifications/messages";
 import { createClient } from "@/lib/supabase/server";
 import { reportMessageSchema, sendMessageSchema, startConversationSchema } from "@/lib/validation/messaging";
 import { checkRateLimit, markConversationRead, startOrContinueConversation } from "@/services/messaging";
@@ -43,6 +44,7 @@ export async function startConversationAction(
     return { error: "Couldn't send your message. Please try again." };
   }
 
+  await notifyMessageRecipient(result.conversationId, user.id);
   revalidatePath("/messages");
   redirect(`/messages/${result.conversationId}`);
 }
@@ -74,6 +76,7 @@ export async function sendMessageAction(
     return { error: "Couldn't send your message. Please try again." };
   }
 
+  await notifyMessageRecipient(conversationId, user.id);
   revalidatePath(`/messages/${conversationId}`);
   revalidatePath("/messages");
   return {};

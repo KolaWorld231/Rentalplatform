@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { notifyUser } from "@/lib/admin/audit";
 import { getPaymentProvider } from "@/lib/payments";
-import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { processVerifiedPaymentEvent } from "@/lib/payments/service";
 
 /**
  * Payment provider webhook endpoint. Handles subscription activation —
@@ -16,6 +15,12 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
  * Docker-backed Edge Functions runtime isn't available. Porting this
  * handler's body into `supabase/functions/payments-webhook/` later is a
  * copy, not a redesign — see that folder's README.
+ *
+ * The actual activation logic lives in `lib/payments/service.ts`'s
+ * `processVerifiedPaymentEvent` so a provider's own status poll (MTN
+ * MoMo's `checkStatus`, used because its sandbox callbacks are known
+ * unreliable — see `app/checkout/momo/actions.ts`) resolves a payment
+ * through the exact same code, not a parallel copy of it.
  */
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -26,108 +31,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid or unverifiable webhook" }, { status: 401 });
   }
 
-  const supabase = createServiceRoleClient();
-
-  const { data: transaction } = await supabase
-    .from("payment_transactions")
-    .select("*")
-    .eq("internal_reference", event.internalReference)
-    .maybeSingle();
-
-  if (!transaction) {
-    return NextResponse.json({ error: "unknown transaction reference" }, { status: 404 });
+  const result = await processVerifiedPaymentEvent(event, provider.name);
+  if (result.status === "error") {
+    return NextResponse.json({ error: result.error }, { status: result.error === "unknown transaction reference" ? 404 : 500 });
   }
-
-  // Reject an event whose amount/currency don't match what we expect for
-  // this transaction — never trust the webhook payload's amount blindly.
-  if (Number(transaction.amount) !== event.amountUsd || transaction.currency !== event.currency) {
-    await supabase.from("payment_webhook_events").insert({
-      provider: provider.name,
-      event_id: event.eventId,
-      payload: { note: "amount/currency mismatch", event },
-      processing_status: "failed",
-      related_transaction_id: transaction.id,
-      error_message: "amount or currency mismatch",
-      processed_at: new Date().toISOString(),
-    });
-    return NextResponse.json({ error: "amount mismatch" }, { status: 400 });
-  }
-
-  // Idempotency: this insert is the only gate. A unique(provider, event_id)
-  // violation means this event was already processed — acknowledge and
-  // stop, without touching subscription state again.
-  const { error: insertError } = await supabase.from("payment_webhook_events").insert({
-    provider: provider.name,
-    event_id: event.eventId,
-    payload: event as unknown as Record<string, unknown>,
-    processing_status: "received",
-    related_transaction_id: transaction.id,
-  });
-
-  if (insertError) {
-    if (insertError.code === "23505") {
-      return NextResponse.json({ status: "duplicate" }, { status: 200 });
-    }
-    return NextResponse.json({ error: "could not record webhook event" }, { status: 500 });
-  }
-
-  if (event.status === "confirmed") {
-    await supabase
-      .from("payment_transactions")
-      .update({ provider_transaction_id: event.providerTransactionId })
-      .eq("id", transaction.id);
-
-    const { error: activationError } = await supabase.rpc("confirm_payment_and_activate_subscription", {
-      p_transaction_id: transaction.id,
-      p_provider_event_ref: event.eventId,
-    });
-
-    await supabase
-      .from("payment_webhook_events")
-      .update({
-        processing_status: activationError ? "failed" : "processed",
-        error_message: activationError?.message ?? null,
-        processed_at: new Date().toISOString(),
-      })
-      .eq("provider", provider.name)
-      .eq("event_id", event.eventId);
-
-    if (activationError) {
-      return NextResponse.json({ error: "activation failed" }, { status: 500 });
-    }
-
-    await notifyUser({
-      userId: transaction.user_id,
-      type: "subscription_activated",
-      title: "Your Direct Access Pass is active",
-      body: "You can now message property owners for the next 30 days.",
-      link: "/pricing",
-    });
-  } else {
-    // failed / reversed / refunded: record the outcome, never activate.
-    await supabase.from("payment_transactions").update({ status: event.status }).eq("id", transaction.id);
-    if (transaction.subscription_id) {
-      await supabase
-        .from("subscriptions")
-        .update({ status: event.status === "refunded" ? "refunded" : "payment_failed" })
-        .eq("id", transaction.subscription_id);
-    }
-    await supabase
-      .from("payment_webhook_events")
-      .update({ processing_status: "processed", processed_at: new Date().toISOString() })
-      .eq("provider", provider.name)
-      .eq("event_id", event.eventId);
-
-    if (event.status === "failed") {
-      await notifyUser({
-        userId: transaction.user_id,
-        type: "payment_failed",
-        title: "Your payment wasn't confirmed",
-        body: "No charge was applied. You can try subscribing again anytime.",
-        link: "/pricing",
-      });
-    }
-  }
-
-  return NextResponse.json({ status: "ok" });
+  return NextResponse.json({ status: result.status });
 }

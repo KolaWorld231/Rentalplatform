@@ -16,13 +16,14 @@ import type { CheckoutParams, CheckoutResult, PaymentProvider, VerifiedWebhookEv
  */
 export class MockPaymentProvider implements PaymentProvider {
   readonly name = "mock";
+  readonly requiresPayerPhone = false;
 
   async createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
     const url = new URL("/checkout/mock", params.returnUrl);
     url.searchParams.set("txn", params.transactionId);
     url.searchParams.set("ref", params.internalReference);
     url.searchParams.set("amount", params.amountUsd.toFixed(2));
-    return { redirectUrl: url.toString() };
+    return { kind: "redirect", redirectUrl: url.toString() };
   }
 
   async verifyWebhook(input: WebhookVerificationInput): Promise<VerifiedWebhookEvent | null> {
