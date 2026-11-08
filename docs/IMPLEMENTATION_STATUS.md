@@ -2657,6 +2657,10 @@ this resolution avoids entirely.
   uninstalled from `mobile/package.json` (confirmed zero remaining
   usages before removing it) — it was only ever used to launch the
   now-deleted checkout handoff.
+- The Foundation-milestone `start_mobile_checkout()` RPC (already
+  unused before this wave — see the MTN MoMo sync entry above) dropped
+  outright via a new migration, applied to the live project — no
+  reason to keep a now-doubly-dead checkout primitive deployed.
 - Web's own checkout (`startCheckoutAction`, `/pricing`, the mock
   provider flow, `/checkout/momo/pending`) is completely untouched —
   this wave only removes code from the mobile side.

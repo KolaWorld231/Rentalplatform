@@ -182,8 +182,8 @@ routes (bearer-token-authenticated wrappers around `startCheckout()`/
 `checkStatus()`) have been deleted — they are not needed and must not
 be rebuilt without first revisiting the IAP policy decision. The
 Foundation-milestone `start_mobile_checkout()` RPC (which only ever
-worked for the mock provider) remains deployed but unused; dropping it
-is a separate, low-priority migration, not required for correctness.
+worked for the mock provider) has been dropped entirely — nothing
+calls it.
 
 ### Liberia-specific provider research (not yet resolved)
 
