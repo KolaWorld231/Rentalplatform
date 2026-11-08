@@ -1,5 +1,5 @@
 -- Manual RLS verification for Milestone 2. Run with:
---   su postgres -c "psql -d domilink_dev -f supabase/local-shim/test_m2_rls.sql"
+--   su postgres -c "psql -d 231rentals_dev -f supabase/local-shim/test_m2_rls.sql"
 -- Expects every \echo'd assertion to say PASS.
 
 \set ON_ERROR_STOP on

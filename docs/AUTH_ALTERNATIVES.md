@@ -2,7 +2,7 @@
 
 ## Why this document exists
 
-DomiLink's auth today is Supabase email+password plus, as of this
+231Rentals's auth today is Supabase email+password plus, as of this
 change, passkey (WebAuthn/biometric) sign-up and sign-in — see
 `docs/DATABASE_SCHEMA.md` and `lib/auth/webauthn-actions.ts`. Email is a
 poor primary identifier in markets like Liberia, where active email
@@ -145,7 +145,7 @@ option.
 
 ## Option 5 — Operational / non-technical mitigations
 
-- **Agent-assisted account creation**: a trusted person (DomiLink staff,
+- **Agent-assisted account creation**: a trusted person (231Rentals staff,
   a partner organization) helps someone without reliable phone/email
   access create and verify an account in person — a process decision,
   not a code change.

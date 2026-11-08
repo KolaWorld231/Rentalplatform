@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import type { ActionState } from "@/lib/auth/actions";
 import { LIBERIA_COUNTIES, PROPERTY_CATEGORIES, type Property } from "@/types/database";
 import { formatCategory } from "@/lib/utils/format";
+import { brand } from "@/lib/config/brand";
 
 const initialState: ActionState = {};
 
@@ -160,7 +161,7 @@ export function PropertyForm({
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-lg font-semibold text-charcoal-700">Rental terms</h2>
         <p className="text-xs text-charcoal-400">
-          Leave blank if not applicable — DomiLink shows these as &quot;not provided&quot; rather
+          Leave blank if not applicable — {brand.name} shows these as &quot;not provided&quot; rather
           than guessing.
         </p>
         <div className="grid gap-4 sm:grid-cols-3">

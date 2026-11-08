@@ -1,9 +1,10 @@
-# DomiLink — Liberia Direct Property Rental Marketplace
+# 231Rentals — Liberia Direct Property Rental Marketplace
 
-"DomiLink" is a provisional development name (not trademark/domain-checked).
-Change it in `lib/config/brand.ts`.
+The brand name and identity live in `lib/config/brand.ts` and the
+231Rentals brand kit — change the name there, not by hunting through
+the app.
 
-DomiLink connects renters directly with property owners in Liberia. Owners
+231Rentals connects renters directly with property owners in Liberia. Owners
 list for free; renters browse for free; a $5 / 30-day Direct Access Pass
 unlocks direct messaging with as many owners as a renter likes, with no
 per-property fee.

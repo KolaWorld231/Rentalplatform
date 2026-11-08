@@ -2,7 +2,7 @@
 
 ## Overview
 
-DomiLink is a Next.js (App Router) application backed by Supabase
+231Rentals is a Next.js (App Router) application backed by Supabase
 (Postgres + Auth + Storage + Realtime). It follows a thin-client,
 trusted-server model: the browser talks to Supabase directly for reads that
 RLS can safely authorize, and to Next.js Server Actions / Route Handlers

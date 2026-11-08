@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { useSession } from "../lib/auth/session";
-import { subscriptionPlan } from "../lib/brand";
+import { brand, subscriptionPlan } from "../lib/brand";
 import { formatExpiryDate, formatUsd } from "../lib/format";
 import { getActiveSubscription } from "../lib/subscriptions/service";
 
@@ -82,7 +82,7 @@ export default function PricingScreen() {
 
           {user && !subscription.data && (
             <Text className="text-sm text-charcoal-600 dark:text-charcoal-400">
-              Get a Direct Access Pass from the DomiLink website, on any browser. Once it&apos;s active, it shows up
+              Get a Direct Access Pass from the {brand.name} website, on any browser. Once it&apos;s active, it shows up
               here automatically.
             </Text>
           )}

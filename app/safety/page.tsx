@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { brand } from "@/lib/config/brand";
 
 export const metadata = { title: "Safety Guidance" };
 
@@ -19,7 +20,7 @@ export default function SafetyPage() {
         <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Safety</p>
         <h1 className="font-display text-2xl font-semibold text-charcoal-700">Safety guidance</h1>
         <p className="mt-1 text-sm text-charcoal-500">
-          DomiLink does not guarantee the outcome of a rental transaction. Use this checklist before
+          {brand.name} does not guarantee the outcome of a rental transaction. Use this checklist before
           you commit to anything.
         </p>
       </div>

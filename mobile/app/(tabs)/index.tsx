@@ -7,6 +7,7 @@ import { PropertyCard } from "../../components/properties/PropertyCard";
 import { logoutAction } from "../../lib/auth/actions";
 import { useSession } from "../../lib/auth/session";
 import { getRecentlyListed } from "../../lib/properties/service";
+import { brand } from "../../lib/brand";
 
 export default function HomeScreen() {
   const { user, loading } = useSession();
@@ -15,7 +16,7 @@ export default function HomeScreen() {
   return (
     <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="px-4 pt-16 pb-8 gap-5">
       <View>
-        <Text className="font-display-bold text-3xl text-forest-700 dark:text-forest-500">DomiLink</Text>
+        <Text className="font-display-bold text-3xl text-forest-700 dark:text-forest-500">{brand.name}</Text>
         <Text className="mt-1 text-base text-charcoal-500 dark:text-charcoal-400">Your Next Place. Direct From the Owner.</Text>
       </View>
 

@@ -1,6 +1,6 @@
 -- Manual verification for Milestone 4: subscription/payment RLS and the
 -- idempotent activation path. Run with:
---   su postgres -c "psql -d domilink_dev -f supabase/local-shim/test_m4_rls.sql"
+--   su postgres -c "psql -d 231rentals_dev -f supabase/local-shim/test_m4_rls.sql"
 
 \set ON_ERROR_STOP on
 

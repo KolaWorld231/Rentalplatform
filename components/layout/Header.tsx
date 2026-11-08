@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/Button";
+import { BrandMark } from "@/components/ui/BrandMark";
 import { IntentChoiceDialog } from "@/components/auth/IntentChoiceDialog";
 import { brand } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
@@ -43,7 +44,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold text-brand-800">
-          <Home className="h-6 w-6 text-brand-600" aria-hidden="true" />
+          <BrandMark className="h-7 w-7" />
           {brand.name}
         </Link>
 

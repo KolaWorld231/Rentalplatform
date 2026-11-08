@@ -1,6 +1,6 @@
 -- Manual verification for Milestone 5: messaging RLS and the subscription
 -- gate on conversation creation. Run with:
---   su postgres -c "psql -d domilink_dev -f supabase/local-shim/test_m5_rls.sql"
+--   su postgres -c "psql -d 231rentals_dev -f supabase/local-shim/test_m5_rls.sql"
 --
 -- Uses fixed literal UUIDs throughout (rather than psql \gset variables)
 -- so every assertion — including ones inside `do $$ ... $$` exception

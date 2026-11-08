@@ -1,5 +1,6 @@
 import "server-only";
 import type { CheckoutParams, CheckoutResult, PaymentProvider, VerifiedWebhookEvent, WebhookVerificationInput } from "../types";
+import { brand } from "@/lib/config/brand";
 
 /**
  * MTN expects local MSISDN digits only (no "+", country code included).
@@ -117,8 +118,8 @@ export class MtnMomoProvider implements PaymentProvider {
         currency: this.currency,
         externalId: params.transactionId,
         payer: { partyIdType: "MSISDN", partyId: normalizeLiberianMsisdn(params.payerPhone) },
-        payerMessage: "DomiLink Direct Access Pass",
-        payeeNote: "DomiLink Direct Access Pass",
+        payerMessage: `${brand.name} Direct Access Pass`,
+        payeeNote: `${brand.name} Direct Access Pass`,
       }),
     });
 

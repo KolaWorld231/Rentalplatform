@@ -2907,3 +2907,71 @@ account ever accumulates view rows.
 - `npx tsc --noEmit`, `npm run lint`, `npm run test` (60/60) all clean.
 - All sweep test accounts (admin/owner/renter, listing, conversation,
   messages) deleted after, this time without the FK error.
+
+## Rebrand: DomiLink → 231Rentals
+
+The user confirmed "DomiLink" (always flagged in this codebase as a
+provisional, not-trademark-checked placeholder — see every prior
+`lib/config/brand.ts` comment) was replaced by a real decided business
+name and brand identity, 231Rentals, documented in a Claude Artifact
+brand kit (colors/fonts/shapes are identical to what this app already
+uses — the kit was built from this project's own live tokens, so this
+is a name + logo-mark change, not a redesign). Confirmed full scope
+with the user via `AskUserQuestion`: rename everywhere, including
+internal identifiers, not just user-visible text.
+
+- **Web app**: `lib/config/brand.ts`'s `name` is now `"231Rentals"`
+  (every page already reads title/metadata/footer/header text from
+  this one constant); the handful of places that had "DomiLink"
+  hardcoded instead of reading `brand.name` (`/login`, `/how-it-works`,
+  `/safety`, `IntentChoiceDialog`, `PropertyForm`, `Footer`,
+  `lib/auth/webauthn-config.ts`'s `rpName`, `lib/auth/webauthn-
+  actions.ts`'s display-name fallback, `lib/payments/providers/
+  mtn-momo.ts`'s payer message) now import and use it too, so there is
+  exactly one place the name lives. New `components/ui/BrandMark.tsx`
+  implements the brand kit's actual mark (a roof-stroke over "231" on a
+  rounded tile, in `currentColor`/the existing `--color-surface` token
+  so it already works in dark mode) and replaces the generic `lucide-
+  react` house icon that stood in for a logo in `Header.tsx`.
+  `package.json`'s npm package name: `"domilink"` → `"231rentals"`
+  (`package-lock.json` regenerated to match).
+- **Mobile app**: `mobile/app.json` — display name `"231Rentals"`, Expo
+  slug `231rentals-mobile`, deep-link scheme `rentals231` (unchanged
+  from `domilink`/`domilink-mobile` would have kept the old name
+  embedded in build artifacts), iOS bundle identifier and Android
+  package both `com.rentals231.mobile` (changed now, before any real
+  EAS build or store submission exists — per `docs/IMPLEMENTATION_
+  STATUS.md`'s own "Known production blockers", no EAS build has
+  actually been run yet, so this carries zero migration cost). New
+  `brand.name` added to `mobile/lib/brand.ts` (mirroring the web
+  config's shape) and wired into the three files that had "DomiLink"
+  hardcoded (`(auth)/login.tsx`, `(tabs)/index.tsx`, `pricing.tsx`).
+- **Live data**: the disclosed demo-listings seed account's email
+  (`demo-listings@domilink.app` → `demo-listings@231rentals.app`),
+  `profiles.display_name` (`"DomiLink Listings Team"` →
+  `"231Rentals Listings Team"` — the name renters actually see as the
+  owner on the 6 seeded demo listings), and `owner_profiles.bio`'s
+  disclosure text all updated directly on the live project. Checked
+  every other table (`properties`, `support_tickets`,
+  `admin_audit_logs`) for lingering "DomiLink" text — none found.
+- **Docs**: `CLAUDE.md`, `README.md`, `mobile/README.md`, and the
+  living reference docs (`docs/API.md`, `ARCHITECTURE.md`,
+  `AUTH_ALTERNATIVES.md`, `DEPLOYMENT.md`, `DESIGN_SYSTEM.md`,
+  `SECURITY.md`, `PRODUCT_SPECIFICATION.md`) all updated.
+  **Deliberately left alone**: this file's own historical dated
+  entries, `docs/designs/*.md`, and `concepts_brief.md` — these
+  describe what was actually true/said at the time each entry was
+  written, and rewriting a changelog's history to match a later rename
+  would misrepresent it. The real Vercel domain
+  (`domilink-preview.vercel.app`) is also deliberately untouched here —
+  renaming the actual hosting project/domain is a separate
+  infrastructure decision, not a text rename, and not something this
+  pass changed.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean on web; `npx tsc --noEmit` clean on mobile.
+- **Live-verified** locally: page `<title>` now reads "231Rentals —
+  Your Next Place. Direct From the Owner."; the new `BrandMark` SVG
+  renders correctly in the header on `/`, `/login`, `/how-it-works`;
+  `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
+  correctly (confirming every relocated hardcoded string now reads from
+  `brand.name`).

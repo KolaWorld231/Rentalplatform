@@ -8,7 +8,7 @@ it falls through.
 
 ## Solution
 
-DomiLink connects renters directly with property owners.
+231Rentals connects renters directly with property owners.
 
 - Property owners register and list properties **for free**.
 - Property seekers browse and search listings **for free**.

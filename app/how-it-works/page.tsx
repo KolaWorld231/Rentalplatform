@@ -2,7 +2,7 @@ import { CheckCircle2, Home, MessageCircle, Search, ShieldCheck, Upload } from "
 import Link from "next/link";
 import { ProcessSteps } from "@/components/marketing/ProcessSteps";
 import { buttonVariants } from "@/components/ui/Button";
-import { subscriptionPlan } from "@/lib/config/brand";
+import { brand, subscriptionPlan } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
 
 export const metadata = { title: "How It Works" };
@@ -23,7 +23,7 @@ export default function HowItWorksPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
       <h1 className="max-w-2xl font-display text-3xl font-semibold text-charcoal-700">
-        How DomiLink works
+        How {brand.name} works
       </h1>
       <p className="mt-2 max-w-lg text-sm text-charcoal-500">
         One marketplace, two sides — free for renters to browse and free for owners to list.

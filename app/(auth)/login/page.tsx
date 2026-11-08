@@ -12,6 +12,7 @@ import { IntentChoiceDialog } from "@/components/auth/IntentChoiceDialog";
 import { PasskeyLoginButton } from "@/components/auth/PasskeyLoginButton";
 import { PhoneAuthForm } from "@/components/auth/PhoneAuthForm";
 import { WhatsAppAuthForm } from "@/components/auth/WhatsAppAuthForm";
+import { brand } from "@/lib/config/brand";
 import { usePasskeySupport } from "@/lib/auth/use-passkey-support";
 import { cn } from "@/lib/utils/cn";
 
@@ -37,7 +38,7 @@ function LoginForm() {
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
       <div>
         <h1 className="font-display text-2xl font-semibold text-charcoal-700">Log in</h1>
-        <p className="mt-1 text-sm text-charcoal-500">Welcome back to DomiLink.</p>
+        <p className="mt-1 text-sm text-charcoal-500">Welcome back to {brand.name}.</p>
       </div>
 
       <Card className="p-6">
@@ -136,7 +137,7 @@ function LoginForm() {
       </Card>
 
       <div className="text-center text-sm text-charcoal-500">
-        New to DomiLink?{" "}
+        New to {brand.name}?{" "}
         <IntentChoiceDialog className="font-medium text-brand-700">Create an account</IntentChoiceDialog>
       </div>
     </div>
