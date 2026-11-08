@@ -32,7 +32,7 @@ decide whether to:
   exercised end-to-end), after cleaning up the test data created during
   verification (a few test accounts, one test property listing, one test
   conversation, one test subscription — all clearly named `E2E Test …` /
-  `domilink.e2e.*@…` for easy identification), or
+  `231rentals.e2e.*@…` for easy identification), or
 - provision a fresh Supabase project specifically for production and
   apply the same migrations there (via `supabase db push` from a
   Docker-and-network-unrestricted machine, or the same Management API

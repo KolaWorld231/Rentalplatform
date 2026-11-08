@@ -1,6 +1,6 @@
 -- Manual verification for Milestone 6: identity/property verification RLS
 -- and document privacy. Run with:
---   su postgres -c "psql -d domilink_dev -f supabase/local-shim/test_m6_rls.sql"
+--   su postgres -c "psql -d 231rentals_dev -f supabase/local-shim/test_m6_rls.sql"
 
 \set ON_ERROR_STOP on
 

@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireUser } from "@/lib/auth/session";
+import { brand } from "@/lib/config/brand";
 import { mintSessionForEmail } from "@/lib/auth/session-mint";
 import { webAuthnConfig } from "@/lib/auth/webauthn-config";
 import { passkeyLabelSchema, passkeySignupSchema } from "@/lib/validation/auth";
@@ -101,7 +102,7 @@ export async function startPasskeyRegistrationAction(): Promise<WebAuthnActionSt
     rpID,
     rpName,
     userName: user.email ?? profile?.display_name ?? user.id,
-    userDisplayName: profile?.display_name ?? user.email ?? "DomiLink user",
+    userDisplayName: profile?.display_name ?? user.email ?? `${brand.name} user`,
     attestationType: "none",
     authenticatorSelection: { residentKey: "required", userVerification: "preferred" },
     excludeCredentials: (existing ?? []).map((c: Pick<WebAuthnCredential, "credential_id" | "transports">) => ({

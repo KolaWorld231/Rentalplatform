@@ -1,7 +1,7 @@
 -- Manual RLS verification for Milestone 3. Run after test_m2_rls.sql's
 -- setup (or re-seed): this script creates its own users to stay
 -- independent. Run with:
---   su postgres -c "psql -d domilink_dev -f supabase/local-shim/test_m3_rls.sql"
+--   su postgres -c "psql -d 231rentals_dev -f supabase/local-shim/test_m3_rls.sql"
 
 \set ON_ERROR_STOP on
 

@@ -156,7 +156,7 @@ threat model, not a one-time checklist.
 `next.config.ts` sets, on every route: `X-Content-Type-Options: nosniff`,
 `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`,
 a restrictive `Permissions-Policy` (camera/microphone/geolocation all
-denied — none of DomiLink's features use them), and a `Content-Security-
+denied — none of 231Rentals's features use them), and a `Content-Security-
 Policy` scoped to `'self'` plus the configured Supabase origin for
 `connect-src`/`img-src`/WebSocket (Realtime). Verified by curling a
 running build and confirming every header is present (see

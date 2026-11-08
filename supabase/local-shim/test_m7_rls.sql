@@ -1,6 +1,6 @@
 -- Manual verification for Milestone 7: admin/moderation RLS, audit log
 -- privacy, and notifications. Run with:
---   su postgres -c "psql -d domilink_dev -f supabase/local-shim/test_m7_rls.sql"
+--   su postgres -c "psql -d 231rentals_dev -f supabase/local-shim/test_m7_rls.sql"
 
 \set ON_ERROR_STOP on
 

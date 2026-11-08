@@ -58,7 +58,7 @@ export function Footer() {
         ))}
       </div>
       <div className="border-t border-border px-4 py-4 text-center text-xs text-charcoal-400 sm:px-6 lg:px-8">
-        &copy; {new Date().getFullYear()} {brand.legalEntityName}. DomiLink does not verify that every
+        &copy; {new Date().getFullYear()} {brand.legalEntityName}. {brand.name} does not verify that every
         advertiser is the legal owner of a property and does not guarantee rental outcomes.
       </div>
     </footer>

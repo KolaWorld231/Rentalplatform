@@ -1,12 +1,12 @@
 # CLAUDE.md — Permanent instructions for this project
 
-This file is the durable brief for any Claude Code session working on DomiLink.
+This file is the durable brief for any Claude Code session working on 231Rentals.
 Read it before making changes. Keep it updated when conventions change.
 
 ## Mission
 
-DomiLink is a direct property rental marketplace for Liberia. Renters currently
-pay agents ~$30–40 per viewing with no guarantee of a result. DomiLink lets
+231Rentals is a direct property rental marketplace for Liberia. Renters currently
+pay agents ~$30–40 per viewing with no guarantee of a result. 231Rentals lets
 property owners list for free and connects them directly with renters. Renters
 browse for free; a $5 / 30-day "Direct Access Pass" unlocks direct messaging
 with as many owners as they like (no per-property fee).

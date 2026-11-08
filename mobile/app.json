@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "DomiLink",
-    "slug": "domilink-mobile",
-    "scheme": "domilink",
+    "name": "231Rentals",
+    "slug": "231rentals-mobile",
+    "scheme": "rentals231",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.domilink.mobile"
+      "bundleIdentifier": "com.rentals231.mobile"
     },
     "android": {
-      "package": "com.domilink.mobile",
+      "package": "com.rentals231.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#a00c30",
         "foregroundImage": "./assets/android-icon-foreground.png",

@@ -1,6 +1,6 @@
-# DomiLink Mobile
+# 231Rentals Mobile
 
-Native iOS/Android app for DomiLink, built with Expo. This is a
+Native iOS/Android app for 231Rentals, built with Expo. This is a
 standalone project inside the same repo as the Next.js web app (see the
 repo root) — its own `package.json`/`node_modules`, not a pnpm/Turborepo
 workspace. It reuses the **same Supabase backend** and the **same

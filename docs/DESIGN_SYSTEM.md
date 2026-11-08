@@ -1,6 +1,6 @@
 # Design System
 
-DomiLink's visual identity combines restrained Claymorphism (soft dimensional
+231Rentals's visual identity combines restrained Claymorphism (soft dimensional
 surfaces), editorial real-estate presentation, and a bold black/white/red
 brand palette. This document is the source of truth; every page must draw
 from these tokens rather than inventing new values inline.
@@ -154,7 +154,7 @@ history in `/account`, rather than inventing a new status vocabulary.
 The admin console deliberately reuses the owner dashboard's layout
 conventions (top nav bar, `Card`-based stat tiles, same badge variants for
 status) rather than adopting a separate "admin theme" — it's still
-DomiLink, just with a different nav. Moderation queues use the same
+231Rentals, just with a different nav. Moderation queues use the same
 empty-state and card-list patterns as the owner's property list.
 Notifications reuse the unread-dot convention from the messages list.
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { brand } from "@/lib/config/brand";
 
 /**
  * WebAuthn ties every credential to the exact origin it was registered
@@ -13,7 +14,7 @@ export function webAuthnConfig() {
   const { hostname, origin } = new URL(appUrl);
   return {
     rpID: hostname,
-    rpName: "DomiLink",
+    rpName: brand.name,
     origin,
   };
 }

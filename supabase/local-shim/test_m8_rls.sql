@@ -1,5 +1,5 @@
 -- Manual verification for Milestone 8's support_tickets table. Run with:
---   su postgres -c "psql -d domilink_dev -f supabase/local-shim/test_m8_rls.sql"
+--   su postgres -c "psql -d 231rentals_dev -f supabase/local-shim/test_m8_rls.sql"
 
 \set ON_ERROR_STOP on
 

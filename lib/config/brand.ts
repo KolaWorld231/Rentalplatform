@@ -1,10 +1,9 @@
 /**
- * Single source of truth for brand identity. "DomiLink" is a provisional
- * development name — it has not cleared trademark/domain/business-name
- * checks. Change it here, not by hunting through the app.
+ * Single source of truth for brand identity. Change it here, not by
+ * hunting through the app.
  */
 export const brand = {
-  name: "DomiLink",
+  name: "231Rentals",
   tagline: "Your Next Place. Direct From the Owner.",
   supportingLine: "Less searching through agents. More direct connections.",
   heroHeading: "Your Next Place. Direct From the Owner.",
@@ -17,7 +16,7 @@ export const brand = {
     "Browse properties for free. Unlock direct messaging and contact multiple property owners with one affordable pass.",
   // Legal/business identity: placeholders only, pending real registration.
   legalEntityName: "[COMPANY LEGAL NAME — PENDING REGISTRATION]",
-  supportEmail: "support@example-domilink.test",
+  supportEmail: "support@example-231rentals.test",
   supportPhone: "[SUPPORT PHONE — PENDING]",
   officeAddress: "[OFFICE ADDRESS — PENDING]",
 } as const;

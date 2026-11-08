@@ -1,6 +1,6 @@
 # API / Server Actions
 
-DomiLink prefers Next.js Server Actions over hand-rolled REST routes for
+231Rentals prefers Next.js Server Actions over hand-rolled REST routes for
 mutations, since they get CSRF protection and type-safety for free. This
 document tracks what exists; extended per milestone.
 

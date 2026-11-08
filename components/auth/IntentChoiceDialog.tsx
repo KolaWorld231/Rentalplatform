@@ -4,6 +4,7 @@ import { Home, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
+import { brand } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -28,7 +29,7 @@ export function IntentChoiceDialog({
       <button type="button" className={className} onClick={() => setOpen(true)}>
         {children}
       </button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="What brings you to DomiLink?">
+      <Dialog open={open} onClose={() => setOpen(false)} title={`What brings you to ${brand.name}?`}>
         <div className="grid grid-cols-2 gap-3">
           <Link
             href="/register?intent=renter"

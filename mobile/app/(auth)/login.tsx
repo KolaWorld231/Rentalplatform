@@ -10,6 +10,7 @@ import { WhatsAppAuthForm } from "../../components/auth/WhatsAppAuthForm";
 import { cn } from "../../lib/cn";
 import { loginAction } from "../../lib/auth/actions";
 import { loginSchema, type LoginInput } from "../../lib/validation/auth";
+import { brand } from "../../lib/brand";
 
 export default function LoginScreen() {
   const [method, setMethod] = useState<"password" | "whatsapp">("password");
@@ -34,7 +35,7 @@ export default function LoginScreen() {
     <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="px-4 pt-20 pb-8 gap-6">
       <View>
         <Text className="font-display-bold text-2xl text-charcoal-700 dark:text-ivory-100">Log in</Text>
-        <Text className="mt-1 text-base text-charcoal-500 dark:text-charcoal-400">Welcome back to DomiLink.</Text>
+        <Text className="mt-1 text-base text-charcoal-500 dark:text-charcoal-400">Welcome back to {brand.name}.</Text>
       </View>
 
       <Card className="gap-4 p-5">
@@ -103,7 +104,7 @@ export default function LoginScreen() {
       </Card>
 
       <View className="flex-row justify-center gap-1">
-        <Text className="text-charcoal-500 dark:text-charcoal-400">New to DomiLink?</Text>
+        <Text className="text-charcoal-500 dark:text-charcoal-400">New to {brand.name}?</Text>
         <Link href="/(auth)/register" className="font-medium text-forest-700 dark:text-forest-500">
           Create an account
         </Link>
