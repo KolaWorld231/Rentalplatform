@@ -135,10 +135,10 @@ function LoginForm() {
         )}
       </Card>
 
-      <p className="text-center text-sm text-charcoal-500">
+      <div className="text-center text-sm text-charcoal-500">
         New to DomiLink?{" "}
         <IntentChoiceDialog className="font-medium text-brand-700">Create an account</IntentChoiceDialog>
-      </p>
+      </div>
     </div>
   );
 }
