@@ -2751,3 +2751,46 @@ gets the safety guard.
   `domilink-preview.vercel.app` instead of 500.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
   (60/60, +5 new) all clean.
+
+## Preview-site audit: `NEXT_PUBLIC_APP_URL` config gap + stray test data cleanup
+
+After the two Vercel fixes above, did a live sweep of
+`domilink-preview.vercel.app` rather than assuming it was fully
+healthy: every public route (`/`, `/search`, `/pricing`, `/login`,
+`/register`, `/forgot-password`, `/about`, `/how-it-works`, `/safety`,
+`/help`, the `/legal/*` pages, `/checkout/mock`) returns 200, every
+auth-gated route correctly 307s to login, and Vercel's runtime-error
+log showed nothing new since the `/pricing` fix deployed. Found two
+more real issues this way, both fixed:
+
+1. **`NEXT_PUBLIC_APP_URL` was never configured on Vercel at all** —
+   it silently fell back to its `http://localhost:3000` default
+   everywhere (`app/sitemap.ts`, `app/robots.ts`,
+   `lib/auth/webauthn-config.ts`, `app/checkout/actions.ts`'s
+   fallback branch), so `/sitemap.xml` and `/robots.txt` were serving
+   `localhost` URLs on the live site — a real, user-visible/SEO bug,
+   not a code defect. Set it to `https://domilink-preview.vercel.app`
+   in Vercel's project env vars (both `production` and `preview`
+   targets, since `NEXT_PUBLIC_*` values are inlined at build time and
+   needed a fresh deployment to take effect either way). Live-verified:
+   `/sitemap.xml` and `/robots.txt` now both serve the real domain.
+2. **One leftover test property/account from an earlier live-testing
+   session** (`mobile-rt-listing-...`, owner `RT Tester`,
+   `mobile-rt-...@example.com`) was still live and visible in real
+   `/search` results — this is exactly the data CLAUDE.md rule #9
+   forbids (unmarked fake inventory in a production path), left behind
+   by a prior wave's live-test cleanup that missed it. Deleted the
+   `auth.users` row directly (cascaded cleanly through
+   `profiles`/`user_roles`/`properties`/`subscriptions` — confirmed
+   zero rows left in any of those tables for that user afterward, and
+   the listing now 404s). Also found and deleted 2 long-expired,
+   already-harmless `webauthn_challenges` rows (service-role-only
+   table, no PII, just stale). Checked every other table for
+   `%test%`/`%example.com%` patterns — nothing else found; the only two
+   real accounts left are the disclosed `demo-listings@domilink.app`
+   seed account and what looks like the project owner's own admin
+   account.
+
+No code change was needed for either fix — one was a missing Vercel
+env var, the other was live data hygiene — so there's nothing to
+redeploy beyond what already shipped above.
