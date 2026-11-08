@@ -2715,3 +2715,39 @@ TypeScript's project config instead of ESLint's.
   (55/55) all clean with `mobile/node_modules` present (the normal
   local state) too — no regression to the web app's own type
   coverage.
+
+## Fix: `/pricing` 500s on every Vercel deployment (preview and real production)
+
+Found by live-checking `domilink-preview.vercel.app` right after
+re-pointing it to the fix above — the homepage loaded, but `/pricing`
+500'd. `get_runtime_errors` showed `PAYMENTS_PROVIDER=mock is not
+allowed in production`, a guard rail from Milestone 4
+(`lib/payments/index.ts`) that's always been there — not caused by
+today's work. Root cause: `NODE_ENV` is `"production"` for *every*
+`next build`, including a Vercel **preview** deployment; it says
+nothing about whether an environment is the real, live production
+site. The guard checked `NODE_ENV` and so blocked the mock provider
+everywhere on Vercel, preview included — meaning `/pricing` has
+likely 500'd on this preview site since Milestone 4 shipped, long
+before any mobile work.
+
+Fix: check `VERCEL_ENV === "production"` when it's set (Vercel sets
+it to `"production"`/`"preview"`/`"development"` and it's exactly the
+signal this needs), falling back to the old `NODE_ENV` check only
+when `VERCEL_ENV` is absent (a non-Vercel production host). This
+`domilink-preview` project has no real "Production" target configured
+(every deployment, even from `main`, lands as `VERCEL_ENV=preview`
+here) — correctly matching that this is a demo/staging site, not real
+production, so the mock provider is allowed here as intended, while a
+genuine future production deployment (`VERCEL_ENV=production`) still
+gets the safety guard.
+
+- New `tests/unit/payment-provider-selection.test.ts` (5 tests):
+  mock provider allowed outside production and on a Vercel preview
+  build despite `NODE_ENV=production`; rejected on a real Vercel
+  production deployment and on a non-Vercel production host with no
+  `VERCEL_ENV`; MTN MoMo provider unaffected by any of this.
+- **Live-verified**: re-deployed, confirmed `/pricing` returns 200 on
+  `domilink-preview.vercel.app` instead of 500.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60, +5 new) all clean.
