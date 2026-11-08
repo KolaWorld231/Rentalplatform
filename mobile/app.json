@@ -43,7 +43,6 @@
           }
         }
       ],
-      "expo-web-browser",
       [
         "expo-notifications",
         {

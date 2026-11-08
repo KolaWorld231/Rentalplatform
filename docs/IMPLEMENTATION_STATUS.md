@@ -2306,18 +2306,11 @@ credentials or input, not more engineering time against this codebase.
   change), then set `WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_ACCESS_TOKEN`/
   `WHATSAPP_OTP_TEMPLATE_NAME` in `.env.example` — see
   `docs/AUTH_ALTERNATIVES.md`'s Option 2.
-- **Mobile app-store in-app-purchase policy decision**: the mobile
-  app's Direct Access Pass checkout (Milestone 4) opens an in-app
-  browser to the same web checkout flow the Next.js app uses. Apple
-  App Store Review Guideline 3.1.1 and Google Play's Payments Policy
-  generally require digital content/services unlocked *inside* an app
-  to go through the platform's own in-app purchase system — this is a
-  real submission-rejection risk for the current approach, not a style
-  preference. Needs a product/legal decision: integrate platform IAP
-  (`expo-in-app-purchases`/StoreKit/Billing — a real scope addition,
-  and the $5 price plus the store's cut becomes a business-model
-  question) or establish a documented basis for an exception before
-  ever submitting to either store. Not resolved by this codebase.
+- **Mobile app-store in-app-purchase policy decision**: **resolved** —
+  see the "Mobile IAP policy decision: reader-app pattern" dated entry
+  below. Mobile no longer initiates a Direct Access Pass purchase at
+  all; it only displays subscription status read from the shared
+  `subscriptions` table. No platform IAP integration is needed.
 - **Mobile app-store listing assets**: no screenshots, feature
   graphic, or store description/keywords exist yet — needs real
   device screenshots and marketing copy decisions from the project
@@ -2620,3 +2613,64 @@ changed.
   project and decoded the returned access token's own `exp`/`iat`
   claims, confirming its lifetime is genuinely 14400s now. Test
   account deleted after.
+
+## Mobile IAP policy decision: reader-app pattern (post-Milestone-8)
+
+Still waiting on MTN (support ticket filed, no reply yet) and PR #9
+(mobile foundation, MoMo sync, push notifications, WhatsApp OTP, and
+the long-lived-sessions tuning above) has since merged into `main`.
+The user asked to keep going and picked resolving the mobile
+in-app-purchase policy risk flagged under "Known production blockers"
+— the mobile checkout, added during the MoMo sync wave, opened an
+in-app browser to web's checkout flow, which is a real App Store/Play
+Store rejection risk (Apple Guideline 3.1.1, Google Play Payments
+Policy) since both generally require platform IAP for unlocking
+in-app digital content/services.
+
+Chosen resolution: the **"reader app" pattern** — the same approach
+Netflix/Spotify/Kindle use. Mobile never initiates a purchase at all;
+web (not an app-store-distributed app, so the IAP rule doesn't apply
+to it) keeps its full, unchanged checkout flow, and a pass bought on
+web shows up on mobile automatically since both clients read the same
+`subscriptions` table. This closes the rejection risk with **no new
+credentials and no platform IAP integration** — the alternative
+(`expo-in-app-purchases`/StoreKit/Billing, plus the $5 price minus the
+store's 15-30% cut becoming a real business-model question) is a much
+larger, credential- and business-decision-blocked undertaking that
+this resolution avoids entirely.
+
+- `mobile/app/pricing.tsx` rewritten to be fully read-only: shows the
+  plan, the signed-in user's real subscription status (active/expiry
+  via `getActiveSubscription`), and — for a non-subscriber — a plain
+  pointer to buy the pass on the website. No phone field, no checkout
+  button, no polling UI.
+- `mobile/lib/subscriptions/service.ts` trimmed to
+  `getActiveSubscription`/`getSubscriptionHistory` only;
+  `startMobileCheckout`/`checkMobileMomoStatus` and their types
+  removed.
+- `app/api/mobile/checkout/route.ts` and
+  `app/api/mobile/checkout/status/route.ts` deleted outright — mobile
+  has no checkout-initiation code path left to authenticate or
+  maintain. `docs/PAYMENTS.md`'s "Mobile parity" section rewritten to
+  describe this.
+- `expo-web-browser` removed from `mobile/app.json`'s plugins and
+  uninstalled from `mobile/package.json` (confirmed zero remaining
+  usages before removing it) — it was only ever used to launch the
+  now-deleted checkout handoff.
+- Web's own checkout (`startCheckoutAction`, `/pricing`, the mock
+  provider flow, `/checkout/momo/pending`) is completely untouched —
+  this wave only removes code from the mobile side.
+- **Verified**: `npx tsc --noEmit` clean on both web and mobile;
+  web's `npm run lint`, `npm run build` (confirmed `/api/mobile/checkout`
+  no longer appears in the route list, while `/api/mobile/messages/
+  notify` and `/api/mobile/whatsapp-otp/{start,verify}` correctly
+  still do), and `npm run test` (55/55) all pass; mobile's `npx expo
+  lint`, `npx expo export --platform ios/android`, and `npx
+  expo-doctor` (20/20) all pass. **Live-verified** against a running
+  `npm run dev` instance and the real Supabase project: the deleted
+  `/api/mobile/checkout` and `/api/mobile/checkout/status` routes both
+  now 404, web's `/pricing` page still loads normally, and a seeded
+  test user with an active subscription row reads back as active
+  through the exact same plain Supabase client call mobile's
+  `getActiveSubscription` uses — with zero checkout code involved.
+  Test account and subscription row deleted after.
