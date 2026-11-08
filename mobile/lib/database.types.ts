@@ -211,6 +211,14 @@ export type PrivateVerificationDocument = {
   created_at: string;
 };
 
+export type PushToken = {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: "ios" | "android";
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -235,6 +243,7 @@ export type Database = {
       identity_verification_requests: TableDef<IdentityVerificationRequest, Pick<IdentityVerificationRequest, "user_id"> & Partial<IdentityVerificationRequest>>;
       property_verification_requests: TableDef<PropertyVerificationRequest, Pick<PropertyVerificationRequest, "property_id" | "applicant_id"> & Partial<PropertyVerificationRequest>>;
       private_verification_documents: TableDef<PrivateVerificationDocument, Omit<PrivateVerificationDocument, "id" | "created_at"> & Partial<PrivateVerificationDocument>>;
+      push_tokens: TableDef<PushToken, Partial<PushToken> & Pick<PushToken, "user_id" | "token" | "platform">>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -260,6 +269,10 @@ export type Database = {
           plan_name: string;
           duration_days: number;
         }[];
+      };
+      register_push_token: {
+        Args: { p_token: string; p_platform: string };
+        Returns: void;
       };
     };
     Enums: {

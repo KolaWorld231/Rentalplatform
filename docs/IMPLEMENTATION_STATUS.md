@@ -2417,3 +2417,84 @@ below. See `docs/PAYMENTS.md` for the full architecture; summary here:
   `npm run test` (49/49) all pass on the web app; `npx tsc --noEmit`,
   `npx expo lint`, and `npx expo export --platform ios/android` all
   pass on mobile.
+
+## Push notifications (post-Milestone-8)
+
+While the MTN MoMo sandbox integration is blocked on MTN support (see
+above), the user asked to keep building — chose push notifications
+for new messages and subscription activation on mobile from a short
+list of options.
+
+- **New migration**: `supabase/migrations/20261108000100_push_tokens.sql`
+  adds `push_tokens` (self-owned, RLS select/insert/delete) and a
+  `register_push_token(p_token, p_platform)` SECURITY DEFINER RPC —
+  needed because the natural "upsert on conflict" for a device token
+  re-registering under a different account (logout/login as someone
+  else on a shared device) would need an RLS `UPDATE` policy
+  permissive enough to let any authenticated user touch any row by
+  token, which is a real privacy leak (a stranger's messages could
+  keep pushing to a device they no longer use). The RPC reads
+  `auth.uid()` from the caller's own JWT, so it can only ever
+  (re)assign a token to the caller themselves — same pattern as
+  `grant_owner_role_to_self`. Also adds `push_enabled` to the existing
+  `notification_preferences` table.
+- **`lib/notifications/push.ts`** (new): `sendPushNotification`,
+  calling Expo's push API (`https://exp.host/--/api/v2/push/send`)
+  directly for every registered token on an account — no separate
+  APNs/FCM setup needed since both Expo Go and a built app register an
+  Expo push token. Checks `push_enabled` first; never throws into its
+  caller on a delivery failure (push is additive, never something a
+  core flow depends on, per the mobile plan's own framing).
+- **`lib/admin/audit.ts`'s `notifyUser()` now sends both** — the one
+  entry point every notification already went through (admin actions,
+  the payments webhook's `processVerifiedPaymentEvent`) now gets push
+  delivery for free, with zero changes at any of those call sites.
+  This means subscription-activation push was already wired the
+  moment `notifyUser` changed — no new call site needed for it.
+- **Found and fixed a real, pre-existing gap while wiring this up**:
+  `new_message` has existed in the `notification_type` enum since
+  Milestone 7, but nothing ever actually called `notifyUser` for a new
+  message — not on web, either. New `lib/notifications/messages.ts`'s
+  `notifyMessageRecipient(conversationId, senderId)` is now called
+  from `app/messages/actions.ts`'s `startConversationAction` and
+  `sendMessageAction` (web) and a new, bearer-token-authenticated
+  `app/api/mobile/messages/notify/route.ts` (mobile, which has no
+  service-role layer to call `notifyUser` from directly — same
+  "thin authenticated route reusing the exact web logic" pattern as
+  the Direct Access Pass milestone's `/api/mobile/checkout`). One
+  function, one notification shape, regardless of which client sent
+  the message.
+- **Mobile**: `mobile/lib/notifications/service.ts`
+  (`registerForPushNotifications`, called from a new
+  `NotificationsBootstrap` component mounted once at the root layout
+  whenever a user is signed in) requests permission, sets the Android
+  notification channel, and calls `register_push_token`. A
+  notification-tap listener in the same component navigates to the
+  notification's `link` field — the identical field web's own
+  notification bell already uses, so a `/messages/{id}` or `/pricing`
+  link means the same thing on either client. `logoutAction` now
+  best-effort deletes this device's token before signing out, so a
+  shared device stops receiving an account's pushes once they log out
+  of it.
+- `mobile/app.json` gained the `expo-notifications` config plugin
+  (brand-colored Android notification icon); `expo-device` and
+  `expo-notifications` are new dependencies.
+- **Live-verified** against the real Supabase project: confirmed
+  `register_push_token` succeeds and the row is owned by the
+  registering user, confirmed re-registering the *same* token under a
+  *different* user correctly reassigns it (not a stray duplicate),
+  confirmed a stranger cannot read another user's `push_tokens` via
+  RLS, confirmed sending a message via the mobile notify endpoint
+  produces exactly one real `new_message` notification row for the
+  recipient with the correct `link` and a body naming the real
+  property title, and confirmed a missing bearer token is rejected
+  with 401. (Actual push *delivery* to a real device was not tested —
+  that needs a real build on a physical device/simulator, which this
+  sandbox doesn't have; the in-app notification row, which is the
+  reliable, testable half of `notifyUser`, is fully verified.) Test
+  accounts, listing, conversation, notifications, and the push token
+  deleted after.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (49/49) on web; `npx tsc --noEmit`, `npx expo lint`, `npx expo
+  export --platform ios/android`, `npx expo-doctor` (20/20) on mobile
+  — all pass.

@@ -61,5 +61,18 @@ export async function loginAction(input: LoginInput): Promise<AuthResult> {
 }
 
 export async function logoutAction() {
+  // Best-effort: remove this device's push token before the session
+  // goes away, so a shared device doesn't keep getting this account's
+  // pushes after logout. Never blocks sign-out on failure.
+  try {
+    const Device = await import("expo-device");
+    if (Device.isDevice) {
+      const Notifications = await import("expo-notifications");
+      const { data: token } = await Notifications.getExpoPushTokenAsync();
+      await supabase.from("push_tokens").delete().eq("token", token);
+    }
+  } catch {
+    // ignore -- see above
+  }
   await supabase.auth.signOut();
 }

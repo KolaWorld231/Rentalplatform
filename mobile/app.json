@@ -43,7 +43,13 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#a00c30"
+        }
+      ]
     ],
     "extra": {
       "router": {}

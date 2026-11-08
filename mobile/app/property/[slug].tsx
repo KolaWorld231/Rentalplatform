@@ -24,7 +24,7 @@ const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning"
 
 export default function PropertyDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { user } = useSession();
+  const { user, session } = useSession();
   const queryClient = useQueryClient();
 
   const property = useQuery({ queryKey: ["property", slug], queryFn: () => getPropertyBySlug(slug) });
@@ -92,7 +92,12 @@ export default function PropertyDetailScreen() {
     if (!user || !messageDraft.trim()) return;
     setContactError(null);
     setSendingMessage(true);
-    const result = await startOrContinueConversation({ propertyId: p.id, renterId: user.id, firstMessage: messageDraft.trim() });
+    const result = await startOrContinueConversation({
+      propertyId: p.id,
+      renterId: user.id,
+      firstMessage: messageDraft.trim(),
+      accessToken: session?.access_token,
+    });
     setSendingMessage(false);
     if (!result.ok) {
       if (result.reason === "subscription_required") {

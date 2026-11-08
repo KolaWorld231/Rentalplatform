@@ -11,7 +11,7 @@ import type { Message } from "../../lib/database.types";
 
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useSession();
+  const { user, session } = useSession();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -50,7 +50,7 @@ export default function ConversationScreen() {
     setSending(true);
     const body = draft.trim();
     setDraft("");
-    const result = await sendMessage(id, user.id, body);
+    const result = await sendMessage(id, user.id, body, session?.access_token);
     if (!("error" in result)) {
       await queryClient.invalidateQueries({ queryKey: ["messages", id] });
     }

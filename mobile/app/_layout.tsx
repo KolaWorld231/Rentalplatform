@@ -10,6 +10,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { NotificationsBootstrap } from "../components/NotificationsBootstrap";
 import { SessionProvider } from "../lib/auth/session";
 
 SplashScreen.preventAutoHideAsync();
@@ -31,6 +32,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
+          <NotificationsBootstrap />
           <Stack screenOptions={{ headerShown: false }} />
         </SessionProvider>
       </QueryClientProvider>

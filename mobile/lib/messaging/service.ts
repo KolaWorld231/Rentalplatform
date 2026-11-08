@@ -7,6 +7,7 @@
 // client as from a Server Action -- Postgres evaluates it either way.
 import { supabase } from "../supabase";
 import type { Conversation, Message } from "../database.types";
+import { notifyMessageRecipient } from "../notifications/service";
 
 export type StartConversationResult =
   | { ok: true; conversationId: string }
@@ -16,6 +17,7 @@ export async function startOrContinueConversation(params: {
   propertyId: string;
   renterId: string;
   firstMessage: string;
+  accessToken?: string;
 }): Promise<StartConversationResult> {
   const { data: existing } = await supabase
     .from("conversations")
@@ -47,12 +49,15 @@ export async function startOrContinueConversation(params: {
     .insert({ conversation_id: conversationId, sender_id: params.renterId, body: params.firstMessage });
   if (msgError) return { ok: false, reason: "unknown" };
 
+  if (params.accessToken) void notifyMessageRecipient(params.accessToken, conversationId);
   return { ok: true, conversationId };
 }
 
-export async function sendMessage(conversationId: string, senderId: string, body: string) {
+export async function sendMessage(conversationId: string, senderId: string, body: string, accessToken?: string) {
   const { error } = await supabase.from("messages").insert({ conversation_id: conversationId, sender_id: senderId, body });
-  return error ? { error: error.message } : {};
+  if (error) return { error: error.message };
+  if (accessToken) void notifyMessageRecipient(accessToken, conversationId);
+  return {};
 }
 
 export async function markConversationRead(conversationId: string, role: "renter" | "owner") {
