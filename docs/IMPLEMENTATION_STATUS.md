@@ -2678,3 +2678,40 @@ this resolution avoids entirely.
   through the exact same plain Supabase client call mobile's
   `getActiveSubscription` uses — with zero checkout code involved.
   Test account and subscription row deleted after.
+
+## Fix: production Vercel builds broken since the mobile foundation milestone
+
+Found while investigating a Vercel preview-deployment failure on an
+unrelated PR: **every single deployment since `mobile/` was added**
+(confirmed via Vercel's deployment history, including the PR #9 merge
+commit on `main` itself) has failed with `module_not_found` TypeScript
+errors inside `mobile/**` files (`Cannot find module 'expo-router'`,
+`'react-native'`, etc.). This is a real, pre-existing production
+blocker, not caused by any specific feature PR — it predates and is
+independent of the mobile-IAP-policy PR it was first noticed on.
+
+Root cause: root `tsconfig.json`'s `include` globs (`**/*.ts`,
+`**/*.tsx`) have no `mobile` exclusion, so Next's build-time
+TypeScript check walks `mobile/`'s files as part of the web app's own
+program. Locally this was masked entirely by `mobile/node_modules`
+happening to already be installed on disk (whichever session last ran
+`npm install` inside `mobile/`) — once a dependency resolves, `tsc`
+is satisfied regardless of which project "owns" it. Vercel's build
+only runs `npm install` at the web app's root, so `mobile/node_modules`
+never exists there, and the same files that compile locally fail with
+`Cannot find module` on every real deployment.
+
+Fix: added `"mobile"` to `tsconfig.json`'s `exclude` array — the same
+category of fix as the earlier `eslint.config.mjs`-leaking-into-
+`mobile/` bug this session already found and fixed, just in
+TypeScript's project config instead of ESLint's.
+
+- **Verified** by literally reproducing Vercel's exact failure
+  locally: moved `mobile/node_modules` aside, confirmed `npx tsc
+  --noEmit` now fails with the identical `module_not_found` errors
+  without the fix, confirmed it's clean with the fix in place, then
+  restored `mobile/node_modules`.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (55/55) all clean with `mobile/node_modules` present (the normal
+  local state) too — no regression to the web app's own type
+  coverage.
