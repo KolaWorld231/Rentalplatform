@@ -2591,3 +2591,32 @@ architecture summary.
   (55/55, +6 new OTP unit tests) on web; `npx tsc --noEmit`, `npx
   expo lint`, `npx expo export --platform ios/android`, `npx
   expo-doctor` (20/20) on mobile — all pass.
+
+## Long-lived sessions tuned (post-Milestone-8)
+
+Still waiting on MTN, so the user asked to keep building again — chose
+`docs/AUTH_ALTERNATIVES.md`'s Option 3, a cheap, no-new-code friction
+reducer for low-connectivity mobile use. Config only, no app code
+changed.
+
+- Checked the live project's actual Auth configuration first (via
+  Supabase's Management API, `GET /config/auth`), rather than assuming:
+  `sessions_inactivity_timeout` and `sessions_timebox` were already
+  both disabled — there was never an absolute session expiry or an
+  inactivity-based forced logout on this project. That already-correct
+  state is the real reason a session can last indefinitely (as long as
+  the client refreshes periodically, which both clients' Supabase
+  clients already do automatically) — nothing to fix there.
+- The one real lever was `jwt_exp` (the access token's own lifetime),
+  the default 3600s (1 hour). Bumped to 14400s (4 hours) on the live
+  project via the Management API, and mirrored in
+  `supabase/config.toml` (`jwt_expiry`) so local dev matches
+  production. This doesn't change how long a session survives — the
+  refresh token does that, untouched — it reduces how often the
+  client needs a refresh round-trip at all, which matters specifically
+  for Liberia's low-bandwidth mobile context: fewer refresh attempts
+  means fewer chances for one to fail at a bad connectivity moment.
+- **Live-verified**: signed a real test user in against the live
+  project and decoded the returned access token's own `exp`/`iat`
+  claims, confirming its lifetime is genuinely 14400s now. Test
+  account deleted after.

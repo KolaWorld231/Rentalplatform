@@ -103,16 +103,35 @@ equivalent):
   implementation, just a JSON-in/JSON-out wrapper around the same
   functions web's Server Actions call.
 
-## Option 3 — "Remember this device" long-lived sessions
+## Option 3 — "Remember this device" long-lived sessions — **tuned**
 
 Not a new sign-in method — a way to make whichever method is in place
-need to happen less often. Supabase session refresh tokens already
-support long-lived sessions by configuration (how long a refresh token
-stays valid before requiring a fresh login); tuning this down the amount
-of friction for a low-connectivity, low-email user without any new
-infrastructure. Pair this with passkeys (already shipped) or phone OTP
-(Option 1) for the lowest-friction combination: authenticate once, rarely
-again on a trusted device.
+need to happen less often. Checked the live project's actual Auth
+config (Supabase Management API's `/config/auth`, not assumed) before
+changing anything:
+
+- `sessions_inactivity_timeout` and `sessions_timebox` were **already
+  both disabled** on this project — no absolute session expiry and no
+  inactivity-based forced logout exist already. This is the thing that
+  actually keeps a session alive indefinitely (as long as the client
+  refreshes periodically, which both web's and mobile's Supabase
+  clients already do automatically) — nothing needed changing here.
+- `jwt_exp` (the access token's own lifetime) was the default 3600s (1
+  hour) — bumped to 14400s (4 hours), applied to the live project via
+  the Management API and mirrored in `supabase/config.toml` for local
+  dev. This doesn't change how long a session *lasts* (that's the
+  refresh token, unaffected) — it reduces how often the client needs a
+  refresh round-trip at all, which matters specifically for
+  intermittent/low-bandwidth mobile connectivity: fewer refresh
+  attempts means fewer chances for one to fail at a bad moment, and
+  less data used on token refreshes.
+- Live-verified: logged a real test user in against the live project
+  and decoded the returned access token's own `exp`/`iat` claims to
+  confirm its lifetime is genuinely 14400s now, not the old 3600s.
+
+Pair this with passkeys (already shipped) or WhatsApp/phone OTP
+(Options 1-2) for the lowest-friction combination: authenticate once,
+rarely again on a trusted device.
 
 ## Option 4 — USSD
 
@@ -146,7 +165,8 @@ option.
 3. **Phone/SMS OTP** — code-complete (`lib/auth/phone-actions.ts`),
    inert pending the live project's SMS provider being configured —
    see `docs/IMPLEMENTATION_STATUS.md`'s production blockers.
-4. **Long-lived sessions** — a cheap, immediate friction-reducer to apply
-   regardless of which identity method is used. Not yet tuned.
+4. **Long-lived sessions** — tuned. No inactivity timeout/timebox
+   existed already; access-token lifetime bumped from 1 to 4 hours,
+   applied to the live project and verified.
 5. **USSD / agent-assisted onboarding** — longer-term, non-technical,
    partnership-dependent; noted for completeness, not a near-term build.
