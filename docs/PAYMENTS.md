@@ -149,8 +149,8 @@ approve + enter their PIN.
     is redirected to `/checkout/momo/pending`, which polls
     `checkMomoPaymentStatusAction` (`app/checkout/momo/actions.ts`) every
     few seconds.
-  - Mobile: the same poll, via the authenticated
-    `POST /api/mobile/checkout/status` route (see "Mobile parity" below).
+  - Mobile: no polling path exists — see "Mobile parity" below, mobile
+    never initiates a checkout at all.
 - **Liberia is a confirmed live MoMo production market** (per MTN's own
   community posts, not assumed), but the sandbox only accepts **EUR** and
   a generic `X-Target-Environment: sandbox` — Liberia's real production
@@ -161,22 +161,29 @@ approve + enter their PIN.
   currency (USD); `MTN_MOMO_CURRENCY` only controls what's sent to MTN's
   API, and never corrupts the ledger.
 
-## Mobile parity
+## Mobile parity — mobile is checkout-free by design
 
-Mobile has no server-role layer, so it can't call a real provider's
-`createCheckout` directly (MTN's subscription key must never reach a
-client bundle). `app/api/mobile/checkout/route.ts` is a thin,
-bearer-token-authenticated route that calls the **exact same**
-`startCheckout()` the web Server Action calls — not a reimplementation.
-`app/api/mobile/checkout/status/route.ts` is the equivalent for polling.
-Both validate the caller via `supabase.auth.getUser(accessToken)` against
-the service-role client before doing anything. This superseded the
-Foundation-milestone `start_mobile_checkout()` RPC, which only ever
-worked for the mock provider (it hardcoded `provider = 'mock'` and could
-only create database rows, never call a real provider's API) — see
-`docs/IMPLEMENTATION_STATUS.md`. That RPC is still deployed but unused;
-dropping it is a separate, low-priority migration, not required for
-correctness.
+Mobile has **no checkout-initiation code path at all** — no checkout
+API route, no phone-entry UI, no polling. `mobile/app/pricing.tsx`
+only ever reads the signed-in user's real subscription status
+(`mobile/lib/subscriptions/service.ts`'s `getActiveSubscription`) and
+points a non-subscriber at the website to buy a pass there. This is a
+deliberate "reader app" pattern (the same one Netflix/Spotify/Kindle
+use), not a missing feature — see
+`docs/IMPLEMENTATION_STATUS.md`'s dated entry for the App Store/Play
+Store in-app-purchase policy reasoning. Web keeps the full checkout
+flow above unchanged, since the app-store IAP rule doesn't apply to a
+website; a renter buys the pass from any browser and it's immediately
+active on mobile too, since both clients read the same `subscriptions`
+table.
+
+The previously-built `app/api/mobile/checkout/{route,status/route}.ts`
+routes (bearer-token-authenticated wrappers around `startCheckout()`/
+`checkStatus()`) have been deleted — they are not needed and must not
+be rebuilt without first revisiting the IAP policy decision. The
+Foundation-milestone `start_mobile_checkout()` RPC (which only ever
+worked for the mock provider) has been dropped entirely — nothing
+calls it.
 
 ### Liberia-specific provider research (not yet resolved)
 

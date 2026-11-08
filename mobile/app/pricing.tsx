@@ -1,14 +1,12 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import * as WebBrowser from "expo-web-browser";
+import { useQuery } from "@tanstack/react-query";
 import { Link, Stack } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TextInput, View } from "react-native";
+import { Text, View } from "react-native";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { useSession } from "../lib/auth/session";
 import { subscriptionPlan } from "../lib/brand";
 import { formatExpiryDate, formatUsd } from "../lib/format";
-import { checkMobileMomoStatus, getActiveSubscription, startMobileCheckout } from "../lib/subscriptions/service";
+import { getActiveSubscription } from "../lib/subscriptions/service";
 
 const BENEFITS = [
   "Message as many property owners as you like for 30 days",
@@ -17,17 +15,23 @@ const BENEFITS = [
   "Manual renewal only -- never an automatic charge",
 ];
 
-const POLL_INTERVAL_MS = 4000;
-const MAX_POLLS = 45; // ~3 minutes
-
+/**
+ * Deliberately read-only: mobile shows the plan and the signed-in
+ * user's real subscription status, but never initiates a purchase.
+ * Apple App Store Review Guideline 3.1.1 and Google Play's Payments
+ * Policy generally require unlocking in-app digital content/services
+ * through the platform's own in-app purchase system -- the Direct
+ * Access Pass's actual price point makes a real IAP integration (plus
+ * the store's 15-30% cut) not worth it right now, so mobile simply
+ * never offers a way to buy it, the same "reader app" pattern Netflix/
+ * Spotify/Kindle use. Web (not an app-store app, no IAP rule applies)
+ * keeps its full checkout flow unchanged -- a renter buys the pass
+ * there, from any browser, and it's immediately active here too since
+ * both clients read the same `subscriptions` table. See
+ * docs/IMPLEMENTATION_STATUS.md for the decision record.
+ */
 export default function PricingScreen() {
-  const { user, session } = useSession();
-  const queryClient = useQueryClient();
-  const [starting, setStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [phone, setPhone] = useState("");
-  const [pendingReference, setPendingReference] = useState<string | null>(null);
-  const [pollAttempt, setPollAttempt] = useState(0);
+  const { user } = useSession();
 
   const subscription = useQuery({
     queryKey: ["active-subscription", user?.id],
@@ -35,86 +39,28 @@ export default function PricingScreen() {
     queryFn: () => getActiveSubscription(user!.id),
   });
 
-  useEffect(() => {
-    if (!pendingReference || !session || pollAttempt >= MAX_POLLS) return;
-
-    const timer = setTimeout(
-      async () => {
-        const result = await checkMobileMomoStatus(session.access_token, pendingReference);
-        if (result.status === "confirmed") {
-          setPendingReference(null);
-          await queryClient.invalidateQueries({ queryKey: ["active-subscription", user?.id] });
-          return;
-        }
-        if (result.status === "failed") {
-          setPendingReference(null);
-          setError("That payment wasn't confirmed. No charge was applied -- you can try again.");
-          return;
-        }
-        if (result.status === "error") {
-          setPendingReference(null);
-          setError(result.error ?? "Something went wrong checking your payment.");
-          return;
-        }
-        setPollAttempt((a) => a + 1);
-      },
-      pollAttempt === 0 ? 0 : POLL_INTERVAL_MS,
-    );
-
-    return () => clearTimeout(timer);
-  }, [pendingReference, pollAttempt, session, queryClient, user?.id]);
-
-  async function onStartCheckout() {
-    if (!session) return;
-    setError(null);
-    setStarting(true);
-    try {
-      const checkout = await startMobileCheckout(session.access_token, phone.trim() || undefined);
-      if (checkout.kind === "redirect") {
-        await WebBrowser.openBrowserAsync(checkout.redirectUrl);
-        await queryClient.invalidateQueries({ queryKey: ["active-subscription", user?.id] });
-      } else {
-        setPollAttempt(0);
-        setPendingReference(checkout.reference);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't start checkout.");
-    } finally {
-      setStarting(false);
-    }
-  }
-
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="gap-5 p-4 pb-10">
+    <View className="flex-1 bg-canvas dark:bg-charcoal-900">
       <Stack.Screen options={{ headerShown: true, title: subscriptionPlan.name }} />
+      <View className="gap-5 p-4">
+        {!user ? (
+          <Card className="gap-3 p-5">
+            <Text className="text-base text-charcoal-700 dark:text-ivory-100">Log in to see your Direct Access Pass.</Text>
+            <Link href="/(auth)/login" asChild>
+              <Button>Log in</Button>
+            </Link>
+          </Card>
+        ) : subscription.data ? (
+          <Card className="gap-1 p-5">
+            <Text className="font-sans-semibold text-success-500">Your pass is active</Text>
+            {subscription.data.expires_at && (
+              <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+                Expires {formatExpiryDate(subscription.data.expires_at)}
+              </Text>
+            )}
+          </Card>
+        ) : null}
 
-      {!user ? (
-        <Card className="gap-3 p-5">
-          <Text className="text-base text-charcoal-700 dark:text-ivory-100">Log in to get a Direct Access Pass.</Text>
-          <Link href="/(auth)/login" asChild>
-            <Button>Log in</Button>
-          </Link>
-        </Card>
-      ) : subscription.data ? (
-        <Card className="gap-1 p-5">
-          <Text className="font-sans-semibold text-success-500">Your pass is active</Text>
-          {subscription.data.expires_at && (
-            <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
-              Expires {formatExpiryDate(subscription.data.expires_at)}
-            </Text>
-          )}
-        </Card>
-      ) : pendingReference ? (
-        <Card className="items-center gap-2 p-5 text-center">
-          <ActivityIndicator />
-          <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Check your phone</Text>
-          <Text className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
-            Approve the mobile money payment request and enter your PIN to activate your pass.
-          </Text>
-        </Card>
-      ) : null}
-
-      {!pendingReference && (
         <Card className="gap-3 p-5 shadow-[var(--shadow-clay-raised)]">
           <Text className="font-sans-semibold text-sm text-forest-700 dark:text-forest-500">{subscriptionPlan.name}</Text>
           <Text className="font-display-bold text-4xl text-charcoal-700 dark:text-ivory-100">
@@ -134,30 +80,14 @@ export default function PricingScreen() {
             Compare: paying an agent per viewing typically costs $30–40 and only covers one property.
           </Text>
 
-          {error && <Text className="text-sm text-error-500">{error}</Text>}
-
           {user && !subscription.data && (
-            <>
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="Mobile money phone number (e.g. 0770 000 000)"
-                placeholderTextColor="#737373"
-                keyboardType="phone-pad"
-                className="h-12 rounded-md border border-border bg-surface px-3.5 text-base text-charcoal-700 dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100"
-              />
-              <Button variant="clay" loading={starting} onPress={onStartCheckout}>
-                Get the Direct Access Pass
-              </Button>
-            </>
+            <Text className="text-sm text-charcoal-600 dark:text-charcoal-400">
+              Get a Direct Access Pass from the DomiLink website, on any browser. Once it&apos;s active, it shows up
+              here automatically.
+            </Text>
           )}
         </Card>
-      )}
-
-      <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">
-        Only a verified payment ever activates your pass -- nothing here marks it active until that&apos;s
-        confirmed.
-      </Text>
-    </ScrollView>
+      </View>
+    </View>
   );
 }
