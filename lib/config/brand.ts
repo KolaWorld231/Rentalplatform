@@ -15,7 +15,7 @@ export const brand = {
   subscriptionSupportingCopy:
     "Browse properties for free. Unlock direct messaging and contact multiple property owners with one affordable pass.",
   // Legal/business identity: placeholders only, pending real registration.
-  legalEntityName: "[COMPANY LEGAL NAME — PENDING REGISTRATION]",
+  legalEntityName: "231Rentals",
   supportEmail: "support@example-231rentals.test",
   supportPhone: "[SUPPORT PHONE — PENDING]",
   officeAddress: "[OFFICE ADDRESS — PENDING]",
