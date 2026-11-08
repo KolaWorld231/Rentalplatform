@@ -51,7 +51,15 @@
       ]
     ],
     "extra": {
-      "router": {}
-    }
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "1f6e104e-b19a-4abf-9910-813278e85c49"
+      }
+    },
+    "owner": "quaresmaharijgens2026"
   }
 }
