@@ -406,6 +406,19 @@ export type WebAuthnChallenge = {
   created_at: string;
 };
 
+export type WhatsAppOtpPurpose = "signup" | "login";
+
+export type WhatsAppOtpChallenge = {
+  id: string;
+  phone: string;
+  code_hash: string;
+  purpose: WhatsAppOtpPurpose;
+  metadata: Record<string, unknown>;
+  attempts: number;
+  expires_at: string;
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -496,6 +509,10 @@ export type Database = {
       webauthn_challenges: TableDef<
         WebAuthnChallenge,
         Partial<WebAuthnChallenge> & Pick<WebAuthnChallenge, "purpose" | "challenge" | "expires_at">
+      >;
+      whatsapp_otp_challenges: TableDef<
+        WhatsAppOtpChallenge,
+        Partial<WhatsAppOtpChallenge> & Pick<WhatsAppOtpChallenge, "phone" | "code_hash" | "purpose" | "expires_at">
       >;
     };
     Views: Record<string, never>;

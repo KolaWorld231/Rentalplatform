@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireUser } from "@/lib/auth/session";
+import { mintSessionForEmail } from "@/lib/auth/session-mint";
 import { webAuthnConfig } from "@/lib/auth/webauthn-config";
 import { passkeyLabelSchema, passkeySignupSchema } from "@/lib/validation/auth";
 import type { WebAuthnChallenge, WebAuthnCredential } from "@/types/database";
@@ -78,29 +79,8 @@ function base64ToPublicKey(base64: string) {
   return new Uint8Array(Buffer.from(base64, "base64"));
 }
 
-/** Mints a real Supabase session for userEmail without a password, after
- * this module has independently verified a WebAuthn ceremony. Supabase
- * Auth has no API to "just log this user in" from trusted server code, so
- * this uses generateLink (which only generates a token, never sends an
- * email) and immediately redeems it via verifyOtp on the request-scoped,
- * cookie-writing client — the standard pattern for bolting a custom auth
- * factor onto Supabase Auth. */
-async function mintSessionForEmail(email: string) {
-  const admin = createServiceRoleClient();
-  const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
-  if (error || !data.properties?.hashed_token) {
-    throw new Error("Could not complete passkey sign-in. Please try again.");
-  }
-
-  const supabase = await createClient();
-  const { error: verifyError } = await supabase.auth.verifyOtp({
-    type: "magiclink",
-    token_hash: data.properties.hashed_token,
-  });
-  if (verifyError) {
-    throw new Error("Could not complete passkey sign-in. Please try again.");
-  }
-}
+// mintSessionForEmail moved to lib/auth/session-mint.ts, shared with
+// the WhatsApp OTP flow -- see that file for the trick itself.
 
 // --- Registering an additional passkey for an already-logged-in user ---
 

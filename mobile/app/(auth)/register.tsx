@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
+import { WhatsAppAuthForm } from "../../components/auth/WhatsAppAuthForm";
 import { cn } from "../../lib/cn";
 import { registerAction } from "../../lib/auth/actions";
 import { registerSchema, type RegisterInput } from "../../lib/validation/auth";
@@ -14,6 +15,7 @@ import { registerSchema, type RegisterInput } from "../../lib/validation/auth";
 export default function RegisterScreen() {
   const params = useLocalSearchParams<{ intent?: string }>();
   const defaultIntent = params.intent === "owner" ? "owner" : "renter";
+  const [method, setMethod] = useState<"password" | "whatsapp">("password");
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     control,
@@ -26,6 +28,7 @@ export default function RegisterScreen() {
     defaultValues: { displayName: "", email: "", password: "", intent: defaultIntent },
   });
   const intent = watch("intent");
+  const displayName = watch("displayName");
 
   async function onSubmit(values: RegisterInput) {
     setServerError(null);
@@ -83,38 +86,70 @@ export default function RegisterScreen() {
             <Input label="Full name" value={field.value} onChangeText={field.onChange} error={errors.displayName?.message} />
           )}
         />
-        <Controller
-          control={control}
-          name="email"
-          render={({ field }) => (
-            <Input
-              label="Email"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.email?.message}
+
+        <View className="flex-row gap-2">
+          <Pressable
+            onPress={() => setMethod("password")}
+            className={cn(
+              "flex-1 items-center rounded-md border py-2",
+              method === "password" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+            )}
+          >
+            <Text className={cn("text-sm font-sans-semibold", method === "password" ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+              Password
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setMethod("whatsapp")}
+            className={cn(
+              "flex-1 items-center rounded-md border py-2",
+              method === "whatsapp" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+            )}
+          >
+            <Text className={cn("text-sm font-sans-semibold", method === "whatsapp" ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+              WhatsApp
+            </Text>
+          </Pressable>
+        </View>
+
+        {method === "whatsapp" ? (
+          <WhatsAppAuthForm mode="signup" displayName={displayName} intent={intent} />
+        ) : (
+          <>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field }) => (
+                <Input
+                  label="Email"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  error={errors.email?.message}
+                />
+              )}
             />
-          )}
-        />
-        <Controller
-          control={control}
-          name="password"
-          render={({ field }) => (
-            <Input
-              label="Password"
-              secureTextEntry
-              hint="At least 8 characters."
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.password?.message}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field }) => (
+                <Input
+                  label="Password"
+                  secureTextEntry
+                  hint="At least 8 characters."
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  error={errors.password?.message}
+                />
+              )}
             />
-          )}
-        />
-        {serverError && <Text className="text-sm font-medium text-error-500">{serverError}</Text>}
-        <Button loading={isSubmitting} onPress={() => handleSubmit(onSubmit)()}>
-          Create account
-        </Button>
+            {serverError && <Text className="text-sm font-medium text-error-500">{serverError}</Text>}
+            <Button loading={isSubmitting} onPress={() => handleSubmit(onSubmit)()}>
+              Create account
+            </Button>
+          </>
+        )}
       </Card>
 
       <View className="flex-row justify-center gap-1">

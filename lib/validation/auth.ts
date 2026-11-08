@@ -59,3 +59,28 @@ export const phoneOtpSchema = z.object({
   mode: z.enum(["signup", "login"]),
 });
 export type PhoneOtpInput = z.infer<typeof phoneOtpSchema>;
+
+// WhatsApp OTP isn't a native Supabase Auth method (unlike phone/SMS
+// above), so signup still collects an email -- same convention as
+// passkeys: it's the underlying Supabase Auth identifier, never typed
+// again at sign-in. Only the phone number is asked for on every later
+// login. See docs/AUTH_ALTERNATIVES.md.
+export const whatsappSignupSchema = z.object({
+  displayName: z.string().trim().min(2, "Enter your name").max(80),
+  phone: phoneNumberSchema,
+  email: z.string().trim().email("Enter a valid email address"),
+  intent: z.enum(["renter", "owner"]),
+});
+export type WhatsappSignupInput = z.infer<typeof whatsappSignupSchema>;
+
+export const whatsappLoginSchema = z.object({
+  phone: phoneNumberSchema,
+});
+export type WhatsappLoginInput = z.infer<typeof whatsappLoginSchema>;
+
+export const whatsappOtpVerifySchema = z.object({
+  phone: phoneNumberSchema,
+  code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code"),
+  mode: z.enum(["signup", "login"]),
+});
+export type WhatsappOtpVerifyInput = z.infer<typeof whatsappOtpVerifySchema>;

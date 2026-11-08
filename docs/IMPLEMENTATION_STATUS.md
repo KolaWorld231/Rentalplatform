@@ -2294,9 +2294,18 @@ credentials or input, not more engineering time against this codebase.
   set a Test OTP number/code under Authentication → Settings to try it
   without a real SMS provider first), then add real SMS provider
   credentials there when ready — no further code changes needed either
-  time. WhatsApp OTP remains researched-only in
-  `docs/AUTH_ALTERNATIVES.md`, blocked on a Meta Business API setup, a
-  bigger lift than phone/SMS.
+  time.
+- **Meta WhatsApp Business Cloud API credentials**: WhatsApp OTP
+  sign-up/sign-in is now built and code-complete
+  (`lib/auth/whatsapp-otp.ts`, `components/auth/WhatsAppAuthForm.tsx`
+  on web and mobile) and live-verified end-to-end except the actual
+  message send — the same shape as the phone/SMS gap above. Needs the
+  project owner to set up a Meta WhatsApp Business Cloud API account
+  and get an "Authentication" category OTP template approved (a
+  business-side process that can take days to weeks, not a code
+  change), then set `WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_ACCESS_TOKEN`/
+  `WHATSAPP_OTP_TEMPLATE_NAME` in `.env.example` — see
+  `docs/AUTH_ALTERNATIVES.md`'s Option 2.
 - **Mobile app-store in-app-purchase policy decision**: the mobile
   app's Direct Access Pass checkout (Milestone 4) opens an in-app
   browser to the same web checkout flow the Next.js app uses. Apple
@@ -2498,3 +2507,87 @@ list of options.
   (49/49) on web; `npx tsc --noEmit`, `npx expo lint`, `npx expo
   export --platform ios/android`, `npx expo-doctor` (20/20) on mobile
   — all pass.
+
+## WhatsApp OTP sign-up/sign-in (post-Milestone-8)
+
+Still waiting on MTN support, so the user asked to keep building —
+chose WhatsApp OTP, the "bigger lift" option from
+`docs/AUTH_ALTERNATIVES.md`'s Option 2, researched but not built
+during the earlier passkey work. Built fully on both web and mobile;
+see `docs/AUTH_ALTERNATIVES.md`'s updated Option 2 section for the
+architecture summary.
+
+- **New migration**: `supabase/migrations/20261108000200_whatsapp_otp.sql`
+  adds `whatsapp_otp_challenges` — same service-role-only shape as
+  `webauthn_challenges` (no policies granted to anon/authenticated at
+  all, so RLS denies every client access by default). Only a salted
+  SHA-256 hash of the 6-digit code is ever stored, never the code
+  itself.
+- **`lib/auth/otp-code.ts`** (new, unit-tested): code generation
+  (`crypto.randomInt`, not `Math.random`), salted hashing, and a
+  `crypto.timingSafeEqual`-based comparison — the hash comparison
+  itself is a real, if minor, security detail worth getting right
+  given it guards an account takeover path, not just a style
+  preference.
+- **`lib/auth/session-mint.ts`** (new): extracted the passkey work's
+  `mintSessionForEmail` (the `admin.generateLink` + `verifyOtp` trick
+  for turning a verified non-Supabase-native factor into a real
+  session) out of `webauthn-actions.ts` so WhatsApp OTP reuses the
+  exact same code, not a second copy of it — a small, behavior-
+  preserving refactor. Added `mintSessionTokensForEmail`, the mobile
+  variant that returns raw tokens instead of writing cookies (no
+  cookie jar inside a Route Handler mobile calls with no existing
+  session).
+- **Account identity**: signup still collects an email once, purely
+  as the underlying Supabase Auth identifier (same convention the
+  passkey work established — never typed again at sign-in). Every
+  later sign-in is phone + WhatsApp code only.
+  `profiles.phone`/`phone_verified_at` — unused columns since they
+  were added in Milestone 2, confirmed unused again when researching
+  the native phone/SMS OTP work — are now the real phone→account
+  lookup for returning users, set on successful signup verification.
+- **`lib/auth/whatsapp-otp.ts`** (new): the core logic
+  (`startWhatsAppSignup`/`startWhatsAppLogin`/`verifyWhatsAppOtp`) as
+  plain functions taking typed input and returning structured
+  results — no `FormData`, no `redirect()` — so both web's Server
+  Actions (`lib/auth/whatsapp-actions.ts`) and mobile's authenticated-
+  by-design-not-needed routes (`app/api/mobile/whatsapp-otp/{start,
+  verify}/route.ts` — there's no session yet at the point of
+  requesting/verifying a code, so no bearer token applies) call the
+  identical code. A failed send (certain right now, with no real
+  Meta credentials configured) deletes its own challenge row rather
+  than leaving an orphan that would both mislead a later lookup and
+  wrongly count against that phone's rate limit.
+- **`lib/auth/whatsapp-cloud-api.ts`** (new): the Meta WhatsApp
+  Business Cloud API client, scoped to exactly OTP delivery. Throws a
+  clear, specific error when its env vars aren't configured rather
+  than fabricating a send — same "never fabricate success" rule
+  `CLAUDE.md` applies to payments, applied here too.
+- **UI**: `components/auth/WhatsAppAuthForm.tsx` (web) and its mobile
+  equivalent, both a two-step phone→code flow matching the existing
+  `PhoneAuthForm`'s pattern exactly; both `/login` and `/register`
+  (web) and mobile's login/register screens gained a WhatsApp method
+  toggle alongside the existing options.
+- **Live-verified** against the real Supabase project (14 checks, via
+  the real HTTP routes against a running dev server — not reimplemented
+  logic in a test script): confirmed starting signup fails gracefully
+  with the real "no credentials configured" error and leaves no
+  orphaned challenge row, confirmed a wrong code is rejected and
+  increments the attempts counter, confirmed the correct code creates
+  a real Supabase Auth user, sets `profiles.phone`/`phone_verified_at`,
+  grants the `owner` role when that was the declared intent, mints a
+  session whose access token actually resolves via `getUser`, and
+  deletes the consumed challenge row; confirmed an expired challenge
+  is rejected even with the right code; confirmed logging in by phone
+  for the now-existing account resolves to the exact same user;
+  confirmed a login attempt for an unknown phone number fails with
+  the same generic message a real send failure would (no account-
+  existence enumeration). The one thing not verified — actual message
+  delivery via the real Meta Cloud API — needs the project owner's
+  WhatsApp Business account; everything else in the flow is both
+  built and proven correct against the live database. Test account
+  and all challenge rows deleted after.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (55/55, +6 new OTP unit tests) on web; `npx tsc --noEmit`, `npx
+  expo lint`, `npx expo export --platform ios/android`, `npx
+  expo-doctor` (20/20) on mobile — all pass.

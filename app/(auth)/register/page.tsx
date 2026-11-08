@@ -2,7 +2,7 @@
 
 import { startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
-import { Fingerprint, Home, KeyRound, Phone, Search } from "lucide-react";
+import { Fingerprint, Home, KeyRound, MessageCircle, Phone, Search } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useActionState, useState } from "react";
 import { type ActionState, registerAction } from "@/lib/auth/actions";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { PhoneAuthForm } from "@/components/auth/PhoneAuthForm";
+import { WhatsAppAuthForm } from "@/components/auth/WhatsAppAuthForm";
 import { cn } from "@/lib/utils/cn";
 import { useSearchParams } from "next/navigation";
 
@@ -25,7 +26,7 @@ export default function RegisterPage() {
   );
 }
 
-type Method = "password" | "passkey" | "phone";
+type Method = "password" | "passkey" | "phone" | "whatsapp";
 
 function RegisterForm() {
   const searchParams = useSearchParams();
@@ -128,7 +129,7 @@ function RegisterForm() {
           className="mt-4"
         />
 
-        {method !== "phone" && (
+        {method !== "phone" && method !== "whatsapp" && (
           <Input
             label="Email"
             type="email"
@@ -142,7 +143,7 @@ function RegisterForm() {
         )}
 
         <fieldset
-          className={cn("mt-4 grid gap-2", passkeySupported ? "grid-cols-3" : "grid-cols-2")}
+          className={cn("mt-4 grid gap-2", passkeySupported ? "grid-cols-4" : "grid-cols-3")}
           aria-label="How to sign up"
         >
           {passkeySupported && (
@@ -183,6 +184,18 @@ function RegisterForm() {
             <Phone className="h-4 w-4" aria-hidden="true" />
             Phone
           </button>
+          <button
+            type="button"
+            onClick={() => setMethod("whatsapp")}
+            aria-pressed={method === "whatsapp"}
+            className={cn(
+              "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
+              method === "whatsapp" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+            )}
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            WhatsApp
+          </button>
         </fieldset>
 
         {method === "passkey" && (
@@ -211,6 +224,12 @@ function RegisterForm() {
         {method === "phone" && (
           <div className="mt-4">
             <PhoneAuthForm mode="signup" displayName={displayName} intent={intent} />
+          </div>
+        )}
+
+        {method === "whatsapp" && (
+          <div className="mt-4">
+            <WhatsAppAuthForm mode="signup" displayName={displayName} intent={intent} />
           </div>
         )}
 
