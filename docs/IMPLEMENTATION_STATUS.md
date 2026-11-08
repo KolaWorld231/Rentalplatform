@@ -2833,3 +2833,46 @@ hierarchy issues stood out on desktop:
   dead space; `/pricing`'s agent card now carries a matching price
   headline; confirmed zero regression on mobile (the brand panel is
   `hidden` below `lg:` so it was never affected there).
+
+## Fix: `/login` hydration mismatch (invalid `<dialog>` nested in `<p>`)
+
+Found while extending the design-critique pass to authenticated pages
+(seeded a disposable owner+renter test account and screenshotted
+`/dashboard`, `/dashboard/properties`, `/dashboard/verification`,
+`/messages`, `/account`, `/favourites` — all clean, no design issues
+found there). Logging the renter account in via a real browser
+automation occasionally failed silently: the login form appeared to
+submit, but no session cookie was set and the next page bounced back
+to `/login`. Direct `supabase.auth.signInWithPassword` calls against
+the same account never failed, which ruled out Supabase-side rate
+limiting or a credentials problem.
+
+Running the page locally in dev mode surfaced the real cause: React
+logged `"In HTML, <dialog> cannot be a descendant of <p>. This will
+cause a hydration error."`, reproducible on **every single** load of
+`/login` (not intermittent at all, once observed directly) —
+`app/(auth)/login/page.tsx`'s `<p>New to DomiLink?
+<IntentChoiceDialog>...</p>` wraps `IntentChoiceDialog`, which renders
+a `<button>` and a `<dialog>` as siblings. A `<dialog>` is flow
+content, not phrasing content, so it can never legally sit inside a
+`<p>` — the browser's HTML parser auto-closes the paragraph early,
+producing a different DOM than what React computed, and React then
+discards and regenerates that whole subtree on the client. That
+client-side tree regeneration, happening on every page load, explains
+the intermittent-feeling login failures: automated/fast interactions
+hitting the dialog's subtree during the regeneration window landed on
+the pre-regeneration node and never reached the real click handler.
+
+Fix: changed the wrapping element from `<p>` to `<div>` — `IntentChoiceDialog`
+is also used in `components/layout/Header.tsx` (desktop nav + mobile
+menu), both already wrapped in `<div>`/`<li>`, never a `<p>`, so this
+was the only occurrence of the bug.
+
+- **Verified** by literally reproducing the exact hydration error
+  locally (console log + `PAGEERROR` captured before the fix,
+  confirmed gone after) across `/`, `/login`, `/register`, `/search`,
+  `/pricing`, `/how-it-works`.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean.
+- Test owner/renter accounts, listing, conversation, and messages all
+  deleted after the authenticated-page screenshot pass.
