@@ -81,6 +81,10 @@ export default async function PricingPage({
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Card className="p-6">
           <p className="text-sm font-semibold text-charcoal-400">Paying an agent per viewing</p>
+          <p className="mt-2 font-display text-3xl font-semibold text-charcoal-400 decoration-2">
+            <span className="line-through">$30–40</span>
+            <span className="block text-base font-normal text-charcoal-400">per property, every time</span>
+          </p>
           <ul className="mt-4 flex flex-col gap-2.5">
             {agentColumn.map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-charcoal-500">
