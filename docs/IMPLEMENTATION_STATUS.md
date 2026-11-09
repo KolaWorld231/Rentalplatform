@@ -2975,3 +2975,53 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+## Mobile design fix: ported Claymorphism shadow/elevation system (was entirely flat)
+
+The user saw a screenshot of the (now-working, post-EAS-build) mobile
+home screen and said the UI read as unprofessional/"EVERYTHING IS JUST
+FLAT". Root cause: `mobile/tailwind.config.js` correctly hand-ports
+web's Claymorphism color/radius tokens from `app/globals.css`, but had
+zero `boxShadow` entries, and a repo-wide grep found zero RN
+shadow/elevation props anywhere in `mobile/`. The two existing
+`shadow-[var(--shadow-clay-raised)]` usages (`verification.tsx`,
+`pricing.tsx`) were dead code — NativeWind has no CSSOM, so a
+`var(--...)` reference never resolves. The pure-black dark background
+itself was already correct (matches web's own dark `--background`);
+the real gap was the total absence of depth on foreground surfaces.
+
+Fix (additive, no background-color changes):
+- Added four `boxShadow` tokens to `tailwind.config.js`
+  (`subtle`/`raised`/`floating`/`modal`) — single-layer translations of
+  web's six shadow tokens, since NativeWind/RN only support one shadow
+  layer per view (no multi-layer, no inset). `clay-inset`/`clay-raised`
+  were deliberately not ported as generic utilities for that reason.
+- `Card` now defaults to `shadow-raised`; `Button`'s filled variants
+  (`primary`/`clay`/`danger`) get `shadow-raised active:shadow-subtle`,
+  `secondary` gets `shadow-subtle`, `ghost` stays shadowless.
+- `Input` approximates web's inset shadow with a new `well`
+  color token (one step darker than `surface`/`charcoal-700`) instead
+  of a real shadow — RN has no inset-shadow support, and an outward
+  shadow on a text field would read as raised, the wrong semantic.
+- `PropertyCard` needed restructuring, not just a class: its single
+  `Pressable` combined `overflow-hidden` (to clip the cover photo)
+  with where the shadow needed to live, and `overflow-hidden` clips
+  shadows on the same iOS layer. Split into an outer shadow-carrying
+  `Pressable` (required — `Link asChild` forwards press handling to
+  its one direct child) and an inner `overflow-hidden` wrapper for the
+  image/content.
+- Fixed the two dead `shadow-[var(--shadow-clay-raised)]` usages to
+  `shadow-floating`.
+- Found and fixed a real, separate bug while touching the tab bar
+  (`app/(tabs)/_layout.tsx`): `tabBarStyle` is a plain React Navigation
+  style object, not a NativeWind className, so it never received any
+  shadow and its `backgroundColor` was hardcoded white regardless of
+  color scheme — the tab bar stayed white even in dark mode. Added a
+  `useColorScheme()`-driven background/border and hardcoded the
+  resolved `floating`-tier native shadow props inline (NativeWind's
+  config doesn't reach this style object).
+- Verified: `npx tsc --noEmit` and `npm run lint` clean on mobile.
+  **Not yet live-verified in a running app** — this session has no
+  iOS/Android simulator access; the user should confirm visually on
+  their device/EAS build (per `docs/IMPLEMENTATION_STATUS.md`'s own
+  "don't report a test as passing unless it was actually run" rule,
+  this is disclosed here rather than claimed).
