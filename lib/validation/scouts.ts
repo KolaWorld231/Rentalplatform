@@ -59,3 +59,11 @@ export type ScoutDecisionInput = z.infer<typeof scoutDecisionSchema>;
 
 export const PROBATION_DAYS = 30;
 export const REAPPLY_AFTER_DAYS = 90;
+
+// Milestone 4: earnings. Illustrative defaults from docs/SCOUT_PROGRAM.md's
+// own earnings table -- the spec explicitly lists the bounty amount,
+// share %, and monthly cap as an open decision (§16) still needing the
+// project owner's sign-off against real costs, not a figure to treat
+// as final just because it's coded here.
+export const BOUNTY_AMOUNT_USD = 2;
+export const BOUNTY_CONFIRMED_AVAILABLE_AFTER_DAYS = 30;

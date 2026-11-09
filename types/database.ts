@@ -522,6 +522,36 @@ export type OwnerReferral = {
   created_at: string;
 };
 
+export type ScoutEarningType = "bounty" | "share" | "visit_fee" | "adjustment" | "clawback";
+export type ScoutEarningStatus = "pending" | "approved" | "paid" | "reversed";
+export type ScoutPayoutStatus = "pending" | "paid" | "failed";
+
+export type ScoutEarningsLedgerEntry = {
+  id: string;
+  scout_id: string;
+  owner_referral_id: string | null;
+  type: ScoutEarningType;
+  amount: number;
+  currency: string;
+  status: ScoutEarningStatus;
+  source_ref: string | null;
+  reason: string | null;
+  created_at: string;
+};
+
+export type ScoutPayout = {
+  id: string;
+  scout_id: string;
+  amount: number;
+  currency: string;
+  method: string | null;
+  provider_reference: string | null;
+  status: ScoutPayoutStatus;
+  paid_by: string | null;
+  paid_at: string | null;
+  created_at: string;
+};
+
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;
@@ -665,6 +695,11 @@ export type Database = {
         Partial<Scout> & Pick<Scout, "application_id" | "probation_ends_at" | "referral_code" | "display_name" | "area_id">
       >;
       owner_referrals: TableDef<OwnerReferral, Partial<OwnerReferral> & Pick<OwnerReferral, "scout_id" | "owner_user_id" | "source">>;
+      scout_earnings_ledger: TableDef<
+        ScoutEarningsLedgerEntry,
+        Partial<ScoutEarningsLedgerEntry> & Pick<ScoutEarningsLedgerEntry, "scout_id" | "type" | "amount">
+      >;
+      scout_payouts: TableDef<ScoutPayout, Partial<ScoutPayout> & Pick<ScoutPayout, "scout_id" | "amount">>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -722,6 +757,9 @@ export type Database = {
       scout_verification_step_status: ScoutVerificationStepStatus;
       owner_referral_source: OwnerReferralSource;
       owner_referral_status: OwnerReferralStatus;
+      scout_earning_type: ScoutEarningType;
+      scout_earning_status: ScoutEarningStatus;
+      scout_payout_status: ScoutPayoutStatus;
     };
     CompositeTypes: Record<string, never>;
   };

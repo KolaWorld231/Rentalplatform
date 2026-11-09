@@ -4,13 +4,14 @@ import { Card } from "@/components/ui/Card";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { scoutProgram } from "@/lib/config/brand";
 import { REAPPLY_AFTER_DAYS } from "@/lib/validation/scouts";
-import type { ScoutApplication, ScoutArea, ScoutReference, Scout } from "@/types/database";
+import type { ScoutApplication, ScoutArea, ScoutReference, Scout, ScoutEarningsLedgerEntry } from "@/types/database";
 import {
   decideScoutApplicationAction,
   recordReferenceOutcomeAction,
   recordVerificationStepAction,
   setScoutStatusAction,
 } from "./actions";
+import { approveEarningAction, computeBountyEarningsAction, recordPayoutAction, reverseEarningAction } from "@/lib/scouts/earnings-actions";
 
 export const metadata = { title: `Admin: ${scoutProgram.name}`, robots: { index: false, follow: false } };
 
@@ -46,6 +47,19 @@ export default async function AdminScoutsPage() {
     .order("created_at", { ascending: false })) as {
     data: (Scout & { scout_applications: { full_name: string; phone: string } | null })[] | null;
   };
+
+  const { data: earnings } = (await admin
+    .from("scout_earnings_ledger")
+    .select("*, scouts(display_name)")
+    .in("status", ["pending", "approved"])
+    .order("created_at", { ascending: true })) as {
+    data: (ScoutEarningsLedgerEntry & { scouts: { display_name: string } | null })[] | null;
+  };
+
+  const approvedTotalsByScout = new Map<string, number>();
+  for (const e of earnings ?? []) {
+    if (e.status === "approved") approvedTotalsByScout.set(e.scout_id, (approvedTotalsByScout.get(e.scout_id) ?? 0) + Number(e.amount));
+  }
 
   return (
     <div className="flex flex-col gap-10">
@@ -194,6 +208,62 @@ export default async function AdminScoutsPage() {
                 )}
               </div>
             </Card>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-2xl font-semibold text-charcoal-700">Earnings & payouts</h2>
+          <form action={computeBountyEarningsAction}>
+            <Button type="submit" size="sm" variant="secondary">
+              Compute bounty earnings
+            </Button>
+          </form>
+        </div>
+        <p className="mt-1 text-xs text-charcoal-400">
+          Bounty amounts are illustrative defaults pending the owner&apos;s sign-off — see docs/SCOUT_PROGRAM.md §16.
+          Revenue-share earnings aren&apos;t computed automatically yet. Marking a payout &quot;paid&quot; is an admin
+          attesting a payment was made out-of-band — no payout provider is integrated.
+        </p>
+        <div className="mt-4 flex flex-col gap-2">
+          {(earnings ?? []).length === 0 && <p className="text-sm text-charcoal-400">No pending or approved earnings.</p>}
+          {(earnings ?? []).map((e) => (
+            <Card key={e.id} className="flex items-center justify-between p-3">
+              <div>
+                <p className="text-sm text-charcoal-700">
+                  {e.scouts?.display_name} · {e.type} · ${Number(e.amount).toFixed(2)}
+                </p>
+                <Badge variant={e.status === "approved" ? "success" : "warning"}>{e.status}</Badge>
+              </div>
+              <div className="flex gap-2">
+                {e.status === "pending" && (
+                  <form action={approveEarningAction.bind(null, e.id)}>
+                    <Button type="submit" size="sm" variant="secondary">
+                      Approve
+                    </Button>
+                  </form>
+                )}
+                <form action={reverseEarningAction.bind(null, e.id)}>
+                  <Button type="submit" size="sm" variant="ghost">
+                    Reverse
+                  </Button>
+                </form>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2">
+          {[...approvedTotalsByScout.entries()].map(([scoutId, total]) => (
+            <form key={scoutId} action={recordPayoutAction.bind(null, scoutId)} className="flex items-end gap-2">
+              <span className="text-sm text-charcoal-700">Pay out ${total.toFixed(2)} for scout {scoutId.slice(0, 8)}</span>
+              <input type="text" name="method" placeholder="Method (e.g. mobile money)" className="rounded-[var(--radius-sm)] border border-border px-2 py-1 text-xs" />
+              <input type="text" name="providerReference" placeholder="Reference" className="rounded-[var(--radius-sm)] border border-border px-2 py-1 text-xs" />
+              <Button type="submit" size="sm" variant="primary">
+                Mark paid
+              </Button>
+            </form>
           ))}
         </div>
       </section>
