@@ -2975,3 +2975,28 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
+## Mobile: offline/connectivity handling (UX audit F05, built)
+
+Previously, no offline/connectivity handling existed anywhere in the
+mobile app — every network failure looked identical to "no data" (see
+the UX-audit findings fixed in PR #26). Built per the audit's own
+scoping, now confirmed by the user:
+
+- Added `@react-native-community/netinfo` (`npx expo install`, resolved
+  to `12.0.1` for this Expo SDK).
+- `mobile/app/_layout.tsx`: wires it into TanStack Query's own
+  `onlineManager` (`onlineManager.setEventListener` → `NetInfo.
+  addEventListener`) — the officially documented integration, so
+  queries automatically pause/resume refetching on connectivity change;
+  no custom retry logic written.
+- `components/ui/OfflineBanner.tsx` (new): a small banner shown only
+  while `NetInfo` reports `isConnected === false`, rendered once near
+  the root alongside the tab/stack navigator. Deliberately separate
+  from any screen's own "couldn't load" error text (fixed in PR #26) —
+  a real server/query error still reads as a server error, not a vague
+  "offline" message that may not even be true.
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet live-verified** — no simulator in this session; the user
+  should confirm the banner appears/disappears on airplane-mode toggle
+  and that an in-flight query resumes once connectivity returns.
