@@ -83,12 +83,6 @@ export default function HomeScreen() {
       <Link href="/pricing" asChild>
         <Button variant="clay">Get the Direct Access Pass</Button>
       </Link>
-
-      <Card className="p-4">
-        <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
-          Owner mode lands in a later milestone.
-        </Text>
-      </Card>
     </ScrollView>
   );
 }

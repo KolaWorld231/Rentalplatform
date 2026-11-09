@@ -39,6 +39,7 @@ export default function SearchScreen() {
         <TextInput
           placeholder="Search by title (e.g. Sinkor apartment)"
           placeholderTextColor="#737373"
+          accessibilityLabel="Search properties by title"
           value={q}
           onChangeText={(v) => {
             setQ(v);
@@ -135,13 +136,27 @@ export default function SearchScreen() {
           ListFooterComponent={
             result.data && totalPages > 1 ? (
               <View className="flex-row items-center justify-center gap-4 pt-2">
-                <Pressable disabled={page <= 1} onPress={() => setPage((p) => p - 1)} className={cn(page <= 1 && "opacity-40")}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous page"
+                  accessibilityState={{ disabled: page <= 1 }}
+                  disabled={page <= 1}
+                  onPress={() => setPage((p) => p - 1)}
+                  className={cn(page <= 1 && "opacity-40")}
+                >
                   <Text className="font-sans-semibold text-forest-700 dark:text-forest-500">Previous</Text>
                 </Pressable>
                 <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
                   Page {page} of {totalPages}
                 </Text>
-                <Pressable disabled={page >= totalPages} onPress={() => setPage((p) => p + 1)} className={cn(page >= totalPages && "opacity-40")}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Next page"
+                  accessibilityState={{ disabled: page >= totalPages }}
+                  disabled={page >= totalPages}
+                  onPress={() => setPage((p) => p + 1)}
+                  className={cn(page >= totalPages && "opacity-40")}
+                >
                   <Text className="font-sans-semibold text-forest-700 dark:text-forest-500">Next</Text>
                 </Pressable>
               </View>
@@ -156,6 +171,9 @@ export default function SearchScreen() {
 function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       onPress={onPress}
       className={cn(
         "rounded-full border px-3 py-1.5",

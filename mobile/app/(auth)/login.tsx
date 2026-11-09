@@ -41,6 +41,9 @@ export default function LoginScreen() {
       <Card className="gap-4 p-5">
         <View className="flex-row gap-2">
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Log in with password"
+            accessibilityState={{ selected: method === "password" }}
             onPress={() => setMethod("password")}
             className={cn(
               "flex-1 items-center rounded-md border py-2",
@@ -52,6 +55,9 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Log in with WhatsApp"
+            accessibilityState={{ selected: method === "whatsapp" }}
             onPress={() => setMethod("whatsapp")}
             className={cn(
               "flex-1 items-center rounded-md border py-2",

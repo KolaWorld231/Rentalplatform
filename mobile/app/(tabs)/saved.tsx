@@ -38,6 +38,8 @@ export default function SavedScreen() {
       <Text className="px-4 pb-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Saved</Text>
       {favourites.isLoading ? (
         <ActivityIndicator />
+      ) : favourites.isError ? (
+        <Text className="px-4 text-sm text-error-500">Couldn&apos;t load your saved properties. Pull to refresh.</Text>
       ) : (
         <FlatList
           data={favourites.data ?? []}
