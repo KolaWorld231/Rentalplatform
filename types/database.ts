@@ -506,6 +506,22 @@ export type Scout = {
   updated_at: string;
 };
 
+export type OwnerReferralSource = "code" | "invite" | "manual";
+export type OwnerReferralStatus = "pending_confirmation" | "confirmed" | "declined";
+
+export type OwnerReferral = {
+  id: string;
+  scout_id: string;
+  owner_user_id: string;
+  source: OwnerReferralSource;
+  status: OwnerReferralStatus;
+  confirmed_by_owner_at: string | null;
+  is_payable: boolean;
+  attributed_at: string;
+  attribution_locked: boolean;
+  created_at: string;
+};
+
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;
@@ -648,6 +664,7 @@ export type Database = {
         Scout,
         Partial<Scout> & Pick<Scout, "application_id" | "probation_ends_at" | "referral_code" | "display_name" | "area_id">
       >;
+      owner_referrals: TableDef<OwnerReferral, Partial<OwnerReferral> & Pick<OwnerReferral, "scout_id" | "owner_user_id" | "source">>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -703,6 +720,8 @@ export type Database = {
       scout_status: ScoutStatus;
       scout_verification_step_type: ScoutVerificationStepType;
       scout_verification_step_status: ScoutVerificationStepStatus;
+      owner_referral_source: OwnerReferralSource;
+      owner_referral_status: OwnerReferralStatus;
     };
     CompositeTypes: Record<string, never>;
   };

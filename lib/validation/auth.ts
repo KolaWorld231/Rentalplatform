@@ -5,6 +5,9 @@ export const registerSchema = z.object({
   email: z.string().trim().email("Enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   intent: z.enum(["renter", "owner"]),
+  // Scout referral code, carried from a ?ref= link -- optional, never
+  // required, and never blocks registration if the lookup fails.
+  refCode: z.string().trim().max(20).optional().or(z.literal("")),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
