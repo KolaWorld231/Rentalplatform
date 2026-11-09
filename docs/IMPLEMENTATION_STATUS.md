@@ -2975,3 +2975,47 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
+## Mobile: animated splash screen
+
+User supplied a complete, finished `AnimatedSplash` component (Expo
+Router + Reanimated + `react-native-svg`), built against the official
+brand kit's mark path data (confirmed identical to the path constants
+already used in `components/ui/BrandMark.tsx`, web — same source file).
+
+- `mobile/components/AnimatedSplash.tsx` (new): the component as given,
+  with one import adapted (`brand as BRAND` from the existing
+  `mobile/lib/brand.ts` instead of a nonexistent `../brand/brand`
+  module) — `brand` export extended with `tagline` and a new
+  `colors: { splash: "#da1a32", onSplash: "#ffffff" }` (the official
+  brand red, same value PR #25 already moves the native splash's
+  background to).
+- **Found and fixed a real bug while integrating**: the pasted code
+  scheduled its "min hold," "timeline complete," and "absolute 4s cap"
+  markers via `withDelay(ms, runOnJS(fn)())` — but `runOnJS(fn)()` calls
+  `fn` immediately (the call happens before `withDelay` even runs), and
+  the real delay value was discarded since the expression wasn't
+  assigned to any shared value. This made the splash's exit fire almost
+  instantly instead of after its animated timeline, and also dropped
+  `setMinTimeReached`/`setTimelineDone`'s argument (`runOnJS(fn)()` with
+  no args), setting state to `undefined` instead of `true`. Fixed with
+  plain `setTimeout`s (cleared on unmount) for these three JS-side
+  callbacks — the shared-value animations elsewhere in the file
+  (`roofOffset.value = withDelay(...)`, etc.) were already written
+  correctly and are untouched.
+- `mobile/app/_layout.tsx`: added the one missing font weight
+  (`PlusJakartaSans_800ExtraBold`; `Manrope_500Medium` was already
+  loaded); removed the existing `useEffect` that called
+  `SplashScreen.hideAsync()` on `fontsLoaded` (the new component now
+  owns that single handoff point via its own `onLayout`); restructured
+  so `SessionProvider` wraps a new `RootLayoutInner` that feeds
+  `isAppReady={!sessionLoading}` into `AnimatedSplash`, rendered as an
+  overlay alongside the already-mounting `Stack` rather than blocking it
+  (the component fades out via opacity once its own `onFinish` fires).
+  The pre-fonts-loaded `return null` behavior is unchanged — the native
+  static splash still covers that window exactly as before.
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet visually confirmed on a device/simulator** — no
+  simulator in this session; the user should confirm the handoff is
+  seamless (no flash of blank/wrong color) and that reduced-motion shows
+  the static fallback.
