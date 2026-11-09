@@ -3174,3 +3174,29 @@ paid" attestation, never a real transfer.
   eligibility logic against a seeded confirmed referral + verified
   owner + published, reconfirmed listing, and that re-running it
   doesn't create a second bounty row for the same referral.
+
+## Scout Program Milestone 5: field verification schema (flag off)
+
+Builds on Milestone 2 (branches from `claude/scout-program-m4`). Spec
+§9's field verification is feature-flagged off by default
+(`SCOUT_FIELD_VERIFICATION_ENABLED = false` in
+`lib/validation/scouts.ts`) — this milestone gives the schema a real
+home but deliberately does **not** build the scout-facing submission
+flow (in-app camera capture, on-device photo compression, the
+checklist UI) or an admin review UI, since there's no live path that
+produces rows for either to act on yet. That's a real, separate
+feature (comparable in scope to the existing identity/property
+verification upload flows) — building speculative UI for a flag
+that's off would be exactly the "half-finished implementation" this
+project avoids.
+
+- Migration `20261110000400_scout_program_m5.sql`: `scout_visit_reports`
+  table (checklist jsonb, notes, `photo_paths`, status, `reviewed_by`).
+  RLS: scout reads own, admin/moderator read all, every write
+  service-role (same pattern as every other scout table).
+- The exact "Field visited" label wording from the spec is recorded as
+  `SCOUT_FIELD_VISITED_LABEL_TEMPLATE`, so whenever this is built, the
+  copy doesn't drift from what the spec requires (never implying
+  ownership verification on its own).
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean — no behavior change, schema-and-flag only.

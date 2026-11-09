@@ -539,6 +539,20 @@ export type ScoutEarningsLedgerEntry = {
   created_at: string;
 };
 
+export type ScoutVisitReportStatus = "pending" | "approved" | "rejected";
+
+export type ScoutVisitReport = {
+  id: string;
+  scout_id: string;
+  listing_id: string;
+  checklist: Record<string, unknown>;
+  notes: string | null;
+  photo_paths: string[];
+  status: ScoutVisitReportStatus;
+  reviewed_by: string | null;
+  created_at: string;
+};
+
 export type ScoutPayout = {
   id: string;
   scout_id: string;
@@ -700,6 +714,10 @@ export type Database = {
         Partial<ScoutEarningsLedgerEntry> & Pick<ScoutEarningsLedgerEntry, "scout_id" | "type" | "amount">
       >;
       scout_payouts: TableDef<ScoutPayout, Partial<ScoutPayout> & Pick<ScoutPayout, "scout_id" | "amount">>;
+      scout_visit_reports: TableDef<
+        ScoutVisitReport,
+        Partial<ScoutVisitReport> & Pick<ScoutVisitReport, "scout_id" | "listing_id">
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -760,6 +778,7 @@ export type Database = {
       scout_earning_type: ScoutEarningType;
       scout_earning_status: ScoutEarningStatus;
       scout_payout_status: ScoutPayoutStatus;
+      scout_visit_report_status: ScoutVisitReportStatus;
     };
     CompositeTypes: Record<string, never>;
   };

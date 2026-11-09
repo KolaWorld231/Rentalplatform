@@ -67,3 +67,9 @@ export const REAPPLY_AFTER_DAYS = 90;
 // as final just because it's coded here.
 export const BOUNTY_AMOUNT_USD = 2;
 export const BOUNTY_CONFIRMED_AVAILABLE_AFTER_DAYS = 30;
+
+// Milestone 5: field verification (spec §9). Off by default -- the
+// scout-facing submission flow (camera capture, compression, the
+// checklist UI) isn't built yet; flip this on only once it is.
+export const SCOUT_FIELD_VERIFICATION_ENABLED = false;
+export const SCOUT_FIELD_VISITED_LABEL_TEMPLATE = "A scout visited this property on {date}.";
