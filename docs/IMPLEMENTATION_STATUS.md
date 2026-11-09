@@ -3200,3 +3200,42 @@ project avoids.
   ownership verification on its own).
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
   (60/60) all clean — no behavior change, schema-and-flag only.
+
+## Scout Program: admin-configurable settings (bounty/share/cap/payout/tax)
+
+User confirmed: the bounty amount, revenue-share %, share duration,
+monthly cap, payout provider, and tax-treatment notes are settled by
+the project owner in the admin console, not hardcoded or decided here.
+Builds on Milestone 5 (branches from `claude/scout-program-m5`).
+
+- Migration `20261110000500_scout_program_m6_settings.sql`: a
+  single-row `scout_program_settings` table (enforced singleton via a
+  `check (id)` constraint on a boolean primary key), seeded with the
+  spec's own illustrative defaults ($2 bounty, 10% share, 6 months) —
+  explicitly a starting point, not a final figure, editable
+  immediately. Readable by any authenticated user (so a scout's own
+  dashboard can show the real current bounty rather than a guess, per
+  the spec's "amounts depend on verified activity and can change"
+  rule); writable only via the admin Server Action below.
+- Removed the `BOUNTY_AMOUNT_USD` code constant from
+  `lib/validation/scouts.ts` — `computeBountyEarningsAction`
+  (`lib/scouts/earnings-actions.ts`) now reads it live from
+  `scout_program_settings` on every run. The 30-day confirmed-
+  available waiting period stays a code constant — it's the bounty
+  trigger's fixed timing rule, not one of the settings the spec calls
+  out as admin-editable.
+- `lib/scouts/settings-actions.ts`'s `updateScoutProgramSettingsAction`
+  + `app/admin/scouts/settings/page.tsx`: the admin form. Payout
+  provider/method notes and tax-treatment notes are plain admin-
+  entered text — policy the project owner records here, not something
+  this migration or action computes, enforces, or wires to any real
+  payout API (still none integrated, per the spec's own instruction).
+- `app/admin/scouts/page.tsx`: links to the new Settings page, replaces
+  the "illustrative defaults, see the spec" note with a pointer to the
+  actual settings UI.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` (including
+  `/admin/scouts/settings`), `npm run test` (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm saving settings updates the
+  singleton row and that a subsequent bounty computation uses the new
+  amount.

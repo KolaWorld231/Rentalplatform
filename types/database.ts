@@ -539,6 +539,19 @@ export type ScoutEarningsLedgerEntry = {
   created_at: string;
 };
 
+export type ScoutProgramSettings = {
+  id: true;
+  bounty_amount_usd: number;
+  share_percent: number;
+  share_duration_months: number;
+  monthly_cap_usd: number | null;
+  payout_provider: string | null;
+  payout_method_notes: string | null;
+  tax_treatment_notes: string | null;
+  updated_by: string | null;
+  updated_at: string;
+};
+
 export type ScoutVisitReportStatus = "pending" | "approved" | "rejected";
 
 export type ScoutVisitReport = {
@@ -717,6 +730,10 @@ export type Database = {
       scout_visit_reports: TableDef<
         ScoutVisitReport,
         Partial<ScoutVisitReport> & Pick<ScoutVisitReport, "scout_id" | "listing_id">
+      >;
+      scout_program_settings: TableDef<
+        ScoutProgramSettings,
+        Partial<ScoutProgramSettings> & Pick<ScoutProgramSettings, "bounty_amount_usd" | "share_percent" | "share_duration_months">
       >;
     };
     Views: Record<string, never>;

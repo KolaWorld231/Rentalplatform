@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { recordAdminAction } from "@/lib/admin/audit";
 import { requireAnyRole } from "@/lib/auth/session";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
-import { BOUNTY_AMOUNT_USD, BOUNTY_CONFIRMED_AVAILABLE_AFTER_DAYS } from "@/lib/validation/scouts";
+import { BOUNTY_CONFIRMED_AVAILABLE_AFTER_DAYS } from "@/lib/validation/scouts";
 import type { OwnerReferral } from "@/types/database";
 
 /**
@@ -25,6 +25,9 @@ import type { OwnerReferral } from "@/types/database";
 export async function computeBountyEarningsAction() {
   const { user } = await requireAnyRole(["admin"], "/admin/scouts");
   const admin = createServiceRoleClient();
+
+  const { data: settings } = await admin.from("scout_program_settings").select("bounty_amount_usd").eq("id", true).single();
+  const bountyAmountUsd = settings?.bounty_amount_usd ?? 0;
 
   const { data: confirmedReferrals } = (await admin
     .from("owner_referrals")
@@ -75,7 +78,7 @@ export async function computeBountyEarningsAction() {
       scout_id: referral.scout_id,
       owner_referral_id: referral.id,
       type: "bounty",
-      amount: BOUNTY_AMOUNT_USD,
+      amount: bountyAmountUsd,
       status: "pending",
       source_ref: eligibleListing.id,
     });
