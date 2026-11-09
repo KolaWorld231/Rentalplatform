@@ -14,10 +14,8 @@
     "android": {
       "package": "com.rentals231.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#a00c30",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#da1a32",
+        "foregroundImage": "./assets/adaptive-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -37,7 +35,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#a00c30",
+          "backgroundColor": "#da1a32",
           "dark": {
             "backgroundColor": "#1a1a1a"
           }
@@ -46,7 +44,8 @@
       [
         "expo-notifications",
         {
-          "color": "#a00c30"
+          "icon": "./assets/notification-icon.png",
+          "color": "#da1a32"
         }
       ]
     ],

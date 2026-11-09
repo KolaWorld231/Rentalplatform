@@ -2975,3 +2975,44 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
+## Applied the real 231Rentals brand kit (web favicons/OG/manifest + real BrandMark SVG + mobile icons/splash)
+
+The user provided the actual, official brand kit (SVGs, web favicon/OG/
+manifest assets, Expo mobile icon/splash/notification assets) — until
+now the web app had no favicon/OG image/manifest configured at all,
+and `components/ui/BrandMark.tsx` was a hand-drawn approximation.
+
+- **Web**: added `public/favicon.ico`/`.svg`, `favicon-{16,32,48}x{16,32,48}.png`,
+  `apple-touch-icon.png`, `icon-192.png`/`icon-512.png`/
+  `icon-maskable-512.png`, `og-image-1200x630.png`, `manifest.webmanifest`.
+  `app/layout.tsx`'s `metadata` now wires up `icons`/`manifest`/
+  `openGraph`/`twitter` (with `metadataBase` from
+  `NEXT_PUBLIC_APP_URL`), plus a new `viewport` export for
+  `themeColor: "#da1a32"`. Removed the unused default Next.js starter
+  SVGs (`file.svg`/`globe.svg`/`next.svg`/`vercel.svg`/`window.svg`) —
+  confirmed unreferenced anywhere first.
+- **`BrandMark.tsx`**: replaced the hand-drawn roof/"231" approximation
+  with the exact viewBox/paths from the kit's `svg/231rentals-mark-red.svg`
+  (the "231" glyphs are outlined vector paths in the kit, not live
+  text) — same component API (`className` prop), so `Header.tsx`
+  needed no changes.
+- **Mobile**: replaced `mobile/assets/{icon,favicon,splash-icon}.png`
+  with the kit's versions, added `adaptive-icon-foreground.png`/
+  `notification-icon.png`/`store-icon-1024.png`, removed the old
+  `android-icon-{foreground,background,monochrome}.png` (superseded by
+  the kit's foreground-image + solid-`backgroundColor` approach, per
+  its own `app.json.snippet`). `mobile/app.json`: `android.adaptiveIcon`
+  simplified to `foregroundImage` + `backgroundColor: "#da1a32"` (the
+  kit's official red — previously `#a00c30`, a darker shade), splash
+  `backgroundColor` and `expo-notifications`' `color` updated to match,
+  and `expo-notifications` now gets an explicit `icon` (Android white
+  silhouette) instead of none.
+- `scoutProgram`/mobile color tokens (`forest.600 = "#da1a32"`) already
+  matched the kit's red exactly — no palette drift found.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean on web; `npx tsc --noEmit`/`npm run lint` clean on
+  mobile. **Not yet visually confirmed in a browser/device** — no
+  browser/simulator in this session; the user should confirm the
+  favicon/OG image render correctly and the mobile icon/splash look
+  right on a real EAS build.
