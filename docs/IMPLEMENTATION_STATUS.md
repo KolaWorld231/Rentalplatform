@@ -2975,3 +2975,40 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
+## Mobile: report/block safety affordance (UX audit F06, built)
+
+Previously, mobile had no report/block/scam-warning UI anywhere (the
+UX audit's F06 finding, PR #26) — web already has a complete mechanism
+(`property_reports`/`message_reports`, both with `authenticated`-insert
+RLS already in place), so this was a mobile UI + direct-insert task,
+not new schema.
+
+- `mobile/lib/database.types.ts`: added `PropertyReport`/`MessageReport`
+  row types, `ReportReason`/`ReportStatus` enums, and their `TableDef`
+  entries — these tables existed in Postgres but had no mobile-side
+  types at all before this.
+- `mobile/lib/validation/reports.ts`, `mobile/lib/reports/service.ts`:
+  hand-ported from `lib/validation/property.ts`'s `reportPropertySchema`/
+  `lib/validation/messaging.ts`'s `reportMessageSchema` and
+  `app/properties/actions.ts`'s `reportPropertyAction`/`app/messages/
+  actions.ts`'s `reportMessageAction` — same reasons, same tables,
+  called directly via the mobile Supabase client (no Server Action
+  layer on mobile; RLS is the enforcement boundary either way).
+- `components/reports/ReportForm.tsx` (new, shared): an inline reason-
+  picker + optional details field + submit, reused for both surfaces
+  below — the caller supplies which table to write to.
+- `app/property/[slug].tsx`: "Report this listing," shown to any
+  logged-in non-owner viewer.
+- `app/messages/[id].tsx`: "Report this conversation," mirroring web's
+  `ReportConversationButton` pattern exactly — one report per
+  conversation keyed to its latest message, not a report action on
+  every individual message bubble.
+- Block-user is explicitly out of scope here, same as the audit's own
+  scoping — no block mechanism exists on web either; it would need its
+  own design/schema decision, not bundled into this report-only pass.
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet live-verified** — no simulator in this session; the user
+  should confirm a submitted report lands in `property_reports`/
+  `message_reports` with the correct `reporter_id`/`reason` against a
+  real Supabase project.

@@ -219,6 +219,42 @@ export type PushToken = {
   created_at: string;
 };
 
+export type ReportReason =
+  | "fake_listing"
+  | "misleading_price"
+  | "already_rented"
+  | "unauthorized_representative"
+  | "impersonation"
+  | "harassment"
+  | "fraudulent_payment_request"
+  | "suspicious_message"
+  | "other";
+export type ReportStatus = "open" | "investigating" | "resolved" | "dismissed";
+
+export type PropertyReport = {
+  id: string;
+  property_id: string;
+  reporter_id: string;
+  reason: ReportReason;
+  details: string | null;
+  status: ReportStatus;
+  assigned_moderator_id: string | null;
+  resolution_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+};
+
+export type MessageReport = {
+  id: string;
+  message_id: string;
+  conversation_id: string;
+  reporter_id: string;
+  reason: ReportReason;
+  details: string | null;
+  status: ReportStatus;
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -244,6 +280,11 @@ export type Database = {
       property_verification_requests: TableDef<PropertyVerificationRequest, Pick<PropertyVerificationRequest, "property_id" | "applicant_id"> & Partial<PropertyVerificationRequest>>;
       private_verification_documents: TableDef<PrivateVerificationDocument, Omit<PrivateVerificationDocument, "id" | "created_at"> & Partial<PrivateVerificationDocument>>;
       push_tokens: TableDef<PushToken, Partial<PushToken> & Pick<PushToken, "user_id" | "token" | "platform">>;
+      property_reports: TableDef<PropertyReport, Pick<PropertyReport, "property_id" | "reporter_id" | "reason"> & Partial<PropertyReport>>;
+      message_reports: TableDef<
+        MessageReport,
+        Pick<MessageReport, "message_id" | "conversation_id" | "reporter_id" | "reason"> & Partial<MessageReport>
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -278,6 +319,8 @@ export type Database = {
     Enums: {
       account_status: AccountStatus;
       app_role: AppRole;
+      report_reason: ReportReason;
+      report_status: ReportStatus;
     };
     CompositeTypes: Record<string, never>;
   };
