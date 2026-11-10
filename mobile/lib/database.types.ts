@@ -219,6 +219,40 @@ export type PushToken = {
   created_at: string;
 };
 
+// Scout Program -- mobile only ever reads these (dashboard display);
+// every write goes through the RPCs above or the app/api/mobile/scouts/*
+// routes, never a direct insert/update from this client.
+export type ScoutStatus = "probation" | "active" | "suspended" | "removed" | "resigned";
+
+export type Scout = {
+  id: string;
+  user_id: string | null;
+  application_id: string;
+  status: ScoutStatus;
+  approved_at: string;
+  probation_ends_at: string;
+  referral_code: string;
+  display_name: string;
+  area_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OwnerReferralStatus = "pending_confirmation" | "confirmed" | "declined";
+
+export type OwnerReferral = {
+  id: string;
+  scout_id: string;
+  owner_user_id: string;
+  source: "code" | "invite" | "manual";
+  status: OwnerReferralStatus;
+  confirmed_by_owner_at: string | null;
+  is_payable: boolean;
+  attributed_at: string;
+  attribution_locked: boolean;
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -244,6 +278,8 @@ export type Database = {
       property_verification_requests: TableDef<PropertyVerificationRequest, Pick<PropertyVerificationRequest, "property_id" | "applicant_id"> & Partial<PropertyVerificationRequest>>;
       private_verification_documents: TableDef<PrivateVerificationDocument, Omit<PrivateVerificationDocument, "id" | "created_at"> & Partial<PrivateVerificationDocument>>;
       push_tokens: TableDef<PushToken, Partial<PushToken> & Pick<PushToken, "user_id" | "token" | "platform">>;
+      scouts: TableDef<Scout, Partial<Scout>>;
+      owner_referrals: TableDef<OwnerReferral, Partial<OwnerReferral>>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -274,10 +310,28 @@ export type Database = {
         Args: { p_token: string; p_platform: string };
         Returns: void;
       };
+      attribute_scout_referral: {
+        Args: { p_ref_code: string };
+        Returns: void;
+      };
+      respond_to_scout_referral: {
+        Args: { p_referral_id: string; p_confirm: boolean };
+        Returns: void;
+      };
+      claim_scout_account: {
+        Args: { p_scout_id: string };
+        Returns: void;
+      };
+      find_claimable_scout_id: {
+        Args: Record<string, never>;
+        Returns: string | null;
+      };
     };
     Enums: {
       account_status: AccountStatus;
       app_role: AppRole;
+      scout_status: ScoutStatus;
+      owner_referral_status: OwnerReferralStatus;
     };
     CompositeTypes: Record<string, never>;
   };

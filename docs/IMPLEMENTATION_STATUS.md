@@ -3239,3 +3239,79 @@ Builds on Milestone 5 (branches from `claude/scout-program-m5`).
   session; the user should confirm saving settings updates the
   singleton row and that a subsequent bounty computation uses the new
   amount.
+
+## Scout Program: mobile parity (Milestone 7)
+
+Branches from `claude/scout-program-m6-settings`. Mirrors the web
+Scout Program flows on mobile; admin review/settings stay web-only, as
+established in every prior milestone.
+
+- Migration `20261110000600_scout_program_m7_mobile.sql`: four new
+  `SECURITY DEFINER` RPCs, each scoped to `auth.uid()` read from the
+  caller's own JWT (never an argument), mirroring the existing
+  `grant_owner_role_to_self()` pattern this project already uses for
+  privileged-but-self-scoped mobile writes:
+  - `attribute_scout_referral(p_ref_code)` — attributes an
+    `owner_referrals` row at signup; silently no-ops on an unknown
+    code or a self-referral, same as web's
+    `attributeScoutReferral`.
+  - `respond_to_scout_referral(p_referral_id, p_confirm)` — confirms
+    or declines a pending referral, scoped to
+    `owner_user_id = auth.uid()` and `status = 'pending_confirmation'`.
+  - `claim_scout_account(p_scout_id)` — links an unclaimed `scouts` row
+    to the caller only when their `profiles.phone` exactly matches the
+    application's phone.
+  - `find_claimable_scout_id()` — since the existing `scouts_select_self`
+    RLS policy only lets a caller see a scout row that's already
+    theirs, mobile has no way to discover an unclaimed match the way
+    web's dashboard page does via service-role. This returns just the
+    matching scout's id (or null), scoped the same way
+    `claim_scout_account` is, so the caller learns nothing beyond "a
+    match exists."
+  The scout *application* flow (phone OTP + submission) is different —
+  the applicant has no account yet, so there's no `auth.uid()` to
+  scope an RPC to. That flow is proxied through four new
+  `app/api/mobile/scouts/*` routes (`areas`, `otp/start`, `otp/verify`,
+  `apply`), unauthenticated by design, each calling the existing
+  `lib/scouts/actions.ts` Server Actions directly — same pattern as
+  the pre-existing `app/api/mobile/whatsapp-otp/*` routes.
+- `mobile/lib/database.types.ts`: added `Scout`/`OwnerReferral` types,
+  their status unions, corresponding (read-only from mobile's
+  perspective) `TableDef`s, and the four new RPCs' signatures.
+- `mobile/lib/validation/scouts.ts`, `mobile/lib/scouts/service.ts`
+  (new): hand-ported subset of the web validation schema plus thin
+  wrappers — `fetch` calls to the new API routes for the
+  application flow, direct Supabase reads/RPC calls for everything
+  else (dashboard reads, referral attribution/response, account
+  claim), kept in sync by hand per this project's established
+  web/mobile duplication convention.
+- `mobile/app/scouts/index.tsx`, `apply.tsx`, `dashboard.tsx` (new):
+  mirror web's `/scouts`, `/scouts/apply`, `/scouts/dashboard`. The
+  apply screen follows the same phase flow as web's `ScoutApplyForm`
+  (details → request OTP → verify OTP → submit → confirmation); the
+  dashboard screen shows status, referral link/code, and a "claim my
+  scout dashboard" prompt when `find_claimable_scout_id()` finds a
+  match.
+- `mobile/app/(auth)/register.tsx`: reads an optional `?ref=` deep-link
+  param via `useLocalSearchParams` and, after a successful
+  registration, calls `attribute_scout_referral` (best-effort — an
+  unknown/self-referral code is silently ignored by the RPC itself).
+- `mobile/app/(tabs)/index.tsx` (Home tab): added a pending-referral
+  confirm/decline card (mobile has no onboarding/welcome screen
+  equivalent to web's, so Home — the first screen after registration —
+  is the natural insertion point instead) and a "Become a Scout" link.
+  Also removed a stale "Owner mode lands in a later milestone" line
+  that contradicted the working Owner mode link directly above it,
+  noticed while editing this screen.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean on the web app; `npx tsc --noEmit` and `npm run
+  lint` clean on mobile (no mobile `build`/`test` script exists in
+  this project — mobile verification has always been typecheck+lint
+  only, same as every prior mobile change this session).
+- **Not live-verified** — no simulator/device and no local Supabase
+  instance in this session. Before shipping, exercise end-to-end: the
+  application OTP/submit flow against a seeded open area, referral
+  attribution via a deep-linked `?ref=` registration, confirming/
+  declining a pending referral from the Home tab, and claiming a
+  promoted scout account whose application phone matches the logged-
+  in user's profile phone.
