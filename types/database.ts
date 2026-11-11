@@ -552,7 +552,6 @@ export type ScoutVisitReport = {
   reviewed_by: string | null;
   created_at: string;
 };
-
 export type ScoutPayout = {
   id: string;
   scout_id: string;
@@ -565,7 +564,6 @@ export type ScoutPayout = {
   paid_at: string | null;
   created_at: string;
 };
-
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;

@@ -112,6 +112,18 @@ export async function getFavouritedProperties(userId: string): Promise<PropertyW
     .filter(Boolean);
 }
 
+// Add-only -- unlike toggleFavourite, this never deletes a row. Used by the
+// swipe deck (and safe for any other "add to picks" affordance) where the
+// caller doesn't know/care whether the property is already a Pick and must
+// never accidentally un-pick it.
+export async function addFavourite(userId: string, propertyId: string): Promise<{ favourited: true } | { error: string }> {
+  const { error } = await supabase
+    .from("property_favourites")
+    .upsert({ user_id: userId, property_id: propertyId }, { onConflict: "user_id,property_id", ignoreDuplicates: true });
+  if (error) return { error: "Couldn't save this property." };
+  return { favourited: true };
+}
+
 export async function toggleFavourite(userId: string, propertyId: string): Promise<{ favourited: boolean } | { error: string }> {
   const { data: existing } = await supabase
     .from("property_favourites")
