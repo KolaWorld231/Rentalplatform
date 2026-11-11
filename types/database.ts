@@ -345,7 +345,10 @@ export type PushToken = {
 
 export type AdminAuditLog = {
   id: string;
-  actor_id: string;
+  // Nullable as of the Scout Program migration -- a null actor means a
+  // system/public event (e.g. an applicant's own submission), not an
+  // admin action.
+  actor_id: string | null;
   action: string;
   target_table: string;
   target_id: string;
@@ -416,6 +419,62 @@ export type WhatsAppOtpChallenge = {
   metadata: Record<string, unknown>;
   attempts: number;
   expires_at: string;
+  created_at: string;
+};
+
+// Scout Program (Milestone 1) ----------------------------------------------
+
+export type ScoutApplicationStatus = "applied" | "waitlisted" | "withdrawn";
+export type ScoutReferenceRelationship = "family" | "employer" | "community_leader" | "other";
+
+export type ScoutArea = {
+  id: string;
+  county: LiberiaCounty;
+  neighborhood: string;
+  seat_cap: number;
+  seats_filled: number;
+  is_open: boolean;
+  created_at: string;
+};
+
+export type ScoutApplication = {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  age_confirmed: boolean;
+  age_confirmed_at: string;
+  area_id: string;
+  area_knowledge: string;
+  experience: string | null;
+  smartphone_model: string;
+  has_data_access: boolean;
+  motivation: string;
+  code_of_conduct_version: string;
+  code_of_conduct_accepted_at: string;
+  verification_consent_at: string;
+  phone_verified_at: string;
+  status: ScoutApplicationStatus;
+  reference_code: string;
+  created_at: string;
+};
+
+export type ScoutReference = {
+  id: string;
+  application_id: string;
+  full_name: string;
+  relationship: ScoutReferenceRelationship;
+  phone: string;
+  created_at: string;
+};
+
+export type ScoutApplicationOtpChallenge = {
+  id: string;
+  phone: string;
+  code_hash: string;
+  attempts: number;
+  expires_at: string;
+  verified_at: string | null;
   created_at: string;
 };
 
@@ -514,6 +573,35 @@ export type Database = {
         WhatsAppOtpChallenge,
         Partial<WhatsAppOtpChallenge> & Pick<WhatsAppOtpChallenge, "phone" | "code_hash" | "purpose" | "expires_at">
       >;
+      scout_areas: TableDef<ScoutArea, Partial<ScoutArea> & Pick<ScoutArea, "county" | "neighborhood">>;
+      scout_applications: TableDef<
+        ScoutApplication,
+        Partial<ScoutApplication> &
+          Pick<
+            ScoutApplication,
+            | "full_name"
+            | "phone"
+            | "age_confirmed"
+            | "age_confirmed_at"
+            | "area_id"
+            | "area_knowledge"
+            | "smartphone_model"
+            | "has_data_access"
+            | "motivation"
+            | "code_of_conduct_version"
+            | "code_of_conduct_accepted_at"
+            | "verification_consent_at"
+            | "phone_verified_at"
+          >
+      >;
+      scout_references: TableDef<
+        ScoutReference,
+        Partial<ScoutReference> & Pick<ScoutReference, "application_id" | "full_name" | "relationship" | "phone">
+      >;
+      scout_application_otp_challenges: TableDef<
+        ScoutApplicationOtpChallenge,
+        Partial<ScoutApplicationOtpChallenge> & Pick<ScoutApplicationOtpChallenge, "phone" | "code_hash" | "expires_at">
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -527,6 +615,23 @@ export type Database = {
       };
       is_identity_verified: { Args: { target_user: string }; Returns: boolean };
       is_property_verified: { Args: { target_property: string }; Returns: boolean };
+      submit_scout_application: {
+        Args: {
+          p_full_name: string;
+          p_phone: string;
+          p_email: string | null;
+          p_area_id: string;
+          p_area_knowledge: string;
+          p_experience: string | null;
+          p_smartphone_model: string;
+          p_has_data_access: boolean;
+          p_motivation: string;
+          p_code_of_conduct_version: string;
+          p_phone_verified_at: string;
+          p_references: { fullName: string; relationship: ScoutReferenceRelationship; phone: string }[];
+        };
+        Returns: { id: string; status: ScoutApplicationStatus; reference_code: string }[];
+      };
     };
     Enums: {
       account_status: AccountStatus;
@@ -546,6 +651,8 @@ export type Database = {
       verification_status: VerificationStatus;
       notification_type: NotificationType;
       support_ticket_status: SupportTicketStatus;
+      scout_application_status: ScoutApplicationStatus;
+      scout_reference_relationship: ScoutReferenceRelationship;
     };
     CompositeTypes: Record<string, never>;
   };

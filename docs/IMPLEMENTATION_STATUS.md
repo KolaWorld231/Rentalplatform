@@ -3127,3 +3127,66 @@ before building:
   cards loads more or shows the end state, on-screen buttons behave
   identically to a finger swipe, an already-favourited property never
   appears as a card, guests see no Swipe toggle at all).
+
+## Scout Program Milestone 1: data model + public application flow ("Rental HunterZ")
+
+`docs/SCOUT_PROGRAM.md` is the full spec (previously saved, not yet
+built). This milestone covers only the Postgres data model and a
+working public application flow — everything else in the spec (admin
+review queue, probation, referral attribution, earnings ledger,
+payouts, field verification, mobile parity) is a later milestone.
+Applications land in `applied`/`waitlisted` status with nothing yet to
+move them further.
+
+- Migration `supabase/migrations/20261109000500_scout_program_m1.sql`:
+  `scout_areas` (admin-curated pilot areas with `seat_cap`/
+  `seats_filled`, seeded with 3 clearly-labeled placeholder rows —
+  swap for real pilot neighbourhoods once the owner has them),
+  `scout_applications`, `scout_references`, and
+  `scout_application_otp_challenges` (pre-account phone verification,
+  modeled on the existing `whatsapp_otp_challenges` table — applicants
+  have no account yet). Also alters `admin_audit_logs.actor_id` to
+  nullable, since an applicant's own submission has no admin/user actor.
+  RLS on every new table: no anon/authenticated policy grants a write
+  anywhere — all writes go through `lib/scouts/actions.ts` via the
+  service-role client, matching the existing service-role-only
+  precedent. A new `submit_scout_application` RPC does the duplicate
+  check, area seat-cap decision, application + reference inserts, and
+  the `seats_filled` increment atomically (`for update` row lock),
+  reusing the transactional-RPC pattern from
+  `20261107000200_mobile_checkout_rpc.sql`.
+- `lib/validation/scouts.ts`: `scoutApplicationSchema` and the OTP
+  request/verify schemas, reusing `phoneNumberSchema` from
+  `lib/validation/auth.ts` rather than redefining it.
+- `lib/scouts/actions.ts`: `startScoutApplicationOtpAction` (rate-
+  limited 3 per 10 minutes per phone — there's no `auth.uid()` for an
+  anonymous applicant, so this is keyed on phone, not the authenticated-
+  sender pattern `services/messaging.ts` uses), `verifyScoutApplicationOtpAction`
+  (5-attempt cap, 10-minute TTL), `submitScoutApplicationAction` (re-
+  checks the phone was verified within the last 30 minutes before
+  calling the RPC, writes to `admin_audit_logs` with `actor_id: null`).
+- **Disclosed, intentional gaps, not silent omissions**: no SMS
+  provider is configured yet (`lib/scouts/scout-sms.ts` throws rather
+  than fabricating a "sent" success, same rule as payments and
+  WhatsApp OTP — see `docs/AUTH_ALTERNATIVES.md`; in non-production
+  environments only, the generated code is logged to the console so
+  the flow can be exercised locally). No CAPTCHA and no per-IP rate
+  limiting either — neither mechanism exists anywhere in this codebase
+  today, and both need their own infrastructure/credential decisions;
+  per-phone rate limiting is the only abuse mitigation in this
+  milestone.
+- `app/scouts/page.tsx` (public info, honest copy only, no invented
+  stats), `app/scouts/apply/page.tsx` + `components/scouts/
+  ScoutApplyForm.tsx`/`ScoutPhoneVerify.tsx` (the application form,
+  phone-OTP-gated before submission, confirmation screen with a
+  reference code). Footer gets one new "Become a Scout" link.
+- Brand config: `scoutProgram.name = "Rental HunterZ"` in
+  `lib/config/brand.ts` (the spec's "Key Scouts" was only ever a
+  placeholder) — both new pages read this, never hard-code the name.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean.
+- **Not yet live-verified against a running local Supabase instance**
+  (`supabase db reset` + manual pass seeding a near-full pilot area,
+  exercising the rate limit/attempt-cap/TTL rejections, and reading the
+  dev-console-logged OTP code) — flagged here rather than claimed,
+  same convention as every other unverified change in this file.
