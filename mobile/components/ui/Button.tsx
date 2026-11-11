@@ -5,11 +5,11 @@ type Variant = "primary" | "secondary" | "clay" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: "bg-forest-600 active:bg-forest-700",
-  secondary: "bg-surface dark:bg-charcoal-700 border border-border dark:border-charcoal-500",
-  clay: "bg-clay-500 active:bg-clay-600",
+  primary: "bg-forest-600 active:bg-forest-700 shadow-raised active:shadow-subtle",
+  secondary: "bg-surface dark:bg-charcoal-700 border border-border dark:border-charcoal-500 shadow-subtle",
+  clay: "bg-clay-500 active:bg-clay-600 shadow-raised active:shadow-subtle",
   ghost: "bg-transparent",
-  danger: "bg-error-500",
+  danger: "bg-error-500 shadow-raised active:shadow-subtle",
 };
 
 const VARIANT_TEXT_CLASSES: Record<Variant, string> = {

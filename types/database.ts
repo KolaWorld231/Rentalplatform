@@ -521,7 +521,6 @@ export type OwnerReferral = {
   attribution_locked: boolean;
   created_at: string;
 };
-
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;
