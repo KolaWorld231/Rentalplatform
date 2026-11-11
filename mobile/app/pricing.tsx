@@ -74,7 +74,7 @@ export default function PricingScreen() {
           </Card>
         ) : null}
 
-        <Card className="gap-3 p-5 shadow-[var(--shadow-clay-raised)]">
+        <Card className="gap-3 p-5 shadow-floating">
           <Text className="font-sans-semibold text-sm text-forest-700 dark:text-forest-500">{subscriptionPlan.name}</Text>
           <Text className="font-display-bold text-4xl text-charcoal-700 dark:text-ivory-100">
             {formatUsd(subscriptionPlan.priceUsd)}

@@ -133,7 +133,7 @@ function IdentityCard({
   }
 
   return (
-    <Card className={request?.status === "verified" ? "gap-3 p-5 shadow-[var(--shadow-clay-raised)]" : "gap-3 p-5"}>
+    <Card className={request?.status === "verified" ? "gap-3 p-5 shadow-floating" : "gap-3 p-5"}>
       <View className="flex-row items-center justify-between">
         <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Identity verification</Text>
         {request && <Text className="text-xs font-sans-semibold text-forest-700 dark:text-forest-500">{STATUS_COPY[request.status]}</Text>}

@@ -16,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { count: pendingProperty },
     { count: openPropertyReports },
     { count: openMessageReports },
+    { count: pendingScoutApplications },
   ] = await Promise.all([
     admin.from("properties").select("id", { count: "exact", head: true }).eq("listing_status", "pending_review"),
     admin
@@ -28,6 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       .in("status", ["submitted", "under_review"]),
     admin.from("property_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     admin.from("message_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
+    admin.from("scout_applications").select("id", { count: "exact", head: true }).in("status", ["applied", "under_review"]),
   ]);
 
   const links = [
@@ -35,6 +37,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/listings", label: "Listings", count: pendingListings ?? 0 },
     { href: "/admin/verifications", label: "Verifications", count: (pendingIdentity ?? 0) + (pendingProperty ?? 0) },
     { href: "/admin/reports", label: "Reports", count: (openPropertyReports ?? 0) + (openMessageReports ?? 0) },
+    { href: "/admin/scouts", label: "Scouts", count: pendingScoutApplications ?? 0 },
     { href: "/admin/users", label: "Users" },
   ];
 

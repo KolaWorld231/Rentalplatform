@@ -10,10 +10,11 @@ import { Input } from "../../components/ui/Input";
 import { WhatsAppAuthForm } from "../../components/auth/WhatsAppAuthForm";
 import { cn } from "../../lib/cn";
 import { registerAction } from "../../lib/auth/actions";
+import { attributeScoutReferral } from "../../lib/scouts/service";
 import { registerSchema, type RegisterInput } from "../../lib/validation/auth";
 
 export default function RegisterScreen() {
-  const params = useLocalSearchParams<{ intent?: string }>();
+  const params = useLocalSearchParams<{ intent?: string; ref?: string }>();
   const defaultIntent = params.intent === "owner" ? "owner" : "renter";
   const [method, setMethod] = useState<"password" | "whatsapp">("password");
   const [serverError, setServerError] = useState<string | null>(null);
@@ -36,6 +37,10 @@ export default function RegisterScreen() {
     if (result.error) {
       setServerError(result.error);
       return;
+    }
+    if (params.ref) {
+      // Best-effort -- an unknown/self-referral code is silently ignored by the RPC itself.
+      await attributeScoutReferral(params.ref);
     }
     router.replace("/(tabs)");
   }
