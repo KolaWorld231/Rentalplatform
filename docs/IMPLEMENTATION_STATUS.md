@@ -2315,11 +2315,12 @@ credentials or input, not more engineering time against this codebase.
   graphic, or store description/keywords exist yet — needs real
   device screenshots and marketing copy decisions from the project
   owner, not fabricated placeholders.
-- **Mobile EAS build/signing credentials**: no Expo/EAS account or
-  Apple/Google signing credentials exist in this environment, so no
-  EAS build was actually run — `mobile/eas.json`'s three profiles
-  (development/preview/production) are configured and ready, but
-  untested end-to-end pending those credentials.
+- **Mobile EAS build/signing credentials**: **partially resolved** —
+  an Expo account now exists and an Android `preview` build has run
+  successfully end-to-end (EAS-managed keystore, auto-generated; see
+  the dated entry above). No Apple Developer account exists yet, so
+  an iOS build and Play Store-ready signing are still blocked on the
+  project owner.
 - **MTN MoMo production credentials**: `lib/payments/providers/mtn-momo.ts`
   is built and live-sync'd between web and mobile (see the dated entry
   below), but no real MTN MoMo subscription key/API user/API key exist
@@ -2975,6 +2976,157 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
+## First real EAS build: crash from missing cloud env vars (fixed)
+
+The user asked to preview the mobile app. A live Expo Go tunnel wasn't
+possible from this session (the environment's outbound TLS-intercepting
+proxy isn't trusted by `@expo/ngrok`'s bundled binary — `x509:
+certificate signed by unknown authority` — and Expo's own tunnel needs
+an Expo account login; neither is a thing to work around by disabling
+TLS verification). Built a real installable APK instead: linked the
+mobile app to a new EAS project
+(`quaresmaharijgens2026/231rentals-mobile`, `extra.eas.projectId` in
+`mobile/app.json`) using an Expo access token added via
+`request_credential`, then ran `eas build --platform android --profile
+preview`.
+
+The **first** build succeeded but crashed instantly on launch
+("231Rentals has stopped"). Root cause, confirmed from the build's own
+log output: EAS Build reads env vars from the EAS project's own
+dashboard, never from a local `.env.local` — so only
+`EXPO_PUBLIC_APP_URL` (set directly in `eas.json`'s profile `env`
+block) was present; `EXPO_PUBLIC_SUPABASE_URL`/
+`EXPO_PUBLIC_SUPABASE_ANON_KEY` were both `undefined`.
+`lib/supabase.ts` calls `createClient(supabaseEnv.url,
+supabaseEnv.anonKey, ...)` at module top-level with no guard, so
+`@supabase/supabase-js` throws synchronously on an undefined URL,
+crashing before any screen can render — this was always a latent bug
+in `mobile/lib/supabase.ts`'s module-load-time client construction, it
+just had never been exercised by a real cloud build before (local dev
+always had `.env.local` present).
+
+Fix: registered both variables on the EAS project's `preview`
+environment (`eas env:create`, anon key marked `sensitive`), confirmed
+via `eas env:list` that the next build's log shows both loaded, then
+ran a second build.
+
+- **Live-verified**: second build finished clean; confirmed via the
+  build log that both Supabase env vars loaded this time (the first
+  build's log only listed `EXPO_PUBLIC_APP_URL`). Gave the user the
+  new build's install link to confirm the crash is gone on their
+  device.
+- This resolves one more "Known production blocker" from this file:
+  "no EAS build was actually run" — one now has been, successfully,
+  for Android. iOS still needs the user's own Apple Developer account
+  (unchanged blocker).
+
+## Mobile design fix: ported Claymorphism shadow/elevation system (was entirely flat)
+
+The user saw a screenshot of the (now-working, post-EAS-build) mobile
+home screen and said the UI read as unprofessional/"EVERYTHING IS JUST
+FLAT". Root cause: `mobile/tailwind.config.js` correctly hand-ports
+web's Claymorphism color/radius tokens from `app/globals.css`, but had
+zero `boxShadow` entries, and a repo-wide grep found zero RN
+shadow/elevation props anywhere in `mobile/`. The two existing
+`shadow-[var(--shadow-clay-raised)]` usages (`verification.tsx`,
+`pricing.tsx`) were dead code — NativeWind has no CSSOM, so a
+`var(--...)` reference never resolves. The pure-black dark background
+itself was already correct (matches web's own dark `--background`);
+the real gap was the total absence of depth on foreground surfaces.
+
+Fix (additive, no background-color changes):
+- Added four `boxShadow` tokens to `tailwind.config.js`
+  (`subtle`/`raised`/`floating`/`modal`) — single-layer translations of
+  web's six shadow tokens, since NativeWind/RN only support one shadow
+  layer per view (no multi-layer, no inset). `clay-inset`/`clay-raised`
+  were deliberately not ported as generic utilities for that reason.
+- `Card` now defaults to `shadow-raised`; `Button`'s filled variants
+  (`primary`/`clay`/`danger`) get `shadow-raised active:shadow-subtle`,
+  `secondary` gets `shadow-subtle`, `ghost` stays shadowless.
+- `Input` approximates web's inset shadow with a new `well`
+  color token (one step darker than `surface`/`charcoal-700`) instead
+  of a real shadow — RN has no inset-shadow support, and an outward
+  shadow on a text field would read as raised, the wrong semantic.
+- `PropertyCard` needed restructuring, not just a class: its single
+  `Pressable` combined `overflow-hidden` (to clip the cover photo)
+  with where the shadow needed to live, and `overflow-hidden` clips
+  shadows on the same iOS layer. Split into an outer shadow-carrying
+  `Pressable` (required — `Link asChild` forwards press handling to
+  its one direct child) and an inner `overflow-hidden` wrapper for the
+  image/content.
+- Fixed the two dead `shadow-[var(--shadow-clay-raised)]` usages to
+  `shadow-floating`.
+- Found and fixed a real, separate bug while touching the tab bar
+  (`app/(tabs)/_layout.tsx`): `tabBarStyle` is a plain React Navigation
+  style object, not a NativeWind className, so it never received any
+  shadow and its `backgroundColor` was hardcoded white regardless of
+  color scheme — the tab bar stayed white even in dark mode. Added a
+  `useColorScheme()`-driven background/border and hardcoded the
+  resolved `floating`-tier native shadow props inline (NativeWind's
+  config doesn't reach this style object).
+- Verified: `npx tsc --noEmit` and `npm run lint` clean on mobile.
+  **Not yet live-verified in a running app** — this session has no
+  iOS/Android simulator access; the user should confirm visually on
+  their device/EAS build (per `docs/IMPLEMENTATION_STATUS.md`'s own
+  "don't report a test as passing unless it was actually run" rule,
+  this is disclosed here rather than claimed).
+
+## Mobile: Tinder-style swipe browsing mode (adds to Picks/favourites)
+
+Built on top of the shadow-fix branch (depends on its `shadow-raised`/
+`shadow-subtle` tokens). The user asked for a swipe-right/swipe-left way
+to browse search results on mobile, with "yes" swipes landing in a
+"Picks" list they can navigate and reach out from. This mapped almost
+entirely onto what already existed, confirmed via an Explore pass
+before building:
+
+- **"Picks" is the existing favourites mechanism** — `mobile/app/(tabs)
+  /saved.tsx` already renders the user's favourited properties
+  (`property_favourites`, RLS-scoped to the owning user); no new list
+  screen was built.
+- **Reaching out already worked** — the existing inline contact form on
+  `mobile/app/property/[slug].tsx` (same subscription-gated
+  `startOrContinueConversation` as web) is reached by tapping a card in
+  Saved; no new messaging logic was built.
+- Added `addFavourite()` (`mobile/lib/properties/service.ts`) alongside
+  the existing `toggleFavourite()` — an **add-only** upsert
+  (`ON CONFLICT ... DO NOTHING`) so a swipe-right can never accidentally
+  un-pick a property that's already a favourite. `toggleFavourite`
+  itself is untouched.
+- Found `react-native-gesture-handler`/`react-native-reanimated` were
+  installed but the app was **never wrapped in
+  `GestureHandlerRootView`** — fixed in `mobile/app/_layout.tsx`, a
+  required (not swipe-specific) root-layout fix.
+- Split `PropertyCard.tsx` into a new presentational
+  `PropertyCardContent.tsx` (image/price/title/location markup, no
+  gesture/navigation wrapper) + `PropertyCard.tsx` (unchanged tap-to-
+  navigate behavior), so the new swipeable card could reuse the same
+  markup without forcing `PropertyCard`'s `Link`/`Pressable` into a
+  draggable role.
+- New `SwipeCard.tsx` (pan gesture, rotate/translate drag, fling-off
+  threshold, YES/NO overlay badges using the existing `success-*`/
+  `error-*` tokens) and `SwipeDeck.tsx` (fetches pages via the existing
+  `searchProperties`, excludes already-favourited properties via the
+  existing `getFavouritedPropertyIds`, calls `addFavourite` on swipe-
+  right, advances with no DB write at all on swipe-left, on-screen
+  Yes/No buttons as a non-gesture alternative, end-of-deck empty state).
+- `mobile/app/(tabs)/search.tsx` gets a Grid/Swipe toggle, shown **only
+  to logged-in users** (confirmed with the user — guests only ever see
+  the plain grid, matching how Saved/Picks already gates on login);
+  Swipe mode shares the screen's existing filter state/query, it does
+  not duplicate search UI.
+- Confirmed with the user and intentionally **not** built: skip
+  ("no") persistence — a left swipe is purely client-side with no
+  record kept, so a skipped property can resurface in a later session;
+  this was an explicit, accepted decision, not an oversight.
+- Verified: `npx tsc --noEmit` and `npm run lint` clean on mobile.
+  **Not yet live-verified in a running app** — no simulator access in
+  this session; needs on-device confirmation (swipe right adds to
+  Saved/Picks, swipe left advances with no network call, running out of
+  cards loads more or shows the end state, on-screen buttons behave
+  identically to a finger swipe, an already-favourited property never
+  appears as a card, guests see no Swipe toggle at all).
 
 ## Scout Program Milestone 1: data model + public application flow ("Rental HunterZ")
 
