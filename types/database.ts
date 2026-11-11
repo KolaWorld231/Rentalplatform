@@ -551,7 +551,6 @@ export type ScoutProgramSettings = {
   updated_by: string | null;
   updated_at: string;
 };
-
 export type ScoutVisitReportStatus = "pending" | "approved" | "rejected";
 
 export type ScoutVisitReport = {
@@ -565,7 +564,6 @@ export type ScoutVisitReport = {
   reviewed_by: string | null;
   created_at: string;
 };
-
 export type ScoutPayout = {
   id: string;
   scout_id: string;
@@ -578,7 +576,6 @@ export type ScoutPayout = {
   paid_at: string | null;
   created_at: string;
 };
-
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;

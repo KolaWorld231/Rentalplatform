@@ -51,6 +51,10 @@ module.exports = {
         surface: "#ffffff",
         canvas: "#f7f6f6",
         border: "#e5e5e5",
+        // One step darker than surface/charcoal-700 -- used to fake an
+        // inset/recessed look on Input, since RN has no inset-shadow
+        // support (see mobile Input.tsx).
+        well: { light: "#f1f0f0", dark: "#141414" },
         success: { 500: "#2f8f5b", 100: "#e3f3ea" },
         warning: { 500: "#b9790f", 100: "#fbf0dc" },
         error: { 500: "#c23f3f", 100: "#fae7e7" },
@@ -62,6 +66,24 @@ module.exports = {
         lg: "20px",
         xl: "28px",
         "2xl": "36px",
+      },
+      boxShadow: {
+        // Single-layer approximations of web's (possibly dual-layer)
+        // app/globals.css shadow tokens -- NativeWind/RN only support one
+        // shadow layer per view, so these are tuned slightly heavier than
+        // a literal copy of web's outer layer alone, to read correctly
+        // against a pure-black background, not pixel-matched to the CSS.
+        // clay-inset/clay-raised are intentionally not ported as generic
+        // utilities here -- RN has no inset-shadow support and no
+        // multi-layer/dual-tone support without a new dependency; see
+        // Input.tsx and verification.tsx/pricing.tsx for how those two
+        // are handled instead. On Android these compile to OS-native
+        // grey-tinted `elevation` (no color control) -- an accepted
+        // platform divergence from iOS.
+        subtle: "0 1px 3px rgba(0,0,0,0.08)",
+        raised: "0 4px 10px rgba(0,0,0,0.14)",
+        floating: "0 8px 20px rgba(0,0,0,0.18)",
+        modal: "0 16px 32px rgba(0,0,0,0.30)",
       },
       fontFamily: {
         // Loaded via expo-font in app/_layout.tsx; same pairing as the
