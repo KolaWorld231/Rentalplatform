@@ -2,6 +2,11 @@
 // hand (see mobile/README.md).
 export const brand = {
   name: "231Rentals",
+  tagline: "Your Next Place. Direct From the Owner.",
+  colors: {
+    splash: "#da1a32",
+    onSplash: "#ffffff",
+  },
 } as const;
 
 export const subscriptionPlan = {
