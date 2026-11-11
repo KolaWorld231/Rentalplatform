@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { scoutProgram } from "@/lib/config/brand";
+import { cn } from "@/lib/utils/cn";
 import { REAPPLY_AFTER_DAYS } from "@/lib/validation/scouts";
 import type { ScoutApplication, ScoutArea, ScoutReference, Scout, ScoutEarningsLedgerEntry } from "@/types/database";
 import {
@@ -214,16 +216,24 @@ export default async function AdminScoutsPage() {
       <section>
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl font-semibold text-charcoal-700">Earnings & payouts</h2>
-          <form action={computeBountyEarningsAction}>
-            <Button type="submit" size="sm" variant="secondary">
-              Compute bounty earnings
-            </Button>
-          </form>
+          <div className="flex gap-2">
+            <Link href="/admin/scouts/settings" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+              Settings
+            </Link>
+            <form action={computeBountyEarningsAction}>
+              <Button type="submit" size="sm" variant="secondary">
+                Compute bounty earnings
+              </Button>
+            </form>
+          </div>
         </div>
         <p className="mt-1 text-xs text-charcoal-400">
-          Bounty amounts are illustrative defaults pending the owner&apos;s sign-off — see docs/SCOUT_PROGRAM.md §16.
-          Revenue-share earnings aren&apos;t computed automatically yet. Marking a payout &quot;paid&quot; is an admin
-          attesting a payment was made out-of-band — no payout provider is integrated.
+          The bounty amount, revenue share, and monthly cap are configured in{" "}
+          <Link href="/admin/scouts/settings" className="underline">
+            Settings
+          </Link>
+          , not hardcoded. Revenue-share earnings aren&apos;t computed automatically yet. Marking a payout
+          &quot;paid&quot; is an admin attesting a payment was made out-of-band — no payout provider is integrated.
         </p>
         <div className="mt-4 flex flex-col gap-2">
           {(earnings ?? []).length === 0 && <p className="text-sm text-charcoal-400">No pending or approved earnings.</p>}

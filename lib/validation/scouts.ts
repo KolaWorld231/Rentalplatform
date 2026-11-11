@@ -60,14 +60,26 @@ export type ScoutDecisionInput = z.infer<typeof scoutDecisionSchema>;
 export const PROBATION_DAYS = 30;
 export const REAPPLY_AFTER_DAYS = 90;
 
-// Milestone 4: earnings. Illustrative defaults from docs/SCOUT_PROGRAM.md's
-// own earnings table -- the spec explicitly lists the bounty amount,
-// share %, and monthly cap as an open decision (§16) still needing the
-// project owner's sign-off against real costs, not a figure to treat
-// as final just because it's coded here.
-export const BOUNTY_AMOUNT_USD = 2;
+// Milestone 4: earnings. The bounty amount, revenue-share %, share
+// duration, and monthly cap are admin-configurable in
+// /admin/scouts/settings (scout_program_settings, Milestone 6) --
+// never hardcoded here, per the spec's own "stored in
+// platform_settings, not constants in code" rule. The 30-day
+// confirmed-available waiting period is the bounty trigger's fixed
+// timing rule, not one of the settings the spec calls out as
+// admin-editable, so it stays a code constant.
 export const BOUNTY_CONFIRMED_AVAILABLE_AFTER_DAYS = 30;
 
+export const scoutProgramSettingsSchema = z.object({
+  bountyAmountUsd: z.coerce.number().min(0).max(1000),
+  sharePercent: z.coerce.number().min(0).max(100),
+  shareDurationMonths: z.coerce.number().int().min(1).max(60),
+  monthlyCapUsd: z.coerce.number().min(0).max(100000).optional(),
+  payoutProvider: z.string().trim().max(80).optional().or(z.literal("")),
+  payoutMethodNotes: z.string().trim().max(2000).optional().or(z.literal("")),
+  taxTreatmentNotes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+export type ScoutProgramSettingsInput = z.infer<typeof scoutProgramSettingsSchema>;
 // Milestone 5: field verification (spec §9). Off by default -- the
 // scout-facing submission flow (camera capture, compression, the
 // checklist UI) isn't built yet; flip this on only once it is.
