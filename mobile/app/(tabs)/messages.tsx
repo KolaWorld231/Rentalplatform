@@ -41,6 +41,8 @@ export default function MessagesScreen() {
       <Text className="px-4 pb-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Messages</Text>
       {conversations.isLoading ? (
         <ActivityIndicator />
+      ) : conversations.isError ? (
+        <Text className="px-4 text-sm text-error-500">Couldn&apos;t load your conversations. Pull to refresh.</Text>
       ) : (
         <FlatList
           data={conversations.data ?? []}
@@ -74,7 +76,11 @@ function ConversationRowItem({ conversation: c, currentUserId }: { conversation:
 
   return (
     <Link href={`/messages/${c.id}`} asChild>
-      <Pressable className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-sage-100 dark:border-charcoal-500 dark:active:bg-charcoal-700">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Conversation with ${name ?? "Unknown user"}${unread ? ", unread" : ""}`}
+        className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-sage-100 dark:border-charcoal-500 dark:active:bg-charcoal-700"
+      >
         <Avatar name={name} />
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
