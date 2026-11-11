@@ -6,8 +6,10 @@ import { Avatar } from "../../components/ui/Avatar";
 import { useSession } from "../../lib/auth/session";
 import { formatRelativeDate } from "../../lib/format";
 import { getConversationDetail, getMessages, markConversationRead, sendMessage } from "../../lib/messaging/service";
+import { reportMessage } from "../../lib/reports/service";
 import { supabase } from "../../lib/supabase";
-import type { Message } from "../../lib/database.types";
+import { ReportForm } from "../../components/reports/ReportForm";
+import type { Message, ReportReason } from "../../lib/database.types";
 
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,9 +75,20 @@ export default function ConversationScreen() {
     );
   }
 
+  const latestMessageId = messages.data?.at(-1)?.id ?? null;
+
   return (
     <View className="flex-1 bg-canvas dark:bg-charcoal-900">
       <Stack.Screen options={{ headerShown: true, title: counterpartName ?? "Conversation" }} />
+
+      {user && latestMessageId && (
+        <View className="px-4 pt-2">
+          <ReportForm
+            label="Report this conversation"
+            onSubmit={(reason: ReportReason, details: string) => reportMessage(user.id, latestMessageId, id, reason, details)}
+          />
+        </View>
+      )}
 
       <FlatList
         ref={listRef}

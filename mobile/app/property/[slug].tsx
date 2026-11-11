@@ -10,9 +10,12 @@ import { useSession } from "../../lib/auth/session";
 import { formatCategory, formatRentalFrequency, formatUsd } from "../../lib/format";
 import { startOrContinueConversation } from "../../lib/messaging/service";
 import { getPropertyBySlug, getSimilarProperties, toggleFavourite, getFavouritedPropertyIds } from "../../lib/properties/service";
+import { reportProperty } from "../../lib/reports/service";
 import { propertyImageUrl } from "../../lib/storage";
 import { isIdentityVerified, isPropertyVerified } from "../../lib/verification/service";
 import { VerificationBadge } from "../../components/verification/VerificationBadge";
+import { ReportForm } from "../../components/reports/ReportForm";
+import type { ReportReason } from "../../lib/database.types";
 
 const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning" | "has_parking" | "has_security"; label: string }[] = [
   { key: "has_electricity", label: "Electricity" },
@@ -248,6 +251,13 @@ export default function PropertyDetailScreen() {
             ))}
           </View>
         </View>
+
+        {user && !isOwnListing && (
+          <ReportForm
+            label="Report this listing"
+            onSubmit={(reason: ReportReason, details: string) => reportProperty(user.id, p.id, reason, details)}
+          />
+        )}
 
         {similar.data && similar.data.length > 0 && (
           <View className="gap-3">
