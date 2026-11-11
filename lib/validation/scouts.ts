@@ -80,7 +80,6 @@ export const scoutProgramSettingsSchema = z.object({
   taxTreatmentNotes: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 export type ScoutProgramSettingsInput = z.infer<typeof scoutProgramSettingsSchema>;
-
 // Milestone 5: field verification (spec §9). Off by default -- the
 // scout-facing submission flow (camera capture, compression, the
 // checklist UI) isn't built yet; flip this on only once it is.

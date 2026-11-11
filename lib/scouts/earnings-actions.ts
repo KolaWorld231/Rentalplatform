@@ -28,7 +28,6 @@ export async function computeBountyEarningsAction() {
 
   const { data: settings } = await admin.from("scout_program_settings").select("bounty_amount_usd").eq("id", true).single();
   const bountyAmountUsd = settings?.bounty_amount_usd ?? 0;
-
   const { data: confirmedReferrals } = (await admin
     .from("owner_referrals")
     .select("*")
