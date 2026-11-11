@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { PropertyCard } from "../../components/properties/PropertyCard";
+import { SwipeDeck } from "../../components/properties/SwipeDeck";
+import { useSession } from "../../lib/auth/session";
 import { cn } from "../../lib/cn";
 import { LIBERIA_COUNTIES, PROPERTY_CATEGORIES } from "../../lib/database.types";
 import { formatCategory } from "../../lib/format";
@@ -15,16 +17,19 @@ const SORT_OPTIONS: { value: SearchParamsInput["sort"]; label: string }[] = [
 ];
 
 export default function SearchScreen() {
+  const { user } = useSession();
   const [q, setQ] = useState("");
   const [county, setCounty] = useState<string | undefined>(undefined);
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [sort, setSort] = useState<SearchParamsInput["sort"]>("newest");
   const [page, setPage] = useState(1);
+  const [mode, setMode] = useState<"list" | "swipe">("list");
 
   const params = searchParamsSchema.parse({ q: q || undefined, county, category, sort, page });
   const result = useQuery({
     queryKey: ["search", params],
     queryFn: () => searchProperties(params),
+    enabled: mode === "list",
   });
 
   const totalPages = result.data ? Math.max(1, Math.ceil(result.data.total / result.data.pageSize)) : 1;
@@ -39,6 +44,7 @@ export default function SearchScreen() {
         <TextInput
           placeholder="Search by title (e.g. Sinkor apartment)"
           placeholderTextColor="#737373"
+          accessibilityLabel="Search properties by title"
           value={q}
           onChangeText={(v) => {
             setQ(v);
@@ -93,7 +99,7 @@ export default function SearchScreen() {
 
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
-            {result.data ? `${result.data.total} result${result.data.total === 1 ? "" : "s"}` : " "}
+            {mode === "list" && result.data ? `${result.data.total} result${result.data.total === 1 ? "" : "s"}` : " "}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
             {SORT_OPTIONS.map((opt) => (
@@ -109,9 +115,31 @@ export default function SearchScreen() {
             ))}
           </ScrollView>
         </View>
+
+        {/* Swipe mode is an optional, logged-in-only way to browse the same
+            filtered results -- guests only ever see the plain grid below. */}
+        {user && (
+          <View className="flex-row self-start rounded-full border border-border p-0.5 dark:border-charcoal-500">
+            <Pressable onPress={() => setMode("list")} className={cn("rounded-full px-3 py-1", mode === "list" && "bg-forest-600")}>
+              <Text className={cn("text-xs font-sans-semibold", mode === "list" ? "text-ivory-50" : "text-charcoal-700 dark:text-ivory-100")}>
+                Grid
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => setMode("swipe")} className={cn("rounded-full px-3 py-1", mode === "swipe" && "bg-forest-600")}>
+              <Text className={cn("text-xs font-sans-semibold", mode === "swipe" ? "text-ivory-50" : "text-charcoal-700 dark:text-ivory-100")}>
+                Swipe
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
-      {result.isLoading ? (
+      {mode === "swipe" && user ? (
+        <SwipeDeck
+          key={JSON.stringify({ q: params.q, county: params.county, category: params.category, sort: params.sort })}
+          params={{ q: params.q, county: params.county, category: params.category, sort: params.sort }}
+        />
+      ) : result.isLoading ? (
         <ActivityIndicator className="mt-8" />
       ) : result.isError ? (
         <Text className="px-4 text-sm text-error-500">Couldn&apos;t load results. Pull to refresh.</Text>
@@ -135,13 +163,27 @@ export default function SearchScreen() {
           ListFooterComponent={
             result.data && totalPages > 1 ? (
               <View className="flex-row items-center justify-center gap-4 pt-2">
-                <Pressable disabled={page <= 1} onPress={() => setPage((p) => p - 1)} className={cn(page <= 1 && "opacity-40")}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous page"
+                  accessibilityState={{ disabled: page <= 1 }}
+                  disabled={page <= 1}
+                  onPress={() => setPage((p) => p - 1)}
+                  className={cn(page <= 1 && "opacity-40")}
+                >
                   <Text className="font-sans-semibold text-forest-700 dark:text-forest-500">Previous</Text>
                 </Pressable>
                 <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
                   Page {page} of {totalPages}
                 </Text>
-                <Pressable disabled={page >= totalPages} onPress={() => setPage((p) => p + 1)} className={cn(page >= totalPages && "opacity-40")}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Next page"
+                  accessibilityState={{ disabled: page >= totalPages }}
+                  disabled={page >= totalPages}
+                  onPress={() => setPage((p) => p + 1)}
+                  className={cn(page >= totalPages && "opacity-40")}
+                >
                   <Text className="font-sans-semibold text-forest-700 dark:text-forest-500">Next</Text>
                 </Pressable>
               </View>
@@ -156,6 +198,9 @@ export default function SearchScreen() {
 function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       onPress={onPress}
       className={cn(
         "rounded-full border px-3 py-1.5",

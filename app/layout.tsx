@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
@@ -19,11 +19,37 @@ const displayFont = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
     default: `${brand.name} — ${brand.tagline}`,
     template: `%s | ${brand.name}`,
   },
   description: brand.heroSupportingCopy,
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: `${brand.name} — ${brand.tagline}`,
+    description: brand.heroSupportingCopy,
+    images: [{ url: "/og-image-1200x630.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${brand.name} — ${brand.tagline}`,
+    description: brand.heroSupportingCopy,
+    images: ["/og-image-1200x630.png"],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#da1a32",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

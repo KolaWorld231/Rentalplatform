@@ -52,6 +52,7 @@ export default function PropertyDetailScreen() {
   const [messageDraft, setMessageDraft] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [brokenImageIds, setBrokenImageIds] = useState<Set<string>>(new Set());
 
   if (property.isLoading) {
     return (
@@ -101,7 +102,7 @@ export default function PropertyDetailScreen() {
     setSendingMessage(false);
     if (!result.ok) {
       if (result.reason === "subscription_required") {
-        router.push("/pricing");
+        router.push("/pricing?reason=message_gate");
         return;
       }
       if (result.reason === "own_property") {
@@ -127,14 +128,21 @@ export default function PropertyDetailScreen() {
           horizontal
           pagingEnabled
           keyExtractor={(img) => img.id}
-          renderItem={({ item }) => (
-            <Image
-              source={{ uri: propertyImageUrl(item.storage_path) }}
-              style={{ width: 390, height: 260 }}
-              contentFit="cover"
-              alt={`Photo of ${p.title}`}
-            />
-          )}
+          renderItem={({ item }) =>
+            brokenImageIds.has(item.id) ? (
+              <View className="h-[260px] w-[390px] items-center justify-center bg-sage-100 dark:bg-charcoal-500">
+                <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">Photo couldn&apos;t load</Text>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: propertyImageUrl(item.storage_path) }}
+                style={{ width: 390, height: 260 }}
+                contentFit="cover"
+                alt={`Photo of ${p.title}`}
+                onError={() => setBrokenImageIds((prev) => new Set(prev).add(item.id))}
+              />
+            )
+          }
         />
       ) : (
         <View className="h-64 items-center justify-center bg-sage-100 dark:bg-charcoal-500">
@@ -203,6 +211,7 @@ export default function PropertyDetailScreen() {
                   placeholderTextColor="#737373"
                   multiline
                   numberOfLines={3}
+                  accessibilityLabel="Message to the owner"
                   className="rounded-md border border-border bg-surface p-3 text-sm text-charcoal-700 dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100"
                 />
                 {contactError && <Text className="text-sm text-error-500">{contactError}</Text>}

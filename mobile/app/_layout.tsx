@@ -4,16 +4,19 @@ import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, useFonts as
 import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
   useFonts as usePlusJakartaSans,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import AnimatedSplash from "../components/AnimatedSplash";
 import { NotificationsBootstrap } from "../components/NotificationsBootstrap";
 import { OfflineBanner } from "../components/ui/OfflineBanner";
-import { SessionProvider } from "../lib/auth/session";
+import { SessionProvider, useSession } from "../lib/auth/session";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,26 +30,40 @@ onlineManager.setEventListener((setOnline) => {
   });
 });
 
+// AnimatedSplash itself hides the native splash (see its onLayout) once
+// it has laid out and is ready to paint its own first frame -- a single
+// handoff point, rather than this file also racing to call
+// SplashScreen.hideAsync() the moment fonts load.
+function RootLayoutInner() {
+  const { loading: sessionLoading } = useSession();
+  const [splashDone, setSplashDone] = useState(false);
+
+  return (
+    <>
+      <NotificationsBootstrap />
+      <OfflineBanner />
+      <Stack screenOptions={{ headerShown: false }} />
+      {!splashDone && <AnimatedSplash isAppReady={!sessionLoading} onFinish={() => setSplashDone(true)} />}
+    </>
+  );
+}
+
 export default function RootLayout() {
   const [manropeLoaded] = useManrope({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold });
-  const [displayLoaded] = usePlusJakartaSans({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
+  const [displayLoaded] = usePlusJakartaSans({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold });
   const fontsLoaded = manropeLoaded && displayLoaded;
-
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <SessionProvider>
-          <NotificationsBootstrap />
-          <OfflineBanner />
-          <Stack screenOptions={{ headerShown: false }} />
-        </SessionProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <SessionProvider>
+            <RootLayoutInner />
+          </SessionProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

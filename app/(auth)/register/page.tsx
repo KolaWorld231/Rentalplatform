@@ -31,6 +31,7 @@ type Method = "password" | "passkey" | "phone" | "whatsapp";
 function RegisterForm() {
   const searchParams = useSearchParams();
   const defaultIntent = searchParams.get("intent") === "owner" ? "owner" : "renter";
+  const refCode = searchParams.get("ref") ?? "";
   const [intent, setIntent] = useState<"renter" | "owner">(defaultIntent);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -238,6 +239,7 @@ function RegisterForm() {
             <input type="hidden" name="intent" value={intent} />
             <input type="hidden" name="displayName" value={displayName} />
             <input type="hidden" name="email" value={email} />
+            <input type="hidden" name="refCode" value={refCode} />
             <Input
               label="Password"
               name="password"
