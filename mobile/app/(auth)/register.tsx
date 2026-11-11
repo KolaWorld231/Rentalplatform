@@ -57,6 +57,9 @@ export default function RegisterScreen() {
       <Card className="gap-4 p-5">
         <View className="flex-row gap-3">
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Find a property"
+            accessibilityState={{ selected: intent === "renter" }}
             onPress={() => setValue("intent", "renter")}
             className={cn(
               "flex-1 gap-1.5 rounded-lg border-2 p-4",
@@ -70,6 +73,9 @@ export default function RegisterScreen() {
             <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">Browse and message owners</Text>
           </Pressable>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="List a property"
+            accessibilityState={{ selected: intent === "owner" }}
             onPress={() => setValue("intent", "owner")}
             className={cn(
               "flex-1 gap-1.5 rounded-lg border-2 p-4",
@@ -94,6 +100,9 @@ export default function RegisterScreen() {
 
         <View className="flex-row gap-2">
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Sign up with password"
+            accessibilityState={{ selected: method === "password" }}
             onPress={() => setMethod("password")}
             className={cn(
               "flex-1 items-center rounded-md border py-2",
@@ -105,6 +114,9 @@ export default function RegisterScreen() {
             </Text>
           </Pressable>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Sign up with WhatsApp"
+            accessibilityState={{ selected: method === "whatsapp" }}
             onPress={() => setMethod("whatsapp")}
             className={cn(
               "flex-1 items-center rounded-md border py-2",

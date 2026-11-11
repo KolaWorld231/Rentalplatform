@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { useState } from "react";
 import { Text, View } from "react-native";
 import { formatCategory, formatRentalFrequency, formatUsd, isRecentlyPublished } from "../../lib/format";
 import { propertyImageUrl } from "../../lib/storage";
@@ -10,20 +11,24 @@ import type { PropertyWithCover } from "../../lib/properties/service";
 export function PropertyCardContent({ property }: { property: PropertyWithCover }) {
   const cover = property.property_images.find((img) => img.is_cover) ?? property.property_images[0];
   const isNew = isRecentlyPublished(property.published_at, 72 * 60 * 60 * 1000);
+  const [imageBroken, setImageBroken] = useState(false);
 
   return (
     <View className="overflow-hidden rounded-lg border border-border bg-surface dark:border-charcoal-500 dark:bg-charcoal-700">
       <View className="aspect-[4/3] bg-sage-100 dark:bg-charcoal-500">
-        {cover ? (
+        {cover && !imageBroken ? (
           <Image
             source={{ uri: propertyImageUrl(cover.storage_path) }}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
             alt={`Photo of ${property.title}`}
+            onError={() => setImageBroken(true)}
           />
         ) : (
           <View className="flex-1 items-center justify-center">
-            <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">No photo yet</Text>
+            <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+              {imageBroken ? "Photo couldn't load" : "No photo yet"}
+            </Text>
           </View>
         )}
         {isNew && (

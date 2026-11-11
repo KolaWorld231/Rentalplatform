@@ -59,6 +59,7 @@ export function WhatsAppAuthForm({
   if (step === "phone") {
     return (
       <View className="gap-3">
+        <Text className="text-xs font-sans-semibold text-charcoal-400">Step 1 of 2</Text>
         {mode === "signup" && (
           <Controller
             control={startForm.control}
@@ -101,6 +102,7 @@ export function WhatsAppAuthForm({
 
   return (
     <View className="gap-3">
+      <Text className="text-xs font-sans-semibold text-charcoal-400">Step 2 of 2</Text>
       <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">We sent a 6-digit code to {phone} on WhatsApp.</Text>
       <Controller
         control={verifyForm.control}
@@ -120,7 +122,7 @@ export function WhatsAppAuthForm({
       <Button loading={verifyForm.formState.isSubmitting} onPress={() => verifyForm.handleSubmit(onVerifySubmit)()}>
         Verify &amp; continue
       </Button>
-      <Pressable onPress={() => setStep("phone")}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Use a different number" onPress={() => setStep("phone")}>
         <Text className="text-xs font-sans-semibold text-charcoal-500 dark:text-charcoal-400">Use a different number</Text>
       </Pressable>
     </View>

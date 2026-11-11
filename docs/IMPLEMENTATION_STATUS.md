@@ -3600,3 +3600,61 @@ and `components/ui/BrandMark.tsx` was a hand-drawn approximation.
   browser/simulator in this session; the user should confirm the
   favicon/OG image render correctly and the mobile icon/splash look
   right on a real EAS build.
+
+## Mobile UX audit (quick-wins batch)
+
+Ran a read-only UX audit of the mobile app against an "elite mobile UX
+architect" methodology the user supplied (a custom skill package, not
+registered in this session — applied manually). No P0 blockers found;
+the full scored audit (scorecard, findings table, missing screens/
+states) lives in this session's plan file, not duplicated here. User
+confirmed: implement the mechanical quick wins now; separately scope
+(not build) offline handling and a mobile report/block safety
+affordance as follow-up work.
+
+Fixed in this pass:
+- `app/(tabs)/index.tsx`: removed a stale "Owner mode lands in a later
+  milestone" line sitting directly below a working link to the already-
+  built Owner dashboard.
+- `app/(tabs)/saved.tsx`, `app/(tabs)/messages.tsx`,
+  `app/messages/[id].tsx`: added explicit `isError` branches — these
+  previously rendered the *empty* state on a failed fetch, indistin‑
+  guishable from "you have none."
+- Accessibility: added `accessibilityRole`/`accessibilityLabel`/
+  `accessibilityState` to every raw `Pressable`/`TextInput` the audit
+  found with zero accessibility props — search filter chips and
+  pagination, the search input, login/register method and intent
+  toggles, conversation rows, the message composer and send button, and
+  owner photo-management buttons. (Where the shared `Button`/`Input`
+  primitives are already used, coverage was already fine — this was
+  the gap everywhere a screen reached for a raw element instead.)
+- `app/pricing.tsx`, `app/verification.tsx`: added missing `isLoading`
+  guards so a subscriber/applicant no longer sees a flash of "no active
+  pass"/"no request yet" before their real status resolves.
+- `app/owner/index.tsx`: added a `dark:` variant to the stale-
+  availability warning callout (one of the only hardcoded-light spots
+  found).
+- `components/properties/PropertyCard.tsx`, `app/property/[slug].tsx`:
+  added an `onError` fallback to every `expo-image` usage — a broken/
+  404 image URL previously rendered a blank box with no fallback.
+- `app/property/[slug].tsx` → `app/pricing.tsx`: the subscription-gate
+  redirect now carries a `reason` param so pricing can explain why the
+  user landed there, instead of a silent, unexplained redirect.
+- `app/owner/index.tsx`: wired the previously-dead `?intent=owner`
+  registration param to a real entry point (the guest-state "Create an
+  account" link on the Owner dashboard).
+- `components/auth/WhatsAppAuthForm.tsx`: added "Step 1 of 2"/"Step 2
+  of 2" labels to the phone→OTP flow.
+
+Explicitly **not** built in this pass (scoped only, in the plan file,
+pending a decision to build them): offline/connectivity handling (no
+`NetInfo`/`onlineManager` wiring exists anywhere today), and a mobile
+report/block-owner safety affordance (web already has the schema —
+`property_reports`/`message_reports` — mobile just has no UI for it
+yet).
+
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet live-verified in a running app** — no simulator in this
+  session; the accessibility additions are non-visual by design, and
+  the error/loading-state additions need a forced-failure/forced-delay
+  manual check to actually exercise.

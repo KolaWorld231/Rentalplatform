@@ -65,6 +65,14 @@ export default function ConversationScreen() {
     );
   }
 
+  if (conversation.isError || messages.isError) {
+    return (
+      <View className="flex-1 items-center justify-center bg-canvas p-6 dark:bg-charcoal-900">
+        <Text className="text-sm text-error-500">Couldn&apos;t load this conversation. Pull to refresh.</Text>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-canvas dark:bg-charcoal-900">
       <Stack.Screen options={{ headerShown: true, title: counterpartName ?? "Conversation" }} />
@@ -102,10 +110,14 @@ export default function ConversationScreen() {
           onChangeText={setDraft}
           placeholder="Write a message…"
           placeholderTextColor="#737373"
+          accessibilityLabel="Write a message"
           multiline
           className="flex-1 max-h-28 rounded-md border border-border bg-surface px-3 py-2 text-base text-charcoal-700 dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100"
         />
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Send message"
+          accessibilityState={{ disabled: sending || !draft.trim(), busy: sending }}
           onPress={onSend}
           disabled={sending || !draft.trim()}
           className={`h-11 items-center justify-center rounded-full bg-clay-500 px-5 active:bg-clay-600 ${sending || !draft.trim() ? "opacity-50" : ""}`}

@@ -152,11 +152,19 @@ export default function EditPropertyScreen() {
               <Image source={{ uri: propertyImageUrl(item.storage_path) }} style={{ width: 90, height: 90, borderRadius: 8 }} alt="" />
               <View className="flex-row gap-1">
                 {!item.is_cover && (
-                  <Pressable onPress={() => setCoverPhoto(id, item.id).then(invalidate)}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Set as cover photo"
+                    onPress={() => setCoverPhoto(id, item.id).then(invalidate)}
+                  >
                     <Text className="text-xs text-forest-700 dark:text-forest-500">Set cover</Text>
                   </Pressable>
                 )}
-                <Pressable onPress={() => deletePropertyPhoto(id, item.id, item.storage_path).then(invalidate)}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete photo"
+                  onPress={() => deletePropertyPhoto(id, item.id, item.storage_path).then(invalidate)}
+                >
                   <Text className="text-xs text-error-500">Delete</Text>
                 </Pressable>
               </View>
