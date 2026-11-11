@@ -3127,7 +3127,6 @@ before building:
   cards loads more or shows the end state, on-screen buttons behave
   identically to a finger swipe, an already-favourited property never
   appears as a card, guests see no Swipe toggle at all).
-
 ## Scout Program Milestone 1: data model + public application flow ("Rental HunterZ")
 
 `docs/SCOUT_PROGRAM.md` is the full spec (previously saved, not yet
@@ -3190,3 +3189,49 @@ move them further.
   exercising the rate limit/attempt-cap/TTL rejections, and reading the
   dev-console-logged OTP code) — flagged here rather than claimed,
   same convention as every other unverified change in this file.
+
+## Scout Program Milestone 2: admin review queue + probation
+
+Builds on Milestone 1 (PR #24, not yet merged — this branches from it,
+not `main`). M1 landed applications in `applied`/`waitlisted` with
+nothing to move them further; M2 adds the admin review workflow and
+the `scouts` table itself. Referral attribution, earnings/payouts,
+field verification, and mobile parity remain later milestones.
+
+- Migration `20261110000100_scout_program_m2.sql`: extends
+  `scout_application_status` with `under_review`/`rejected`/`approved`;
+  adds `scout_status`, `scout_reference_outcome`, and
+  `scout_verification_step_{type,status}` enums; adds `reapply_after`/
+  `decision_reason`/`decided_by`/`decided_at` to `scout_applications`;
+  adds `contacted_at`/`outcome`/`notes`/`reviewed_by` to
+  `scout_references`; new `scout_verification_steps` and `scouts`
+  tables. RLS: admin/moderator-select only (plus a forward-compatible
+  self-select on `scouts` once a scout has a linked account, which
+  nothing writes yet) — every write stays service-role-only, same
+  precedent as every other admin/moderation action in this codebase
+  (`lib/admin/audit.ts`'s `recordAdminAction` pattern).
+- **Scope note**: `scout_verification_steps.document_storage_path`
+  exists per the spec's own data model, but the identity-check evidence
+  *upload* (private bucket + signed URLs) is explicitly not built in
+  this milestone — real, separate work, and the spec itself marks the
+  identity check as "optional per setting." Nothing in M2 writes to
+  that column.
+- `app/admin/scouts/actions.ts`: `recordReferenceOutcomeAction`,
+  `recordVerificationStepAction`, `decideScoutApplicationAction`
+  (approve-to-probation / waitlist / reject, admin-only — moderators
+  can record reference/verification outcomes but not make the final
+  call), `setScoutStatusAction` (active/suspended/removed/resigned).
+  All follow this codebase's existing admin-action shape exactly:
+  `requireAnyRole` re-check, service-role write, `recordAdminAction`,
+  `revalidatePath`.
+- `app/admin/scouts/page.tsx`: pending applications with inline
+  reference-outcome recording and decision buttons, plus a scouts list
+  with probation→active/suspended controls. Added to `AdminNav` with a
+  real pending-count badge (reused aggregate pattern, not fabricated).
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` (including
+  `/admin/scouts`), `npm run test` (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm against a real/seeded application:
+  the reference-outcome form, each decision button (and that approving
+  actually creates a `scouts` row with a unique `referral_code`), and
+  that a rejected application's `reapply_after` is set correctly.

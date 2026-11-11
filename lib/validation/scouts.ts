@@ -42,3 +42,20 @@ export const scoutApplicationSchema = z.object({
   verificationConsent: z.literal(true, { error: "Confirm you consent to verification checks" }),
 });
 export type ScoutApplicationInput = z.infer<typeof scoutApplicationSchema>;
+
+// Milestone 2: admin review -------------------------------------------
+
+export const scoutReferenceOutcomeSchema = z.object({
+  outcome: z.enum(["reached_positive", "reached_concern", "not_reached"]),
+  notes: z.string().trim().max(1000).optional().or(z.literal("")),
+});
+export type ScoutReferenceOutcomeInput = z.infer<typeof scoutReferenceOutcomeSchema>;
+
+export const scoutDecisionSchema = z.object({
+  decision: z.enum(["approve_probation", "waitlist", "reject"]),
+  reason: z.string().trim().max(1000).optional().or(z.literal("")),
+});
+export type ScoutDecisionInput = z.infer<typeof scoutDecisionSchema>;
+
+export const PROBATION_DAYS = 30;
+export const REAPPLY_AFTER_DAYS = 90;

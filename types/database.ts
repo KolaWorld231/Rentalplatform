@@ -424,8 +424,12 @@ export type WhatsAppOtpChallenge = {
 
 // Scout Program (Milestone 1) ----------------------------------------------
 
-export type ScoutApplicationStatus = "applied" | "waitlisted" | "withdrawn";
+export type ScoutApplicationStatus = "applied" | "waitlisted" | "withdrawn" | "under_review" | "rejected" | "approved";
 export type ScoutReferenceRelationship = "family" | "employer" | "community_leader" | "other";
+export type ScoutReferenceOutcome = "reached_positive" | "reached_concern" | "not_reached";
+export type ScoutStatus = "probation" | "active" | "suspended" | "removed" | "resigned";
+export type ScoutVerificationStepType = "completeness_check" | "reference_check" | "identity_check" | "interview";
+export type ScoutVerificationStepStatus = "pending" | "passed" | "failed" | "skipped";
 
 export type ScoutArea = {
   id: string;
@@ -456,6 +460,10 @@ export type ScoutApplication = {
   phone_verified_at: string;
   status: ScoutApplicationStatus;
   reference_code: string;
+  reapply_after: string | null;
+  decision_reason: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
   created_at: string;
 };
 
@@ -465,9 +473,38 @@ export type ScoutReference = {
   full_name: string;
   relationship: ScoutReferenceRelationship;
   phone: string;
+  contacted_at: string | null;
+  outcome: ScoutReferenceOutcome | null;
+  notes: string | null;
+  reviewed_by: string | null;
   created_at: string;
 };
 
+export type ScoutVerificationStep = {
+  id: string;
+  application_id: string;
+  step_type: ScoutVerificationStepType;
+  status: ScoutVerificationStepStatus;
+  reviewer_id: string | null;
+  notes: string | null;
+  document_storage_path: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+export type Scout = {
+  id: string;
+  user_id: string | null;
+  application_id: string;
+  status: ScoutStatus;
+  approved_at: string;
+  probation_ends_at: string;
+  referral_code: string;
+  display_name: string;
+  area_id: string;
+  created_at: string;
+  updated_at: string;
+};
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;
@@ -602,6 +639,14 @@ export type Database = {
         ScoutApplicationOtpChallenge,
         Partial<ScoutApplicationOtpChallenge> & Pick<ScoutApplicationOtpChallenge, "phone" | "code_hash" | "expires_at">
       >;
+      scout_verification_steps: TableDef<
+        ScoutVerificationStep,
+        Partial<ScoutVerificationStep> & Pick<ScoutVerificationStep, "application_id" | "step_type">
+      >;
+      scouts: TableDef<
+        Scout,
+        Partial<Scout> & Pick<Scout, "application_id" | "probation_ends_at" | "referral_code" | "display_name" | "area_id">
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -653,6 +698,10 @@ export type Database = {
       support_ticket_status: SupportTicketStatus;
       scout_application_status: ScoutApplicationStatus;
       scout_reference_relationship: ScoutReferenceRelationship;
+      scout_reference_outcome: ScoutReferenceOutcome;
+      scout_status: ScoutStatus;
+      scout_verification_step_type: ScoutVerificationStepType;
+      scout_verification_step_status: ScoutVerificationStepStatus;
     };
     CompositeTypes: Record<string, never>;
   };
