@@ -2315,11 +2315,12 @@ credentials or input, not more engineering time against this codebase.
   graphic, or store description/keywords exist yet — needs real
   device screenshots and marketing copy decisions from the project
   owner, not fabricated placeholders.
-- **Mobile EAS build/signing credentials**: no Expo/EAS account or
-  Apple/Google signing credentials exist in this environment, so no
-  EAS build was actually run — `mobile/eas.json`'s three profiles
-  (development/preview/production) are configured and ready, but
-  untested end-to-end pending those credentials.
+- **Mobile EAS build/signing credentials**: **partially resolved** —
+  an Expo account now exists and an Android `preview` build has run
+  successfully end-to-end (EAS-managed keystore, auto-generated; see
+  the dated entry above). No Apple Developer account exists yet, so
+  an iOS build and Play Store-ready signing are still blocked on the
+  project owner.
 - **MTN MoMo production credentials**: `lib/payments/providers/mtn-momo.ts`
   is built and live-sync'd between web and mobile (see the dated entry
   below), but no real MTN MoMo subscription key/API user/API key exist
@@ -2975,6 +2976,51 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
+## First real EAS build: crash from missing cloud env vars (fixed)
+
+The user asked to preview the mobile app. A live Expo Go tunnel wasn't
+possible from this session (the environment's outbound TLS-intercepting
+proxy isn't trusted by `@expo/ngrok`'s bundled binary — `x509:
+certificate signed by unknown authority` — and Expo's own tunnel needs
+an Expo account login; neither is a thing to work around by disabling
+TLS verification). Built a real installable APK instead: linked the
+mobile app to a new EAS project
+(`quaresmaharijgens2026/231rentals-mobile`, `extra.eas.projectId` in
+`mobile/app.json`) using an Expo access token added via
+`request_credential`, then ran `eas build --platform android --profile
+preview`.
+
+The **first** build succeeded but crashed instantly on launch
+("231Rentals has stopped"). Root cause, confirmed from the build's own
+log output: EAS Build reads env vars from the EAS project's own
+dashboard, never from a local `.env.local` — so only
+`EXPO_PUBLIC_APP_URL` (set directly in `eas.json`'s profile `env`
+block) was present; `EXPO_PUBLIC_SUPABASE_URL`/
+`EXPO_PUBLIC_SUPABASE_ANON_KEY` were both `undefined`.
+`lib/supabase.ts` calls `createClient(supabaseEnv.url,
+supabaseEnv.anonKey, ...)` at module top-level with no guard, so
+`@supabase/supabase-js` throws synchronously on an undefined URL,
+crashing before any screen can render — this was always a latent bug
+in `mobile/lib/supabase.ts`'s module-load-time client construction, it
+just had never been exercised by a real cloud build before (local dev
+always had `.env.local` present).
+
+Fix: registered both variables on the EAS project's `preview`
+environment (`eas env:create`, anon key marked `sensitive`), confirmed
+via `eas env:list` that the next build's log shows both loaded, then
+ran a second build.
+
+- **Live-verified**: second build finished clean; confirmed via the
+  build log that both Supabase env vars loaded this time (the first
+  build's log only listed `EXPO_PUBLIC_APP_URL`). Gave the user the
+  new build's install link to confirm the crash is gone on their
+  device.
+- This resolves one more "Known production blocker" from this file:
+  "no EAS build was actually run" — one now has been, successfully,
+  for Android. iOS still needs the user's own Apple Developer account
+  (unchanged blocker).
+
 ## Mobile design fix: ported Claymorphism shadow/elevation system (was entirely flat)
 
 The user saw a screenshot of the (now-working, post-EAS-build) mobile
