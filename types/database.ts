@@ -551,7 +551,6 @@ export type ScoutPayout = {
   paid_at: string | null;
   created_at: string;
 };
-
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;

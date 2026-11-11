@@ -60,7 +60,6 @@ export default async function AdminScoutsPage() {
   for (const e of earnings ?? []) {
     if (e.status === "approved") approvedTotalsByScout.set(e.scout_id, (approvedTotalsByScout.get(e.scout_id) ?? 0) + Number(e.amount));
   }
-
   return (
     <div className="flex flex-col gap-10">
       <section>
