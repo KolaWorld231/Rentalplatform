@@ -3235,3 +3235,50 @@ field verification, and mobile parity remain later milestones.
   the reference-outcome form, each decision button (and that approving
   actually creates a `scouts` row with a unique `referral_code`), and
   that a rejected application's `reapply_after` is set correctly.
+
+## Scout Program Milestone 3: referral attribution + scout dashboard
+
+Builds on Milestone 2 (PR #30, not yet merged — this branches from it).
+**Scope cut, stated plainly**: of the spec's three referral-capture
+mechanisms, only the referral-code/link path is built. Scout-assisted
+listing invitations (a scout starting a listing for an owner) and the
+manual "I referred this owner" claim are both separate, real workflows
+left for a later milestone. Collusion/device-fingerprint fraud
+detection (spec §11) isn't built either — only the simple self-
+referral check. Referral capture is also password-signup only; phone/
+WhatsApp signup doesn't carry a `?ref=` code through yet.
+
+- Migration `20261110000200_scout_program_m3.sql`: `owner_referrals`
+  table (`owner_referral_source`/`owner_referral_status` enums), a hard
+  unique index on `owner_user_id` (one referral per owner, enforced at
+  the database level, not just in application code — "first verified
+  referral wins"). RLS: a scout reads only their own referrals (via
+  `scouts.user_id = auth.uid()`), the referred owner reads their own
+  single row, admin/moderator read all; every write stays service-role.
+- `lib/auth/actions.ts`: `registerAction` now accepts an optional
+  `refCode`, captured from a `?ref=` link on `/register`. On successful
+  owner signup, looks up the scout by `referral_code` and inserts a
+  `pending_confirmation` `owner_referrals` row — fire-and-forget, never
+  blocks registration if the code is invalid or the insert fails; blocks
+  self-referral (scout's own linked account can't credit itself).
+- `lib/scouts/referral-actions.ts`: `confirmScoutReferralAction`/
+  `declineScoutReferralAction` — the owner's own explicit confirm/
+  decline, required before a referral counts as real attribution.
+  Declining is final in this milestone.
+- `app/(auth)/onboarding/welcome/page.tsx`: shows the "Were you
+  introduced by {scout}?" confirmation when a pending referral exists
+  for the newly-registered owner.
+- `lib/scouts/dashboard-actions.ts`, `app/scouts/dashboard/page.tsx`:
+  a scout's own dashboard (referral link/code, referred-owner list with
+  status). Scouts don't get an account automatically on approval
+  (M2 leaves `scouts.user_id` null) — `claimScoutAccountAction` links
+  a logged-in user's account to their scout record only when their
+  `profiles.phone` exactly matches the phone on their original
+  application, the only linking mechanism built in this milestone.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` (including
+  `/scouts/dashboard`), `npm run test` (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm: registering via a `?ref=CODE` link
+  creates the pending referral, confirming/declining on the welcome
+  page updates its status, and a scout with a matching account phone
+  can claim and see their dashboard.
