@@ -1,4 +1,5 @@
 import "../global.css";
+import NetInfo from "@react-native-community/netinfo";
 import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, useFonts as useManrope } from "@expo-google-fonts/manrope";
 import {
   PlusJakartaSans_600SemiBold,
@@ -6,7 +7,7 @@ import {
   PlusJakartaSans_800ExtraBold,
   useFonts as usePlusJakartaSans,
 } from "@expo-google-fonts/plus-jakarta-sans";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useState } from "react";
@@ -14,11 +15,20 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AnimatedSplash from "../components/AnimatedSplash";
 import { NotificationsBootstrap } from "../components/NotificationsBootstrap";
+import { OfflineBanner } from "../components/ui/OfflineBanner";
 import { SessionProvider, useSession } from "../lib/auth/session";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+// Pauses/resumes React Query's own refetching on connectivity change --
+// the officially documented integration, not custom retry logic.
+onlineManager.setEventListener((setOnline) => {
+  return NetInfo.addEventListener((state) => {
+    setOnline(!!state.isConnected);
+  });
+});
 
 // AnimatedSplash itself hides the native splash (see its onLayout) once
 // it has laid out and is ready to paint its own first frame -- a single
@@ -31,6 +41,7 @@ function RootLayoutInner() {
   return (
     <>
       <NotificationsBootstrap />
+      <OfflineBanner />
       <Stack screenOptions={{ headerShown: false }} />
       {!splashDone && <AnimatedSplash isAppReady={!sessionLoading} onFinish={() => setSplashDone(true)} />}
     </>

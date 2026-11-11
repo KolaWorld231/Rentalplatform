@@ -3702,3 +3702,28 @@ already used in `components/ui/BrandMark.tsx`, web — same source file).
   simulator in this session; the user should confirm the handoff is
   seamless (no flash of blank/wrong color) and that reduced-motion shows
   the static fallback.
+
+## Mobile: offline/connectivity handling (UX audit F05, built)
+
+Previously, no offline/connectivity handling existed anywhere in the
+mobile app — every network failure looked identical to "no data" (see
+the UX-audit findings fixed in PR #26). Built per the audit's own
+scoping, now confirmed by the user:
+
+- Added `@react-native-community/netinfo` (`npx expo install`, resolved
+  to `12.0.1` for this Expo SDK).
+- `mobile/app/_layout.tsx`: wires it into TanStack Query's own
+  `onlineManager` (`onlineManager.setEventListener` → `NetInfo.
+  addEventListener`) — the officially documented integration, so
+  queries automatically pause/resume refetching on connectivity change;
+  no custom retry logic written.
+- `components/ui/OfflineBanner.tsx` (new): a small banner shown only
+  while `NetInfo` reports `isConnected === false`, rendered once near
+  the root alongside the tab/stack navigator. Deliberately separate
+  from any screen's own "couldn't load" error text (fixed in PR #26) —
+  a real server/query error still reads as a server error, not a vague
+  "offline" message that may not even be true.
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet live-verified** — no simulator in this session; the user
+  should confirm the banner appears/disappears on airplane-mode toggle
+  and that an in-flight query resumes once connectivity returns.
