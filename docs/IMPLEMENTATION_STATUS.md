@@ -3282,3 +3282,46 @@ WhatsApp signup doesn't carry a `?ref=` code through yet.
   creates the pending referral, confirming/declining on the welcome
   page updates its status, and a scout with a matching account phone
   can claim and see their dashboard.
+
+## Scout Program Milestone 4: earnings ledger + payouts
+
+Builds on Milestone 3 (PR #31, not yet merged — branches from it).
+**Scope cut, stated plainly**: only the verified-listing **bounty** is
+computed automatically. The **revenue-share** earning type exists in
+the schema and the admin workflow handles it like any other ledger
+entry, but nothing computes a `share` row yet — splitting 10% of net
+subscription revenue across the distinct owners a renter messaged
+during a subscription period is real money-math, and the spec itself
+lists the bounty/share/cap numbers as an open decision (§16) still
+needing the owner's sign-off, not something to compute automatically
+off an illustrative default. No payout provider is integrated either,
+per the spec's own instruction — this is a ledger + an admin "mark
+paid" attestation, never a real transfer.
+
+- Migration `20261110000300_scout_program_m4.sql`: `scout_earnings_ledger`
+  (append-only; a unique index on `owner_referral_id` where
+  `type='bounty'` is the idempotency guarantee — re-running the bounty
+  computation can never double-pay the same referral) and
+  `scout_payouts`. RLS: scout reads own, admin/moderator read all,
+  every write service-role.
+- `lib/scouts/earnings-actions.ts`: `computeBountyEarningsAction`
+  (admin-triggered — no cron/job-scheduler infrastructure exists in
+  this codebase, so this is a button, not a scheduled job; checks
+  identity-verified + a published listing whose availability was
+  reconfirmed `BOUNTY_CONFIRMED_AVAILABLE_AFTER_DAYS` after the
+  referral's confirmation + no open/investigating report against the
+  owner's properties, exactly per the spec's own trigger table),
+  `approveEarningAction`/`reverseEarningAction`, `recordPayoutAction`
+  (sums a scout's approved earnings, inserts one `scout_payouts` row,
+  marks those ledger rows `paid` — an admin attesting a real-world
+  payment happened, e.g. mobile money or cash, never an API call).
+- `app/admin/scouts/page.tsx`: new Earnings & payouts section —
+  compute button, pending/approved list with approve/reverse, and a
+  mark-paid form per scout with an outstanding approved balance.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm the bounty computation's
+  eligibility logic against a seeded confirmed referral + verified
+  owner + published, reconfirmed listing, and that re-running it
+  doesn't create a second bounty row for the same referral.
