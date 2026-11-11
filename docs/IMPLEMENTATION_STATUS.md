@@ -3315,3 +3315,96 @@ established in every prior milestone.
   declining a pending referral from the Home tab, and claiming a
   promoted scout account whose application phone matches the logged-
   in user's profile phone.
+
+## Scout Program: test suite (spec §15)
+
+Builds on Milestone 7 (`claude/scout-program-m7-mobile`). Two layers,
+both actually executed in this session (not just written):
+
+**1. Vitest unit tests** — `tests/unit/scouts-validation.test.ts` (24
+tests, all passing as part of the existing `npm run test` run, 84/84
+total): every edge case in `lib/validation/scouts.ts`'s Zod schemas —
+each `literal(true)` consent/confirmation field rejecting `false`,
+exactly-two-references enforcement, UUID area-id validation, phone/OTP
+format rules, and `scoutProgramSettingsSchema`'s numeric bounds.
+
+**2. DB-level RLS/constraint tests** — `supabase/local-shim/
+test_scout_program_rls.sql` (new, following the existing `test_m2..
+m8_rls.sql` convention for this sandboxed environment's Docker-less
+Postgres shim). This session actually started the local `postgresql`
+service, created a fresh `231rentals_dev` database, applied the auth
+shim and all 26 migrations in order, and ran the test file for real:
+**24 assertions, all PASS, 0 errors.** It covers the DB-enforced subset
+of the spec's §15 list:
+
+- Seat caps are enforced inside `submit_scout_application` itself (not
+  just decided client-side): filled an area with `seat_cap=2`, confirmed
+  the third application is `waitlisted` and `seats_filled` stops at 2.
+- Duplicate-phone applications are rejected.
+- `scout_applications`/`scout_references` are unreadable by any
+  non-admin client role, admin can read all, and no client role —
+  including an admin's own authenticated session — can insert into
+  either table directly (service-role/RPC only).
+- A scout can read only their own `scouts` row.
+- Referral attribution: self-referral is silently blocked (no row
+  inserted); a real owner's first attribution succeeds; a second
+  attribution attempt for the same owner is a no-op, backed by a hard
+  unique-index test (a direct duplicate insert, bypassing the RPC,
+  still raises `unique_violation`); a stranger cannot confirm/decline
+  someone else's referral; the actual referred owner declining sets
+  `status='declined'` with `is_payable` staying `false`, and a decided
+  referral cannot be re-decided; no client role can insert
+  `owner_referrals` directly.
+- Earnings: the unique index preventing a duplicate bounty for the same
+  `owner_referral_id` is exercised directly (a second insert raises
+  `unique_violation`) — the actual guarantee a re-run of
+  `computeBountyEarningsAction` relies on; a scout can read their own
+  ledger entries but not edit them (append-only); a stranger cannot read
+  another scout's ledger; `scout_payouts` is admin/service-role
+  write-only.
+- `scout_program_settings` is readable by any authenticated user,
+  writable only via service-role.
+- The two new M7 RPCs: `find_claimable_scout_id()` returns null for a
+  non-matching caller and the correct id for a matching one;
+  `claim_scout_account()` links only on an exact phone match and is a
+  safe no-op (never reassigns) when called again by someone else.
+
+**A real bug was found and fixed by this pass**: `respond_to_scout_referral`
+(added in Milestone 7, `20261110000600_scout_program_m7_mobile.sql`)
+had an untyped `CASE 'confirmed' / 'declined' END` in its `UPDATE ...
+SET status = ...` — Postgres can't infer the enum cast in that position,
+so every call raised `column "status" is of type owner_referral_status
+but expression is of type text`. This had shipped in the M7 migration
+without ever being exercised. Fixed by casting both branches explicitly
+(`'confirmed'::public.owner_referral_status`); re-ran the full test file
+afterward to confirm the fix and catch no new regressions.
+
+**Deliberately not covered here, with why** (so this isn't silently
+treated as full §15 coverage):
+- *Phone verified before entering review* and *bounty only after
+  verified owner + published + 30-day confirmed listing* — both live as
+  TypeScript logic in `lib/scouts/actions.ts` /
+  `lib/scouts/earnings-actions.ts` (a request-time challenge lookup and a
+  multi-table Supabase query respectively), not SQL. Testing them
+  properly needs a mocked Supabase client at the Vitest level — a
+  separate, larger piece of work than this pass, not attempted here.
+- *Revenue-share computation* and *fake-renter-farming/collusion
+  fraud holds* — not built yet, per the spec's own documented scope
+  cuts in Milestones 4 and (never built) anti-fraud work. Nothing to
+  test.
+- *Probation blocks auto-publish* — true only because no code path
+  anywhere auto-publishes a listing on scout promotion; there's no
+  meaningful RLS/constraint assertion for the absence of a feature.
+- *Full E2E* (public form → admin approval → referral → earnings
+  release) — needs a running app exercising real HTTP/Server Actions,
+  not a psql script; not attempted in this session.
+- Mobile's own three M7 RPCs are exercised here at the SQL level
+  (`attribute_scout_referral`, `respond_to_scout_referral`,
+  `claim_scout_account`, `find_claimable_scout_id`) but the mobile
+  screens that call them (`mobile/app/scouts/*.tsx`) are still only
+  typecheck/lint-verified, not run on a device/simulator — same
+  disclosed gap as Milestone 7's own entry above.
+
+`npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+(84/84, including the 24 new scout validation tests) all clean on the
+web app after the `respond_to_scout_referral` fix.
