@@ -505,7 +505,6 @@ export type Scout = {
   created_at: string;
   updated_at: string;
 };
-
 export type ScoutApplicationOtpChallenge = {
   id: string;
   phone: string;
