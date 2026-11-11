@@ -1,14 +1,28 @@
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { requireUser, getCurrentUserRoles } from "@/lib/auth/session";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { confirmScoutReferralAction, declineScoutReferralAction } from "@/lib/scouts/referral-actions";
+import { scoutProgram } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
 
 export default async function OnboardingWelcomePage() {
-  await requireUser("/onboarding/welcome");
+  const user = await requireUser("/onboarding/welcome");
   const roles = await getCurrentUserRoles();
   const isOwner = roles.includes("owner");
+
+  const admin = createServiceRoleClient();
+  const { data: pendingReferral } = isOwner
+    ? await admin
+        .from("owner_referrals")
+        .select("id, scouts(display_name)")
+        .eq("owner_user_id", user.id)
+        .eq("status", "pending_confirmation")
+        .maybeSingle()
+    : { data: null };
+  const scoutName = (pendingReferral as { scouts: { display_name: string } | null } | null)?.scouts?.display_name;
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6 text-center">
@@ -23,6 +37,26 @@ export default async function OnboardingWelcomePage() {
             : "Your account is ready. Browsing and searching are free; unlock direct messaging whenever you're ready."}
         </p>
       </div>
+
+      {scoutName && pendingReferral && (
+        <Card className="w-full p-6 text-left">
+          <p className="text-sm text-charcoal-700">
+            Were you introduced by a {scoutProgram.name} scout, <strong>{scoutName}</strong>?
+          </p>
+          <div className="mt-3 flex gap-2">
+            <form action={confirmScoutReferralAction.bind(null, (pendingReferral as { id: string }).id)}>
+              <Button type="submit" variant="primary" size="sm">
+                Yes, that&apos;s right
+              </Button>
+            </form>
+            <form action={declineScoutReferralAction.bind(null, (pendingReferral as { id: string }).id)}>
+              <Button type="submit" variant="ghost" size="sm">
+                I wasn&apos;t referred
+              </Button>
+            </form>
+          </div>
+        </Card>
+      )}
 
       <Card className="w-full p-6 text-left">
         <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Next step</p>

@@ -2315,11 +2315,12 @@ credentials or input, not more engineering time against this codebase.
   graphic, or store description/keywords exist yet — needs real
   device screenshots and marketing copy decisions from the project
   owner, not fabricated placeholders.
-- **Mobile EAS build/signing credentials**: no Expo/EAS account or
-  Apple/Google signing credentials exist in this environment, so no
-  EAS build was actually run — `mobile/eas.json`'s three profiles
-  (development/preview/production) are configured and ready, but
-  untested end-to-end pending those credentials.
+- **Mobile EAS build/signing credentials**: **partially resolved** —
+  an Expo account now exists and an Android `preview` build has run
+  successfully end-to-end (EAS-managed keystore, auto-generated; see
+  the dated entry above). No Apple Developer account exists yet, so
+  an iOS build and Play Store-ready signing are still blocked on the
+  project owner.
 - **MTN MoMo production credentials**: `lib/payments/providers/mtn-momo.ts`
   is built and live-sync'd between web and mobile (see the dated entry
   below), but no real MTN MoMo subscription key/API user/API key exist
@@ -2975,6 +2976,757 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
+## First real EAS build: crash from missing cloud env vars (fixed)
+
+The user asked to preview the mobile app. A live Expo Go tunnel wasn't
+possible from this session (the environment's outbound TLS-intercepting
+proxy isn't trusted by `@expo/ngrok`'s bundled binary — `x509:
+certificate signed by unknown authority` — and Expo's own tunnel needs
+an Expo account login; neither is a thing to work around by disabling
+TLS verification). Built a real installable APK instead: linked the
+mobile app to a new EAS project
+(`quaresmaharijgens2026/231rentals-mobile`, `extra.eas.projectId` in
+`mobile/app.json`) using an Expo access token added via
+`request_credential`, then ran `eas build --platform android --profile
+preview`.
+
+The **first** build succeeded but crashed instantly on launch
+("231Rentals has stopped"). Root cause, confirmed from the build's own
+log output: EAS Build reads env vars from the EAS project's own
+dashboard, never from a local `.env.local` — so only
+`EXPO_PUBLIC_APP_URL` (set directly in `eas.json`'s profile `env`
+block) was present; `EXPO_PUBLIC_SUPABASE_URL`/
+`EXPO_PUBLIC_SUPABASE_ANON_KEY` were both `undefined`.
+`lib/supabase.ts` calls `createClient(supabaseEnv.url,
+supabaseEnv.anonKey, ...)` at module top-level with no guard, so
+`@supabase/supabase-js` throws synchronously on an undefined URL,
+crashing before any screen can render — this was always a latent bug
+in `mobile/lib/supabase.ts`'s module-load-time client construction, it
+just had never been exercised by a real cloud build before (local dev
+always had `.env.local` present).
+
+Fix: registered both variables on the EAS project's `preview`
+environment (`eas env:create`, anon key marked `sensitive`), confirmed
+via `eas env:list` that the next build's log shows both loaded, then
+ran a second build.
+
+- **Live-verified**: second build finished clean; confirmed via the
+  build log that both Supabase env vars loaded this time (the first
+  build's log only listed `EXPO_PUBLIC_APP_URL`). Gave the user the
+  new build's install link to confirm the crash is gone on their
+  device.
+- This resolves one more "Known production blocker" from this file:
+  "no EAS build was actually run" — one now has been, successfully,
+  for Android. iOS still needs the user's own Apple Developer account
+  (unchanged blocker).
+
+## Mobile design fix: ported Claymorphism shadow/elevation system (was entirely flat)
+
+The user saw a screenshot of the (now-working, post-EAS-build) mobile
+home screen and said the UI read as unprofessional/"EVERYTHING IS JUST
+FLAT". Root cause: `mobile/tailwind.config.js` correctly hand-ports
+web's Claymorphism color/radius tokens from `app/globals.css`, but had
+zero `boxShadow` entries, and a repo-wide grep found zero RN
+shadow/elevation props anywhere in `mobile/`. The two existing
+`shadow-[var(--shadow-clay-raised)]` usages (`verification.tsx`,
+`pricing.tsx`) were dead code — NativeWind has no CSSOM, so a
+`var(--...)` reference never resolves. The pure-black dark background
+itself was already correct (matches web's own dark `--background`);
+the real gap was the total absence of depth on foreground surfaces.
+
+Fix (additive, no background-color changes):
+- Added four `boxShadow` tokens to `tailwind.config.js`
+  (`subtle`/`raised`/`floating`/`modal`) — single-layer translations of
+  web's six shadow tokens, since NativeWind/RN only support one shadow
+  layer per view (no multi-layer, no inset). `clay-inset`/`clay-raised`
+  were deliberately not ported as generic utilities for that reason.
+- `Card` now defaults to `shadow-raised`; `Button`'s filled variants
+  (`primary`/`clay`/`danger`) get `shadow-raised active:shadow-subtle`,
+  `secondary` gets `shadow-subtle`, `ghost` stays shadowless.
+- `Input` approximates web's inset shadow with a new `well`
+  color token (one step darker than `surface`/`charcoal-700`) instead
+  of a real shadow — RN has no inset-shadow support, and an outward
+  shadow on a text field would read as raised, the wrong semantic.
+- `PropertyCard` needed restructuring, not just a class: its single
+  `Pressable` combined `overflow-hidden` (to clip the cover photo)
+  with where the shadow needed to live, and `overflow-hidden` clips
+  shadows on the same iOS layer. Split into an outer shadow-carrying
+  `Pressable` (required — `Link asChild` forwards press handling to
+  its one direct child) and an inner `overflow-hidden` wrapper for the
+  image/content.
+- Fixed the two dead `shadow-[var(--shadow-clay-raised)]` usages to
+  `shadow-floating`.
+- Found and fixed a real, separate bug while touching the tab bar
+  (`app/(tabs)/_layout.tsx`): `tabBarStyle` is a plain React Navigation
+  style object, not a NativeWind className, so it never received any
+  shadow and its `backgroundColor` was hardcoded white regardless of
+  color scheme — the tab bar stayed white even in dark mode. Added a
+  `useColorScheme()`-driven background/border and hardcoded the
+  resolved `floating`-tier native shadow props inline (NativeWind's
+  config doesn't reach this style object).
+- Verified: `npx tsc --noEmit` and `npm run lint` clean on mobile.
+  **Not yet live-verified in a running app** — this session has no
+  iOS/Android simulator access; the user should confirm visually on
+  their device/EAS build (per `docs/IMPLEMENTATION_STATUS.md`'s own
+  "don't report a test as passing unless it was actually run" rule,
+  this is disclosed here rather than claimed).
+
+## Mobile: Tinder-style swipe browsing mode (adds to Picks/favourites)
+
+Built on top of the shadow-fix branch (depends on its `shadow-raised`/
+`shadow-subtle` tokens). The user asked for a swipe-right/swipe-left way
+to browse search results on mobile, with "yes" swipes landing in a
+"Picks" list they can navigate and reach out from. This mapped almost
+entirely onto what already existed, confirmed via an Explore pass
+before building:
+
+- **"Picks" is the existing favourites mechanism** — `mobile/app/(tabs)
+  /saved.tsx` already renders the user's favourited properties
+  (`property_favourites`, RLS-scoped to the owning user); no new list
+  screen was built.
+- **Reaching out already worked** — the existing inline contact form on
+  `mobile/app/property/[slug].tsx` (same subscription-gated
+  `startOrContinueConversation` as web) is reached by tapping a card in
+  Saved; no new messaging logic was built.
+- Added `addFavourite()` (`mobile/lib/properties/service.ts`) alongside
+  the existing `toggleFavourite()` — an **add-only** upsert
+  (`ON CONFLICT ... DO NOTHING`) so a swipe-right can never accidentally
+  un-pick a property that's already a favourite. `toggleFavourite`
+  itself is untouched.
+- Found `react-native-gesture-handler`/`react-native-reanimated` were
+  installed but the app was **never wrapped in
+  `GestureHandlerRootView`** — fixed in `mobile/app/_layout.tsx`, a
+  required (not swipe-specific) root-layout fix.
+- Split `PropertyCard.tsx` into a new presentational
+  `PropertyCardContent.tsx` (image/price/title/location markup, no
+  gesture/navigation wrapper) + `PropertyCard.tsx` (unchanged tap-to-
+  navigate behavior), so the new swipeable card could reuse the same
+  markup without forcing `PropertyCard`'s `Link`/`Pressable` into a
+  draggable role.
+- New `SwipeCard.tsx` (pan gesture, rotate/translate drag, fling-off
+  threshold, YES/NO overlay badges using the existing `success-*`/
+  `error-*` tokens) and `SwipeDeck.tsx` (fetches pages via the existing
+  `searchProperties`, excludes already-favourited properties via the
+  existing `getFavouritedPropertyIds`, calls `addFavourite` on swipe-
+  right, advances with no DB write at all on swipe-left, on-screen
+  Yes/No buttons as a non-gesture alternative, end-of-deck empty state).
+- `mobile/app/(tabs)/search.tsx` gets a Grid/Swipe toggle, shown **only
+  to logged-in users** (confirmed with the user — guests only ever see
+  the plain grid, matching how Saved/Picks already gates on login);
+  Swipe mode shares the screen's existing filter state/query, it does
+  not duplicate search UI.
+- Confirmed with the user and intentionally **not** built: skip
+  ("no") persistence — a left swipe is purely client-side with no
+  record kept, so a skipped property can resurface in a later session;
+  this was an explicit, accepted decision, not an oversight.
+- Verified: `npx tsc --noEmit` and `npm run lint` clean on mobile.
+  **Not yet live-verified in a running app** — no simulator access in
+  this session; needs on-device confirmation (swipe right adds to
+  Saved/Picks, swipe left advances with no network call, running out of
+  cards loads more or shows the end state, on-screen buttons behave
+  identically to a finger swipe, an already-favourited property never
+  appears as a card, guests see no Swipe toggle at all).
+## Scout Program Milestone 1: data model + public application flow ("Rental HunterZ")
+
+`docs/SCOUT_PROGRAM.md` is the full spec (previously saved, not yet
+built). This milestone covers only the Postgres data model and a
+working public application flow — everything else in the spec (admin
+review queue, probation, referral attribution, earnings ledger,
+payouts, field verification, mobile parity) is a later milestone.
+Applications land in `applied`/`waitlisted` status with nothing yet to
+move them further.
+
+- Migration `supabase/migrations/20261109000500_scout_program_m1.sql`:
+  `scout_areas` (admin-curated pilot areas with `seat_cap`/
+  `seats_filled`, seeded with 3 clearly-labeled placeholder rows —
+  swap for real pilot neighbourhoods once the owner has them),
+  `scout_applications`, `scout_references`, and
+  `scout_application_otp_challenges` (pre-account phone verification,
+  modeled on the existing `whatsapp_otp_challenges` table — applicants
+  have no account yet). Also alters `admin_audit_logs.actor_id` to
+  nullable, since an applicant's own submission has no admin/user actor.
+  RLS on every new table: no anon/authenticated policy grants a write
+  anywhere — all writes go through `lib/scouts/actions.ts` via the
+  service-role client, matching the existing service-role-only
+  precedent. A new `submit_scout_application` RPC does the duplicate
+  check, area seat-cap decision, application + reference inserts, and
+  the `seats_filled` increment atomically (`for update` row lock),
+  reusing the transactional-RPC pattern from
+  `20261107000200_mobile_checkout_rpc.sql`.
+- `lib/validation/scouts.ts`: `scoutApplicationSchema` and the OTP
+  request/verify schemas, reusing `phoneNumberSchema` from
+  `lib/validation/auth.ts` rather than redefining it.
+- `lib/scouts/actions.ts`: `startScoutApplicationOtpAction` (rate-
+  limited 3 per 10 minutes per phone — there's no `auth.uid()` for an
+  anonymous applicant, so this is keyed on phone, not the authenticated-
+  sender pattern `services/messaging.ts` uses), `verifyScoutApplicationOtpAction`
+  (5-attempt cap, 10-minute TTL), `submitScoutApplicationAction` (re-
+  checks the phone was verified within the last 30 minutes before
+  calling the RPC, writes to `admin_audit_logs` with `actor_id: null`).
+- **Disclosed, intentional gaps, not silent omissions**: no SMS
+  provider is configured yet (`lib/scouts/scout-sms.ts` throws rather
+  than fabricating a "sent" success, same rule as payments and
+  WhatsApp OTP — see `docs/AUTH_ALTERNATIVES.md`; in non-production
+  environments only, the generated code is logged to the console so
+  the flow can be exercised locally). No CAPTCHA and no per-IP rate
+  limiting either — neither mechanism exists anywhere in this codebase
+  today, and both need their own infrastructure/credential decisions;
+  per-phone rate limiting is the only abuse mitigation in this
+  milestone.
+- `app/scouts/page.tsx` (public info, honest copy only, no invented
+  stats), `app/scouts/apply/page.tsx` + `components/scouts/
+  ScoutApplyForm.tsx`/`ScoutPhoneVerify.tsx` (the application form,
+  phone-OTP-gated before submission, confirmation screen with a
+  reference code). Footer gets one new "Become a Scout" link.
+- Brand config: `scoutProgram.name = "Rental HunterZ"` in
+  `lib/config/brand.ts` (the spec's "Key Scouts" was only ever a
+  placeholder) — both new pages read this, never hard-code the name.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean.
+- **Not yet live-verified against a running local Supabase instance**
+  (`supabase db reset` + manual pass seeding a near-full pilot area,
+  exercising the rate limit/attempt-cap/TTL rejections, and reading the
+  dev-console-logged OTP code) — flagged here rather than claimed,
+  same convention as every other unverified change in this file.
+
+## Scout Program Milestone 2: admin review queue + probation
+
+Builds on Milestone 1 (PR #24, not yet merged — this branches from it,
+not `main`). M1 landed applications in `applied`/`waitlisted` with
+nothing to move them further; M2 adds the admin review workflow and
+the `scouts` table itself. Referral attribution, earnings/payouts,
+field verification, and mobile parity remain later milestones.
+
+- Migration `20261110000100_scout_program_m2.sql`: extends
+  `scout_application_status` with `under_review`/`rejected`/`approved`;
+  adds `scout_status`, `scout_reference_outcome`, and
+  `scout_verification_step_{type,status}` enums; adds `reapply_after`/
+  `decision_reason`/`decided_by`/`decided_at` to `scout_applications`;
+  adds `contacted_at`/`outcome`/`notes`/`reviewed_by` to
+  `scout_references`; new `scout_verification_steps` and `scouts`
+  tables. RLS: admin/moderator-select only (plus a forward-compatible
+  self-select on `scouts` once a scout has a linked account, which
+  nothing writes yet) — every write stays service-role-only, same
+  precedent as every other admin/moderation action in this codebase
+  (`lib/admin/audit.ts`'s `recordAdminAction` pattern).
+- **Scope note**: `scout_verification_steps.document_storage_path`
+  exists per the spec's own data model, but the identity-check evidence
+  *upload* (private bucket + signed URLs) is explicitly not built in
+  this milestone — real, separate work, and the spec itself marks the
+  identity check as "optional per setting." Nothing in M2 writes to
+  that column.
+- `app/admin/scouts/actions.ts`: `recordReferenceOutcomeAction`,
+  `recordVerificationStepAction`, `decideScoutApplicationAction`
+  (approve-to-probation / waitlist / reject, admin-only — moderators
+  can record reference/verification outcomes but not make the final
+  call), `setScoutStatusAction` (active/suspended/removed/resigned).
+  All follow this codebase's existing admin-action shape exactly:
+  `requireAnyRole` re-check, service-role write, `recordAdminAction`,
+  `revalidatePath`.
+- `app/admin/scouts/page.tsx`: pending applications with inline
+  reference-outcome recording and decision buttons, plus a scouts list
+  with probation→active/suspended controls. Added to `AdminNav` with a
+  real pending-count badge (reused aggregate pattern, not fabricated).
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` (including
+  `/admin/scouts`), `npm run test` (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm against a real/seeded application:
+  the reference-outcome form, each decision button (and that approving
+  actually creates a `scouts` row with a unique `referral_code`), and
+  that a rejected application's `reapply_after` is set correctly.
+
+## Scout Program Milestone 3: referral attribution + scout dashboard
+
+Builds on Milestone 2 (PR #30, not yet merged — this branches from it).
+**Scope cut, stated plainly**: of the spec's three referral-capture
+mechanisms, only the referral-code/link path is built. Scout-assisted
+listing invitations (a scout starting a listing for an owner) and the
+manual "I referred this owner" claim are both separate, real workflows
+left for a later milestone. Collusion/device-fingerprint fraud
+detection (spec §11) isn't built either — only the simple self-
+referral check. Referral capture is also password-signup only; phone/
+WhatsApp signup doesn't carry a `?ref=` code through yet.
+
+- Migration `20261110000200_scout_program_m3.sql`: `owner_referrals`
+  table (`owner_referral_source`/`owner_referral_status` enums), a hard
+  unique index on `owner_user_id` (one referral per owner, enforced at
+  the database level, not just in application code — "first verified
+  referral wins"). RLS: a scout reads only their own referrals (via
+  `scouts.user_id = auth.uid()`), the referred owner reads their own
+  single row, admin/moderator read all; every write stays service-role.
+- `lib/auth/actions.ts`: `registerAction` now accepts an optional
+  `refCode`, captured from a `?ref=` link on `/register`. On successful
+  owner signup, looks up the scout by `referral_code` and inserts a
+  `pending_confirmation` `owner_referrals` row — fire-and-forget, never
+  blocks registration if the code is invalid or the insert fails; blocks
+  self-referral (scout's own linked account can't credit itself).
+- `lib/scouts/referral-actions.ts`: `confirmScoutReferralAction`/
+  `declineScoutReferralAction` — the owner's own explicit confirm/
+  decline, required before a referral counts as real attribution.
+  Declining is final in this milestone.
+- `app/(auth)/onboarding/welcome/page.tsx`: shows the "Were you
+  introduced by {scout}?" confirmation when a pending referral exists
+  for the newly-registered owner.
+- `lib/scouts/dashboard-actions.ts`, `app/scouts/dashboard/page.tsx`:
+  a scout's own dashboard (referral link/code, referred-owner list with
+  status). Scouts don't get an account automatically on approval
+  (M2 leaves `scouts.user_id` null) — `claimScoutAccountAction` links
+  a logged-in user's account to their scout record only when their
+  `profiles.phone` exactly matches the phone on their original
+  application, the only linking mechanism built in this milestone.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` (including
+  `/scouts/dashboard`), `npm run test` (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm: registering via a `?ref=CODE` link
+  creates the pending referral, confirming/declining on the welcome
+  page updates its status, and a scout with a matching account phone
+  can claim and see their dashboard.
+
+## Scout Program Milestone 4: earnings ledger + payouts
+
+Builds on Milestone 3 (PR #31, not yet merged — branches from it).
+**Scope cut, stated plainly**: only the verified-listing **bounty** is
+computed automatically. The **revenue-share** earning type exists in
+the schema and the admin workflow handles it like any other ledger
+entry, but nothing computes a `share` row yet — splitting 10% of net
+subscription revenue across the distinct owners a renter messaged
+during a subscription period is real money-math, and the spec itself
+lists the bounty/share/cap numbers as an open decision (§16) still
+needing the owner's sign-off, not something to compute automatically
+off an illustrative default. No payout provider is integrated either,
+per the spec's own instruction — this is a ledger + an admin "mark
+paid" attestation, never a real transfer.
+
+- Migration `20261110000300_scout_program_m4.sql`: `scout_earnings_ledger`
+  (append-only; a unique index on `owner_referral_id` where
+  `type='bounty'` is the idempotency guarantee — re-running the bounty
+  computation can never double-pay the same referral) and
+  `scout_payouts`. RLS: scout reads own, admin/moderator read all,
+  every write service-role.
+- `lib/scouts/earnings-actions.ts`: `computeBountyEarningsAction`
+  (admin-triggered — no cron/job-scheduler infrastructure exists in
+  this codebase, so this is a button, not a scheduled job; checks
+  identity-verified + a published listing whose availability was
+  reconfirmed `BOUNTY_CONFIRMED_AVAILABLE_AFTER_DAYS` after the
+  referral's confirmation + no open/investigating report against the
+  owner's properties, exactly per the spec's own trigger table),
+  `approveEarningAction`/`reverseEarningAction`, `recordPayoutAction`
+  (sums a scout's approved earnings, inserts one `scout_payouts` row,
+  marks those ledger rows `paid` — an admin attesting a real-world
+  payment happened, e.g. mobile money or cash, never an API call).
+- `app/admin/scouts/page.tsx`: new Earnings & payouts section —
+  compute button, pending/approved list with approve/reverse, and a
+  mark-paid form per scout with an outstanding approved balance.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm the bounty computation's
+  eligibility logic against a seeded confirmed referral + verified
+  owner + published, reconfirmed listing, and that re-running it
+  doesn't create a second bounty row for the same referral.
+
+## Scout Program Milestone 5: field verification schema (flag off)
+
+Builds on Milestone 2 (branches from `claude/scout-program-m4`). Spec
+§9's field verification is feature-flagged off by default
+(`SCOUT_FIELD_VERIFICATION_ENABLED = false` in
+`lib/validation/scouts.ts`) — this milestone gives the schema a real
+home but deliberately does **not** build the scout-facing submission
+flow (in-app camera capture, on-device photo compression, the
+checklist UI) or an admin review UI, since there's no live path that
+produces rows for either to act on yet. That's a real, separate
+feature (comparable in scope to the existing identity/property
+verification upload flows) — building speculative UI for a flag
+that's off would be exactly the "half-finished implementation" this
+project avoids.
+
+- Migration `20261110000400_scout_program_m5.sql`: `scout_visit_reports`
+  table (checklist jsonb, notes, `photo_paths`, status, `reviewed_by`).
+  RLS: scout reads own, admin/moderator read all, every write
+  service-role (same pattern as every other scout table).
+- The exact "Field visited" label wording from the spec is recorded as
+  `SCOUT_FIELD_VISITED_LABEL_TEMPLATE`, so whenever this is built, the
+  copy doesn't drift from what the spec requires (never implying
+  ownership verification on its own).
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean — no behavior change, schema-and-flag only.
+
+## Scout Program: admin-configurable settings (bounty/share/cap/payout/tax)
+
+User confirmed: the bounty amount, revenue-share %, share duration,
+monthly cap, payout provider, and tax-treatment notes are settled by
+the project owner in the admin console, not hardcoded or decided here.
+Builds on Milestone 5 (branches from `claude/scout-program-m5`).
+
+- Migration `20261110000500_scout_program_m6_settings.sql`: a
+  single-row `scout_program_settings` table (enforced singleton via a
+  `check (id)` constraint on a boolean primary key), seeded with the
+  spec's own illustrative defaults ($2 bounty, 10% share, 6 months) —
+  explicitly a starting point, not a final figure, editable
+  immediately. Readable by any authenticated user (so a scout's own
+  dashboard can show the real current bounty rather than a guess, per
+  the spec's "amounts depend on verified activity and can change"
+  rule); writable only via the admin Server Action below.
+- Removed the `BOUNTY_AMOUNT_USD` code constant from
+  `lib/validation/scouts.ts` — `computeBountyEarningsAction`
+  (`lib/scouts/earnings-actions.ts`) now reads it live from
+  `scout_program_settings` on every run. The 30-day confirmed-
+  available waiting period stays a code constant — it's the bounty
+  trigger's fixed timing rule, not one of the settings the spec calls
+  out as admin-editable.
+- `lib/scouts/settings-actions.ts`'s `updateScoutProgramSettingsAction`
+  + `app/admin/scouts/settings/page.tsx`: the admin form. Payout
+  provider/method notes and tax-treatment notes are plain admin-
+  entered text — policy the project owner records here, not something
+  this migration or action computes, enforces, or wires to any real
+  payout API (still none integrated, per the spec's own instruction).
+- `app/admin/scouts/page.tsx`: links to the new Settings page, replaces
+  the "illustrative defaults, see the spec" note with a pointer to the
+  actual settings UI.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` (including
+  `/admin/scouts/settings`), `npm run test` (60/60) all clean.
+- **Not yet live-verified** — no local Supabase instance in this
+  session; the user should confirm saving settings updates the
+  singleton row and that a subsequent bounty computation uses the new
+  amount.
+
+## Scout Program: mobile parity (Milestone 7)
+
+Branches from `claude/scout-program-m6-settings`. Mirrors the web
+Scout Program flows on mobile; admin review/settings stay web-only, as
+established in every prior milestone.
+
+- Migration `20261110000600_scout_program_m7_mobile.sql`: four new
+  `SECURITY DEFINER` RPCs, each scoped to `auth.uid()` read from the
+  caller's own JWT (never an argument), mirroring the existing
+  `grant_owner_role_to_self()` pattern this project already uses for
+  privileged-but-self-scoped mobile writes:
+  - `attribute_scout_referral(p_ref_code)` — attributes an
+    `owner_referrals` row at signup; silently no-ops on an unknown
+    code or a self-referral, same as web's
+    `attributeScoutReferral`.
+  - `respond_to_scout_referral(p_referral_id, p_confirm)` — confirms
+    or declines a pending referral, scoped to
+    `owner_user_id = auth.uid()` and `status = 'pending_confirmation'`.
+  - `claim_scout_account(p_scout_id)` — links an unclaimed `scouts` row
+    to the caller only when their `profiles.phone` exactly matches the
+    application's phone.
+  - `find_claimable_scout_id()` — since the existing `scouts_select_self`
+    RLS policy only lets a caller see a scout row that's already
+    theirs, mobile has no way to discover an unclaimed match the way
+    web's dashboard page does via service-role. This returns just the
+    matching scout's id (or null), scoped the same way
+    `claim_scout_account` is, so the caller learns nothing beyond "a
+    match exists."
+  The scout *application* flow (phone OTP + submission) is different —
+  the applicant has no account yet, so there's no `auth.uid()` to
+  scope an RPC to. That flow is proxied through four new
+  `app/api/mobile/scouts/*` routes (`areas`, `otp/start`, `otp/verify`,
+  `apply`), unauthenticated by design, each calling the existing
+  `lib/scouts/actions.ts` Server Actions directly — same pattern as
+  the pre-existing `app/api/mobile/whatsapp-otp/*` routes.
+- `mobile/lib/database.types.ts`: added `Scout`/`OwnerReferral` types,
+  their status unions, corresponding (read-only from mobile's
+  perspective) `TableDef`s, and the four new RPCs' signatures.
+- `mobile/lib/validation/scouts.ts`, `mobile/lib/scouts/service.ts`
+  (new): hand-ported subset of the web validation schema plus thin
+  wrappers — `fetch` calls to the new API routes for the
+  application flow, direct Supabase reads/RPC calls for everything
+  else (dashboard reads, referral attribution/response, account
+  claim), kept in sync by hand per this project's established
+  web/mobile duplication convention.
+- `mobile/app/scouts/index.tsx`, `apply.tsx`, `dashboard.tsx` (new):
+  mirror web's `/scouts`, `/scouts/apply`, `/scouts/dashboard`. The
+  apply screen follows the same phase flow as web's `ScoutApplyForm`
+  (details → request OTP → verify OTP → submit → confirmation); the
+  dashboard screen shows status, referral link/code, and a "claim my
+  scout dashboard" prompt when `find_claimable_scout_id()` finds a
+  match.
+- `mobile/app/(auth)/register.tsx`: reads an optional `?ref=` deep-link
+  param via `useLocalSearchParams` and, after a successful
+  registration, calls `attribute_scout_referral` (best-effort — an
+  unknown/self-referral code is silently ignored by the RPC itself).
+- `mobile/app/(tabs)/index.tsx` (Home tab): added a pending-referral
+  confirm/decline card (mobile has no onboarding/welcome screen
+  equivalent to web's, so Home — the first screen after registration —
+  is the natural insertion point instead) and a "Become a Scout" link.
+  Also removed a stale "Owner mode lands in a later milestone" line
+  that contradicted the working Owner mode link directly above it,
+  noticed while editing this screen.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean on the web app; `npx tsc --noEmit` and `npm run
+  lint` clean on mobile (no mobile `build`/`test` script exists in
+  this project — mobile verification has always been typecheck+lint
+  only, same as every prior mobile change this session).
+- **Not live-verified** — no simulator/device and no local Supabase
+  instance in this session. Before shipping, exercise end-to-end: the
+  application OTP/submit flow against a seeded open area, referral
+  attribution via a deep-linked `?ref=` registration, confirming/
+  declining a pending referral from the Home tab, and claiming a
+  promoted scout account whose application phone matches the logged-
+  in user's profile phone.
+
+## Scout Program: test suite (spec §15)
+
+Builds on Milestone 7 (`claude/scout-program-m7-mobile`). Two layers,
+both actually executed in this session (not just written):
+
+**1. Vitest unit tests** — `tests/unit/scouts-validation.test.ts` (24
+tests, all passing as part of the existing `npm run test` run, 84/84
+total): every edge case in `lib/validation/scouts.ts`'s Zod schemas —
+each `literal(true)` consent/confirmation field rejecting `false`,
+exactly-two-references enforcement, UUID area-id validation, phone/OTP
+format rules, and `scoutProgramSettingsSchema`'s numeric bounds.
+
+**2. DB-level RLS/constraint tests** — `supabase/local-shim/
+test_scout_program_rls.sql` (new, following the existing `test_m2..
+m8_rls.sql` convention for this sandboxed environment's Docker-less
+Postgres shim). This session actually started the local `postgresql`
+service, created a fresh `231rentals_dev` database, applied the auth
+shim and all 26 migrations in order, and ran the test file for real:
+**24 assertions, all PASS, 0 errors.** It covers the DB-enforced subset
+of the spec's §15 list:
+
+- Seat caps are enforced inside `submit_scout_application` itself (not
+  just decided client-side): filled an area with `seat_cap=2`, confirmed
+  the third application is `waitlisted` and `seats_filled` stops at 2.
+- Duplicate-phone applications are rejected.
+- `scout_applications`/`scout_references` are unreadable by any
+  non-admin client role, admin can read all, and no client role —
+  including an admin's own authenticated session — can insert into
+  either table directly (service-role/RPC only).
+- A scout can read only their own `scouts` row.
+- Referral attribution: self-referral is silently blocked (no row
+  inserted); a real owner's first attribution succeeds; a second
+  attribution attempt for the same owner is a no-op, backed by a hard
+  unique-index test (a direct duplicate insert, bypassing the RPC,
+  still raises `unique_violation`); a stranger cannot confirm/decline
+  someone else's referral; the actual referred owner declining sets
+  `status='declined'` with `is_payable` staying `false`, and a decided
+  referral cannot be re-decided; no client role can insert
+  `owner_referrals` directly.
+- Earnings: the unique index preventing a duplicate bounty for the same
+  `owner_referral_id` is exercised directly (a second insert raises
+  `unique_violation`) — the actual guarantee a re-run of
+  `computeBountyEarningsAction` relies on; a scout can read their own
+  ledger entries but not edit them (append-only); a stranger cannot read
+  another scout's ledger; `scout_payouts` is admin/service-role
+  write-only.
+- `scout_program_settings` is readable by any authenticated user,
+  writable only via service-role.
+- The two new M7 RPCs: `find_claimable_scout_id()` returns null for a
+  non-matching caller and the correct id for a matching one;
+  `claim_scout_account()` links only on an exact phone match and is a
+  safe no-op (never reassigns) when called again by someone else.
+
+**A real bug was found and fixed by this pass**: `respond_to_scout_referral`
+(added in Milestone 7, `20261110000600_scout_program_m7_mobile.sql`)
+had an untyped `CASE 'confirmed' / 'declined' END` in its `UPDATE ...
+SET status = ...` — Postgres can't infer the enum cast in that position,
+so every call raised `column "status" is of type owner_referral_status
+but expression is of type text`. This had shipped in the M7 migration
+without ever being exercised. Fixed by casting both branches explicitly
+(`'confirmed'::public.owner_referral_status`); re-ran the full test file
+afterward to confirm the fix and catch no new regressions.
+
+**Deliberately not covered here, with why** (so this isn't silently
+treated as full §15 coverage):
+- *Phone verified before entering review* and *bounty only after
+  verified owner + published + 30-day confirmed listing* — both live as
+  TypeScript logic in `lib/scouts/actions.ts` /
+  `lib/scouts/earnings-actions.ts` (a request-time challenge lookup and a
+  multi-table Supabase query respectively), not SQL. Testing them
+  properly needs a mocked Supabase client at the Vitest level — a
+  separate, larger piece of work than this pass, not attempted here.
+- *Revenue-share computation* and *fake-renter-farming/collusion
+  fraud holds* — not built yet, per the spec's own documented scope
+  cuts in Milestones 4 and (never built) anti-fraud work. Nothing to
+  test.
+- *Probation blocks auto-publish* — true only because no code path
+  anywhere auto-publishes a listing on scout promotion; there's no
+  meaningful RLS/constraint assertion for the absence of a feature.
+- *Full E2E* (public form → admin approval → referral → earnings
+  release) — needs a running app exercising real HTTP/Server Actions,
+  not a psql script; not attempted in this session.
+- Mobile's own three M7 RPCs are exercised here at the SQL level
+  (`attribute_scout_referral`, `respond_to_scout_referral`,
+  `claim_scout_account`, `find_claimable_scout_id`) but the mobile
+  screens that call them (`mobile/app/scouts/*.tsx`) are still only
+  typecheck/lint-verified, not run on a device/simulator — same
+  disclosed gap as Milestone 7's own entry above.
+
+`npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+(84/84, including the 24 new scout validation tests) all clean on the
+web app after the `respond_to_scout_referral` fix.
+
+## Applied the real 231Rentals brand kit (web favicons/OG/manifest + real BrandMark SVG + mobile icons/splash)
+
+The user provided the actual, official brand kit (SVGs, web favicon/OG/
+manifest assets, Expo mobile icon/splash/notification assets) — until
+now the web app had no favicon/OG image/manifest configured at all,
+and `components/ui/BrandMark.tsx` was a hand-drawn approximation.
+
+- **Web**: added `public/favicon.ico`/`.svg`, `favicon-{16,32,48}x{16,32,48}.png`,
+  `apple-touch-icon.png`, `icon-192.png`/`icon-512.png`/
+  `icon-maskable-512.png`, `og-image-1200x630.png`, `manifest.webmanifest`.
+  `app/layout.tsx`'s `metadata` now wires up `icons`/`manifest`/
+  `openGraph`/`twitter` (with `metadataBase` from
+  `NEXT_PUBLIC_APP_URL`), plus a new `viewport` export for
+  `themeColor: "#da1a32"`. Removed the unused default Next.js starter
+  SVGs (`file.svg`/`globe.svg`/`next.svg`/`vercel.svg`/`window.svg`) —
+  confirmed unreferenced anywhere first.
+- **`BrandMark.tsx`**: replaced the hand-drawn roof/"231" approximation
+  with the exact viewBox/paths from the kit's `svg/231rentals-mark-red.svg`
+  (the "231" glyphs are outlined vector paths in the kit, not live
+  text) — same component API (`className` prop), so `Header.tsx`
+  needed no changes.
+- **Mobile**: replaced `mobile/assets/{icon,favicon,splash-icon}.png`
+  with the kit's versions, added `adaptive-icon-foreground.png`/
+  `notification-icon.png`/`store-icon-1024.png`, removed the old
+  `android-icon-{foreground,background,monochrome}.png` (superseded by
+  the kit's foreground-image + solid-`backgroundColor` approach, per
+  its own `app.json.snippet`). `mobile/app.json`: `android.adaptiveIcon`
+  simplified to `foregroundImage` + `backgroundColor: "#da1a32"` (the
+  kit's official red — previously `#a00c30`, a darker shade), splash
+  `backgroundColor` and `expo-notifications`' `color` updated to match,
+  and `expo-notifications` now gets an explicit `icon` (Android white
+  silhouette) instead of none.
+- `scoutProgram`/mobile color tokens (`forest.600 = "#da1a32"`) already
+  matched the kit's red exactly — no palette drift found.
+- `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run test`
+  (60/60) all clean on web; `npx tsc --noEmit`/`npm run lint` clean on
+  mobile. **Not yet visually confirmed in a browser/device** — no
+  browser/simulator in this session; the user should confirm the
+  favicon/OG image render correctly and the mobile icon/splash look
+  right on a real EAS build.
+
+## Mobile UX audit (quick-wins batch)
+
+Ran a read-only UX audit of the mobile app against an "elite mobile UX
+architect" methodology the user supplied (a custom skill package, not
+registered in this session — applied manually). No P0 blockers found;
+the full scored audit (scorecard, findings table, missing screens/
+states) lives in this session's plan file, not duplicated here. User
+confirmed: implement the mechanical quick wins now; separately scope
+(not build) offline handling and a mobile report/block safety
+affordance as follow-up work.
+
+Fixed in this pass:
+- `app/(tabs)/index.tsx`: removed a stale "Owner mode lands in a later
+  milestone" line sitting directly below a working link to the already-
+  built Owner dashboard.
+- `app/(tabs)/saved.tsx`, `app/(tabs)/messages.tsx`,
+  `app/messages/[id].tsx`: added explicit `isError` branches — these
+  previously rendered the *empty* state on a failed fetch, indistin‑
+  guishable from "you have none."
+- Accessibility: added `accessibilityRole`/`accessibilityLabel`/
+  `accessibilityState` to every raw `Pressable`/`TextInput` the audit
+  found with zero accessibility props — search filter chips and
+  pagination, the search input, login/register method and intent
+  toggles, conversation rows, the message composer and send button, and
+  owner photo-management buttons. (Where the shared `Button`/`Input`
+  primitives are already used, coverage was already fine — this was
+  the gap everywhere a screen reached for a raw element instead.)
+- `app/pricing.tsx`, `app/verification.tsx`: added missing `isLoading`
+  guards so a subscriber/applicant no longer sees a flash of "no active
+  pass"/"no request yet" before their real status resolves.
+- `app/owner/index.tsx`: added a `dark:` variant to the stale-
+  availability warning callout (one of the only hardcoded-light spots
+  found).
+- `components/properties/PropertyCard.tsx`, `app/property/[slug].tsx`:
+  added an `onError` fallback to every `expo-image` usage — a broken/
+  404 image URL previously rendered a blank box with no fallback.
+- `app/property/[slug].tsx` → `app/pricing.tsx`: the subscription-gate
+  redirect now carries a `reason` param so pricing can explain why the
+  user landed there, instead of a silent, unexplained redirect.
+- `app/owner/index.tsx`: wired the previously-dead `?intent=owner`
+  registration param to a real entry point (the guest-state "Create an
+  account" link on the Owner dashboard).
+- `components/auth/WhatsAppAuthForm.tsx`: added "Step 1 of 2"/"Step 2
+  of 2" labels to the phone→OTP flow.
+
+Explicitly **not** built in this pass (scoped only, in the plan file,
+pending a decision to build them): offline/connectivity handling (no
+`NetInfo`/`onlineManager` wiring exists anywhere today), and a mobile
+report/block-owner safety affordance (web already has the schema —
+`property_reports`/`message_reports` — mobile just has no UI for it
+yet).
+
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet live-verified in a running app** — no simulator in this
+  session; the accessibility additions are non-visual by design, and
+  the error/loading-state additions need a forced-failure/forced-delay
+  manual check to actually exercise.
+
+## Mobile: animated splash screen
+
+User supplied a complete, finished `AnimatedSplash` component (Expo
+Router + Reanimated + `react-native-svg`), built against the official
+brand kit's mark path data (confirmed identical to the path constants
+already used in `components/ui/BrandMark.tsx`, web — same source file).
+
+- `mobile/components/AnimatedSplash.tsx` (new): the component as given,
+  with one import adapted (`brand as BRAND` from the existing
+  `mobile/lib/brand.ts` instead of a nonexistent `../brand/brand`
+  module) — `brand` export extended with `tagline` and a new
+  `colors: { splash: "#da1a32", onSplash: "#ffffff" }` (the official
+  brand red, same value PR #25 already moves the native splash's
+  background to).
+- **Found and fixed a real bug while integrating**: the pasted code
+  scheduled its "min hold," "timeline complete," and "absolute 4s cap"
+  markers via `withDelay(ms, runOnJS(fn)())` — but `runOnJS(fn)()` calls
+  `fn` immediately (the call happens before `withDelay` even runs), and
+  the real delay value was discarded since the expression wasn't
+  assigned to any shared value. This made the splash's exit fire almost
+  instantly instead of after its animated timeline, and also dropped
+  `setMinTimeReached`/`setTimelineDone`'s argument (`runOnJS(fn)()` with
+  no args), setting state to `undefined` instead of `true`. Fixed with
+  plain `setTimeout`s (cleared on unmount) for these three JS-side
+  callbacks — the shared-value animations elsewhere in the file
+  (`roofOffset.value = withDelay(...)`, etc.) were already written
+  correctly and are untouched.
+- `mobile/app/_layout.tsx`: added the one missing font weight
+  (`PlusJakartaSans_800ExtraBold`; `Manrope_500Medium` was already
+  loaded); removed the existing `useEffect` that called
+  `SplashScreen.hideAsync()` on `fontsLoaded` (the new component now
+  owns that single handoff point via its own `onLayout`); restructured
+  so `SessionProvider` wraps a new `RootLayoutInner` that feeds
+  `isAppReady={!sessionLoading}` into `AnimatedSplash`, rendered as an
+  overlay alongside the already-mounting `Stack` rather than blocking it
+  (the component fades out via opacity once its own `onFinish` fires).
+  The pre-fonts-loaded `return null` behavior is unchanged — the native
+  static splash still covers that window exactly as before.
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet visually confirmed on a device/simulator** — no
+  simulator in this session; the user should confirm the handoff is
+  seamless (no flash of blank/wrong color) and that reduced-motion shows
+  the static fallback.
+
+## Mobile: offline/connectivity handling (UX audit F05, built)
+
+Previously, no offline/connectivity handling existed anywhere in the
+mobile app — every network failure looked identical to "no data" (see
+the UX-audit findings fixed in PR #26). Built per the audit's own
+scoping, now confirmed by the user:
+
+- Added `@react-native-community/netinfo` (`npx expo install`, resolved
+  to `12.0.1` for this Expo SDK).
+- `mobile/app/_layout.tsx`: wires it into TanStack Query's own
+  `onlineManager` (`onlineManager.setEventListener` → `NetInfo.
+  addEventListener`) — the officially documented integration, so
+  queries automatically pause/resume refetching on connectivity change;
+  no custom retry logic written.
+- `components/ui/OfflineBanner.tsx` (new): a small banner shown only
+  while `NetInfo` reports `isConnected === false`, rendered once near
+  the root alongside the tab/stack navigator. Deliberately separate
+  from any screen's own "couldn't load" error text (fixed in PR #26) —
+  a real server/query error still reads as a server error, not a vague
+  "offline" message that may not even be true.
+- `npx tsc --noEmit`, `npm run lint` clean on mobile.
+- **Not yet live-verified** — no simulator in this session; the user
+  should confirm the banner appears/disappears on airplane-mode toggle
+  and that an in-flight query resumes once connectivity returns.
 
 ## Mobile: report/block safety affordance (UX audit F06, built)
 

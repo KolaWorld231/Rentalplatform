@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, Stack } from "expo-router";
-import { Text, View } from "react-native";
+import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { ActivityIndicator, Text, View } from "react-native";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { useSession } from "../lib/auth/session";
@@ -32,6 +32,7 @@ const BENEFITS = [
  */
 export default function PricingScreen() {
   const { user } = useSession();
+  const { reason } = useLocalSearchParams<{ reason?: string }>();
 
   const subscription = useQuery({
     queryKey: ["active-subscription", user?.id],
@@ -43,12 +44,24 @@ export default function PricingScreen() {
     <View className="flex-1 bg-canvas dark:bg-charcoal-900">
       <Stack.Screen options={{ headerShown: true, title: subscriptionPlan.name }} />
       <View className="gap-5 p-4">
+        {reason === "message_gate" && (
+          <Card className="gap-1 p-4">
+            <Text className="text-sm text-charcoal-700 dark:text-ivory-100">
+              You&apos;ll need an active Direct Access Pass to message owners.
+            </Text>
+          </Card>
+        )}
+
         {!user ? (
           <Card className="gap-3 p-5">
             <Text className="text-base text-charcoal-700 dark:text-ivory-100">Log in to see your Direct Access Pass.</Text>
             <Link href="/(auth)/login" asChild>
               <Button>Log in</Button>
             </Link>
+          </Card>
+        ) : subscription.isLoading ? (
+          <Card className="items-center p-5">
+            <ActivityIndicator />
           </Card>
         ) : subscription.data ? (
           <Card className="gap-1 p-5">
@@ -61,7 +74,7 @@ export default function PricingScreen() {
           </Card>
         ) : null}
 
-        <Card className="gap-3 p-5 shadow-[var(--shadow-clay-raised)]">
+        <Card className="gap-3 p-5 shadow-floating">
           <Text className="font-sans-semibold text-sm text-forest-700 dark:text-forest-500">{subscriptionPlan.name}</Text>
           <Text className="font-display-bold text-4xl text-charcoal-700 dark:text-ivory-100">
             {formatUsd(subscriptionPlan.priceUsd)}
@@ -80,7 +93,7 @@ export default function PricingScreen() {
             Compare: paying an agent per viewing typically costs $30–40 and only covers one property.
           </Text>
 
-          {user && !subscription.data && (
+          {user && !subscription.isLoading && !subscription.data && (
             <Text className="text-sm text-charcoal-600 dark:text-charcoal-400">
               Get a Direct Access Pass from the {brand.name} website, on any browser. Once it&apos;s active, it shows up
               here automatically.

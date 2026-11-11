@@ -29,6 +29,9 @@ export default function OwnerDashboardScreen() {
         <Link href="/(auth)/login" asChild>
           <Button>Log in</Button>
         </Link>
+        <Link href="/(auth)/register?intent=owner" asChild>
+          <Button variant="clay">Create an account</Button>
+        </Link>
       </View>
     );
   }
@@ -77,8 +80,8 @@ export default function OwnerDashboardScreen() {
         </Card>
 
         {staleCount > 0 && (
-          <Card className="gap-1 border-l-4 border-warning-500 bg-warning-100 p-3">
-            <Text className="text-sm font-sans-semibold text-charcoal-700">
+          <Card className="gap-1 border-l-4 border-warning-500 bg-warning-100 p-3 dark:bg-charcoal-700">
+            <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">
               {staleCount} {staleCount === 1 ? "listing needs" : "listings need"} availability reconfirmed
             </Text>
           </Card>
@@ -119,7 +122,7 @@ function OwnerPropertyRow({ property: p }: { property: Property }) {
   const stale = p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at);
   return (
     <Link href={`/owner/${p.id}`} asChild>
-      <Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Manage listing: ${p.title}`}>
         <Card className="gap-1 p-3">
           <View className="flex-row items-center justify-between">
             <Text className="flex-1 font-sans-semibold text-charcoal-700 dark:text-ivory-100" numberOfLines={1}>

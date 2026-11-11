@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { ActivityIndicator, FlatList, ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
@@ -7,11 +7,18 @@ import { PropertyCard } from "../../components/properties/PropertyCard";
 import { logoutAction } from "../../lib/auth/actions";
 import { useSession } from "../../lib/auth/session";
 import { getRecentlyListed } from "../../lib/properties/service";
-import { brand } from "../../lib/brand";
+import { brand, scoutProgram } from "../../lib/brand";
+import { getPendingScoutReferral, respondToScoutReferral } from "../../lib/scouts/service";
 
 export default function HomeScreen() {
   const { user, loading } = useSession();
+  const queryClient = useQueryClient();
   const recentlyListed = useQuery({ queryKey: ["recently-listed"], queryFn: () => getRecentlyListed() });
+  const pendingReferral = useQuery({
+    queryKey: ["pending-scout-referral", user?.id],
+    enabled: !!user,
+    queryFn: () => getPendingScoutReferral(user!.id),
+  });
 
   return (
     <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="px-4 pt-16 pb-8 gap-5">
@@ -34,6 +41,9 @@ export default function HomeScreen() {
             <Link href="/verification" asChild>
               <Button variant="secondary">Verification center</Button>
             </Link>
+            <Link href="/scouts/dashboard" asChild>
+              <Button variant="secondary">My scout dashboard</Button>
+            </Link>
             <Button variant="secondary" onPress={() => logoutAction()}>
               Log out
             </Button>
@@ -53,6 +63,35 @@ export default function HomeScreen() {
           </>
         )}
       </Card>
+
+      {pendingReferral.data && (
+        <Card className="gap-3 p-4">
+          <Text className="text-sm text-charcoal-700 dark:text-ivory-100">
+            A {scoutProgram.name} scout says they introduced you to {brand.name}. Confirm this?
+          </Text>
+          <View className="flex-row gap-2">
+            <Button
+              size="sm"
+              onPress={async () => {
+                await respondToScoutReferral(pendingReferral.data!.id, true);
+                queryClient.invalidateQueries({ queryKey: ["pending-scout-referral", user!.id] });
+              }}
+            >
+              Confirm
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={async () => {
+                await respondToScoutReferral(pendingReferral.data!.id, false);
+                queryClient.invalidateQueries({ queryKey: ["pending-scout-referral", user!.id] });
+              }}
+            >
+              Decline
+            </Button>
+          </View>
+        </Card>
+      )}
 
       <View className="gap-3">
         <Text className="font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Recently listed</Text>
@@ -84,11 +123,9 @@ export default function HomeScreen() {
         <Button variant="clay">Get the Direct Access Pass</Button>
       </Link>
 
-      <Card className="p-4">
-        <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
-          Owner mode lands in a later milestone.
-        </Text>
-      </Card>
+      <Link href="/scouts" asChild>
+        <Button variant="secondary">Become a Scout</Button>
+      </Link>
     </ScrollView>
   );
 }

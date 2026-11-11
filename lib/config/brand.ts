@@ -31,3 +31,7 @@ export const subscriptionPlan = {
   priceUsd: 5,
   durationDays: 30,
 } as const;
+
+export const scoutProgram = {
+  name: "Rental HunterZ",
+} as const;

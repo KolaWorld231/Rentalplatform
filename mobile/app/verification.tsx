@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { Link, Stack } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { useSession } from "../lib/auth/session";
@@ -64,7 +64,15 @@ export default function VerificationScreen() {
         privately and reviewed only by our moderation team.
       </Text>
 
-      <IdentityCard userId={user.id} request={identity.data} onChanged={() => queryClient.invalidateQueries({ queryKey: ["identity-verification", user.id] })} />
+      {identity.isLoading ? (
+        <ActivityIndicator />
+      ) : (
+        <IdentityCard userId={user.id} request={identity.data} onChanged={() => queryClient.invalidateQueries({ queryKey: ["identity-verification", user.id] })} />
+      )}
+
+      {myProperties.isError && (
+        <Text className="text-sm text-error-500">Couldn&apos;t load your properties. Pull to refresh.</Text>
+      )}
 
       {myProperties.data && myProperties.data.length > 0 && (
         <View className="gap-3">
@@ -125,7 +133,7 @@ function IdentityCard({
   }
 
   return (
-    <Card className={request?.status === "verified" ? "gap-3 p-5 shadow-[var(--shadow-clay-raised)]" : "gap-3 p-5"}>
+    <Card className={request?.status === "verified" ? "gap-3 p-5 shadow-floating" : "gap-3 p-5"}>
       <View className="flex-row items-center justify-between">
         <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Identity verification</Text>
         {request && <Text className="text-xs font-sans-semibold text-forest-700 dark:text-forest-500">{STATUS_COPY[request.status]}</Text>}
@@ -207,7 +215,9 @@ function PropertyVerificationCard({ propertyId, title, applicantId }: { property
         {request.data && <Text className="text-xs font-sans-semibold text-forest-700 dark:text-forest-500">{STATUS_COPY[request.data.status]}</Text>}
       </View>
 
-      {!request.data ? (
+      {request.isLoading ? (
+        <ActivityIndicator />
+      ) : !request.data ? (
         <Button size="sm" loading={submitting} onPress={onStart}>
           Submit for verification
         </Button>

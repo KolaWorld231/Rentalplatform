@@ -22,6 +22,7 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     email: formData.get("email"),
     password: formData.get("password"),
     intent: formData.get("intent"),
+    refCode: formData.get("refCode"),
   });
   if (!parsed.success) {
     return { fieldErrors: firstFieldErrors(parsed.error) };
@@ -49,9 +50,28 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
       { user_id: data.user.id, role: "owner" },
       { onConflict: "user_id,role" },
     );
+
+    if (parsed.data.refCode) {
+      await attributeScoutReferral(data.user.id, parsed.data.refCode);
+    }
   }
 
   redirect("/onboarding/welcome");
+}
+
+// First-touch referral capture only -- never blocks registration if
+// the code is invalid/unknown or the insert fails (unique index on
+// owner_user_id means a retry can't double-attribute anyway). The
+// owner still has to explicitly confirm this on /onboarding/welcome
+// before it's treated as real attribution; see
+// lib/scouts/referral-actions.ts.
+async function attributeScoutReferral(ownerUserId: string, refCode: string) {
+  const admin = createServiceRoleClient();
+  const { data: scout } = await admin.from("scouts").select("id, user_id").eq("referral_code", refCode).maybeSingle();
+  if (!scout) return;
+  if (scout.user_id === ownerUserId) return; // self-referral -- never credited
+
+  await admin.from("owner_referrals").insert({ scout_id: scout.id, owner_user_id: ownerUserId, source: "code" });
 }
 
 export async function loginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
