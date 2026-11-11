@@ -16,8 +16,12 @@ export function Input({ label, error, hint, className, ...props }: InputProps) {
         accessibilityLabel={label ?? props.placeholder}
         accessibilityHint={hint}
         className={cn(
-          "h-12 rounded-md border border-border bg-surface px-3.5 text-base text-charcoal-700",
-          "dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100",
+          // bg-well-* (not bg-surface) gives this a recessed look relative
+          // to the Card it usually sits in -- RN has no inset-shadow
+          // support, so this background-tint swap is the substitute for
+          // web's --shadow-clay-inset.
+          "h-12 rounded-md border border-border bg-well-light px-3.5 text-base text-charcoal-700",
+          "dark:border-charcoal-500 dark:bg-well-dark dark:text-ivory-100",
           error && "border-error-500",
           className,
         )}

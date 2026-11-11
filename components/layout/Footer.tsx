@@ -22,6 +22,7 @@ const columns = [
     links: [
       { href: "/about", label: "About" },
       { href: "/help", label: "Help & Support" },
+      { href: "/scouts", label: "Become a Scout" },
     ],
   },
   {
