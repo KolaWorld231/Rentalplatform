@@ -58,7 +58,7 @@ create or replace function public.respond_to_scout_referral(p_referral_id uuid, 
   as $$
   begin
     update public.owner_referrals
-    set status = case when p_confirm then 'confirmed' else 'declined' end,
+    set status = case when p_confirm then 'confirmed'::public.owner_referral_status else 'declined'::public.owner_referral_status end,
         confirmed_by_owner_at = case when p_confirm then now() else confirmed_by_owner_at end
     where id = p_referral_id
       and owner_user_id = auth.uid()
