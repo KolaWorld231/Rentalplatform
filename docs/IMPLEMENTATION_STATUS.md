@@ -2976,6 +2976,7 @@ internal identifiers, not just user-visible text.
   `/login`'s "Welcome back to 231Rentals."/"New to 231Rentals?" render
   correctly (confirming every relocated hardcoded string now reads from
   `brand.name`).
+
 ## First real EAS build: crash from missing cloud env vars (fixed)
 
 The user asked to preview the mobile app. A live Expo Go tunnel wasn't
@@ -3070,3 +3071,59 @@ Fix (additive, no background-color changes):
   their device/EAS build (per `docs/IMPLEMENTATION_STATUS.md`'s own
   "don't report a test as passing unless it was actually run" rule,
   this is disclosed here rather than claimed).
+
+## Mobile: Tinder-style swipe browsing mode (adds to Picks/favourites)
+
+Built on top of the shadow-fix branch (depends on its `shadow-raised`/
+`shadow-subtle` tokens). The user asked for a swipe-right/swipe-left way
+to browse search results on mobile, with "yes" swipes landing in a
+"Picks" list they can navigate and reach out from. This mapped almost
+entirely onto what already existed, confirmed via an Explore pass
+before building:
+
+- **"Picks" is the existing favourites mechanism** — `mobile/app/(tabs)
+  /saved.tsx` already renders the user's favourited properties
+  (`property_favourites`, RLS-scoped to the owning user); no new list
+  screen was built.
+- **Reaching out already worked** — the existing inline contact form on
+  `mobile/app/property/[slug].tsx` (same subscription-gated
+  `startOrContinueConversation` as web) is reached by tapping a card in
+  Saved; no new messaging logic was built.
+- Added `addFavourite()` (`mobile/lib/properties/service.ts`) alongside
+  the existing `toggleFavourite()` — an **add-only** upsert
+  (`ON CONFLICT ... DO NOTHING`) so a swipe-right can never accidentally
+  un-pick a property that's already a favourite. `toggleFavourite`
+  itself is untouched.
+- Found `react-native-gesture-handler`/`react-native-reanimated` were
+  installed but the app was **never wrapped in
+  `GestureHandlerRootView`** — fixed in `mobile/app/_layout.tsx`, a
+  required (not swipe-specific) root-layout fix.
+- Split `PropertyCard.tsx` into a new presentational
+  `PropertyCardContent.tsx` (image/price/title/location markup, no
+  gesture/navigation wrapper) + `PropertyCard.tsx` (unchanged tap-to-
+  navigate behavior), so the new swipeable card could reuse the same
+  markup without forcing `PropertyCard`'s `Link`/`Pressable` into a
+  draggable role.
+- New `SwipeCard.tsx` (pan gesture, rotate/translate drag, fling-off
+  threshold, YES/NO overlay badges using the existing `success-*`/
+  `error-*` tokens) and `SwipeDeck.tsx` (fetches pages via the existing
+  `searchProperties`, excludes already-favourited properties via the
+  existing `getFavouritedPropertyIds`, calls `addFavourite` on swipe-
+  right, advances with no DB write at all on swipe-left, on-screen
+  Yes/No buttons as a non-gesture alternative, end-of-deck empty state).
+- `mobile/app/(tabs)/search.tsx` gets a Grid/Swipe toggle, shown **only
+  to logged-in users** (confirmed with the user — guests only ever see
+  the plain grid, matching how Saved/Picks already gates on login);
+  Swipe mode shares the screen's existing filter state/query, it does
+  not duplicate search UI.
+- Confirmed with the user and intentionally **not** built: skip
+  ("no") persistence — a left swipe is purely client-side with no
+  record kept, so a skipped property can resurface in a later session;
+  this was an explicit, accepted decision, not an oversight.
+- Verified: `npx tsc --noEmit` and `npm run lint` clean on mobile.
+  **Not yet live-verified in a running app** — no simulator access in
+  this session; needs on-device confirmation (swipe right adds to
+  Saved/Picks, swipe left advances with no network call, running out of
+  cards loads more or shows the end state, on-screen buttons behave
+  identically to a finger swipe, an already-favourited property never
+  appears as a card, guests see no Swipe toggle at all).
