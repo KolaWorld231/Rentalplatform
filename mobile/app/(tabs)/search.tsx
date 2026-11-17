@@ -3,6 +3,8 @@ import { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { PropertyCard } from "../../components/properties/PropertyCard";
 import { SwipeDeck } from "../../components/properties/SwipeDeck";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { Screen } from "../../components/ui/Screen";
 import { useSession } from "../../lib/auth/session";
 import { cn } from "../../lib/cn";
 import { LIBERIA_COUNTIES, PROPERTY_CATEGORIES } from "../../lib/database.types";
@@ -39,8 +41,8 @@ export default function SearchScreen() {
   }
 
   return (
-    <View className="flex-1 bg-canvas pt-16 dark:bg-charcoal-900">
-      <View className="gap-3 px-4 pb-3">
+    <Screen>
+      <View className="gap-3 px-4 pb-3 pt-3">
         <TextInput
           placeholder="Search by title (e.g. Sinkor apartment)"
           placeholderTextColor="#737373"
@@ -142,7 +144,11 @@ export default function SearchScreen() {
       ) : result.isLoading ? (
         <ActivityIndicator className="mt-8" />
       ) : result.isError ? (
-        <Text className="px-4 text-sm text-error-500">Couldn&apos;t load results. Pull to refresh.</Text>
+        <ErrorState
+          message="Couldn't load results."
+          onRetry={() => result.refetch()}
+          retrying={result.isRefetching}
+        />
       ) : (
         <FlatList
           data={result.data?.properties ?? []}
@@ -191,7 +197,7 @@ export default function SearchScreen() {
           }
         />
       )}
-    </View>
+    </Screen>
   );
 }
 

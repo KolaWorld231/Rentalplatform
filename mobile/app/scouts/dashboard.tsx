@@ -6,6 +6,7 @@ import { Card } from "../../components/ui/Card";
 import { useSession } from "../../lib/auth/session";
 import { scoutProgram } from "../../lib/brand";
 import { claimScoutAccount, findClaimableScoutId, getMyScout, getReferredOwnerCount } from "../../lib/scouts/service";
+import { Screen } from "../../components/ui/Screen";
 
 const STATUS_LABEL: Record<string, string> = {
   probation: "On probation",
@@ -89,7 +90,7 @@ export default function ScoutDashboardScreen() {
   const referralLink = `${process.env.EXPO_PUBLIC_APP_URL ?? ""}/register?intent=owner&ref=${scout.referral_code}`;
 
   return (
-    <View className="flex-1 gap-4 bg-canvas px-4 pt-16 dark:bg-charcoal-900">
+    <Screen className="gap-4 px-4 pt-3">
       <Stack.Screen options={{ headerShown: true, title: `My ${scoutProgram.name} dashboard` }} />
 
       <Card className="gap-2 p-5">
@@ -116,6 +117,6 @@ export default function ScoutDashboardScreen() {
       </Card>
 
       <Text className="text-xs text-charcoal-400">Earnings aren&apos;t tracked on mobile yet -- see the web dashboard for payout status.</Text>
-    </View>
+    </Screen>
   );
 }

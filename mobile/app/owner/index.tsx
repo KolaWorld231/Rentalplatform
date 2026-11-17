@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Stack } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
+import { Screen } from "../../components/ui/Screen";
 import { Card } from "../../components/ui/Card";
 import { useSession } from "../../lib/auth/session";
 import { useUserRoles } from "../../lib/auth/use-user-roles";
@@ -70,7 +71,7 @@ export default function OwnerDashboardScreen() {
   const staleCount = list.filter((p) => p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at)).length;
 
   return (
-    <View className="flex-1 bg-canvas pt-16 dark:bg-charcoal-900">
+    <Screen>
       <Stack.Screen options={{ headerShown: true, title: "Owner mode" }} />
       <ScrollView contentContainerClassName="gap-4 px-4 pb-4">
         <Card className="flex-row divide-x divide-border p-0 dark:divide-charcoal-500">
@@ -103,7 +104,7 @@ export default function OwnerDashboardScreen() {
           ListEmptyComponent={<Text className="px-4 text-sm text-charcoal-500 dark:text-charcoal-400">No listings yet.</Text>}
         />
       )}
-    </View>
+    </Screen>
   );
 }
 

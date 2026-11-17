@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { Screen } from "../../components/ui/Screen";
 import { PropertyCard } from "../../components/properties/PropertyCard";
 import { useSession } from "../../lib/auth/session";
 import { getFavouritedProperties } from "../../lib/properties/service";
@@ -34,12 +36,16 @@ export default function SavedScreen() {
   }
 
   return (
-    <View className="flex-1 bg-canvas pt-16 dark:bg-charcoal-900">
-      <Text className="px-4 pb-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Saved</Text>
+    <Screen>
+      <Text className="px-4 pb-3 pt-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Saved</Text>
       {favourites.isLoading ? (
         <ActivityIndicator />
       ) : favourites.isError ? (
-        <Text className="px-4 text-sm text-error-500">Couldn&apos;t load your saved properties. Pull to refresh.</Text>
+        <ErrorState
+          message="Couldn't load your saved properties. Your saved list is safe — this is a problem loading it."
+          onRetry={() => favourites.refetch()}
+          retrying={favourites.isRefetching}
+        />
       ) : (
         <FlatList
           data={favourites.data ?? []}
@@ -59,6 +65,6 @@ export default function SavedScreen() {
           }
         />
       )}
-    </View>
+    </Screen>
   );
 }

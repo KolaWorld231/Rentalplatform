@@ -3,6 +3,8 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { Avatar } from "../../components/ui/Avatar";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { Screen } from "../../components/ui/Screen";
 import { useSession } from "../../lib/auth/session";
 import { formatRelativeDate } from "../../lib/format";
 import { getConversationDetail, getMessages, markConversationRead, sendMessage } from "../../lib/messaging/service";
@@ -70,7 +72,14 @@ export default function ConversationScreen() {
   if (conversation.isError || messages.isError) {
     return (
       <View className="flex-1 items-center justify-center bg-canvas p-6 dark:bg-charcoal-900">
-        <Text className="text-sm text-error-500">Couldn&apos;t load this conversation. Pull to refresh.</Text>
+        <ErrorState
+          message="Couldn't load this conversation."
+          onRetry={() => {
+            conversation.refetch();
+            messages.refetch();
+          }}
+          retrying={conversation.isRefetching || messages.isRefetching}
+        />
       </View>
     );
   }
@@ -78,7 +87,7 @@ export default function ConversationScreen() {
   const latestMessageId = messages.data?.at(-1)?.id ?? null;
 
   return (
-    <View className="flex-1 bg-canvas dark:bg-charcoal-900">
+    <Screen edges={["bottom"]} avoidKeyboard>
       <Stack.Screen options={{ headerShown: true, title: counterpartName ?? "Conversation" }} />
 
       {user && latestMessageId && (
@@ -138,6 +147,6 @@ export default function ConversationScreen() {
           <Text className="font-sans-semibold text-ivory-50">Send</Text>
         </Pressable>
       </View>
-    </View>
+    </Screen>
   );
 }

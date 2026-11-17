@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { brand, scoutProgram } from "../../lib/brand";
+import { Screen } from "../../components/ui/Screen";
 
 const nonNegotiables = [
   "Scouts never charge owners or renters any fee.",
@@ -14,7 +15,8 @@ const nonNegotiables = [
 
 export default function ScoutsInfoScreen() {
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="gap-4 px-4 pt-16 pb-8">
+    <Screen>
+      <ScrollView contentContainerClassName="gap-4 px-4 pt-3 pb-8">
       <Stack.Screen options={{ headerShown: true, title: scoutProgram.name }} />
 
       <View>
@@ -46,6 +48,7 @@ export default function ScoutsInfoScreen() {
       <Link href="/scouts/apply" asChild>
         <Button>Apply to become a scout</Button>
       </Link>
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 }

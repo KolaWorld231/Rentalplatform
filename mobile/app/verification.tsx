@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { ErrorState } from "../components/ui/ErrorState";
 import { useSession } from "../lib/auth/session";
 import { supabase } from "../lib/supabase";
 import {
@@ -71,7 +72,11 @@ export default function VerificationScreen() {
       )}
 
       {myProperties.isError && (
-        <Text className="text-sm text-error-500">Couldn&apos;t load your properties. Pull to refresh.</Text>
+        <ErrorState
+          message="Couldn't load your properties."
+          onRetry={() => myProperties.refetch()}
+          retrying={myProperties.isRefetching}
+        />
       )}
 
       {myProperties.data && myProperties.data.length > 0 && (

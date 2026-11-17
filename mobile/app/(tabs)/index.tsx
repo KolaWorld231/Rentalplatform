@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "expo-router";
-import { ActivityIndicator, FlatList, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { Screen } from "../../components/ui/Screen";
 import { PropertyCard } from "../../components/properties/PropertyCard";
 import { logoutAction } from "../../lib/auth/actions";
 import { useSession } from "../../lib/auth/session";
@@ -21,7 +23,8 @@ export default function HomeScreen() {
   });
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="px-4 pt-16 pb-8 gap-5">
+    <Screen>
+      <ScrollView contentContainerClassName="px-4 pt-3 pb-8 gap-5">
       <View>
         <Text className="font-display-bold text-3xl text-forest-700 dark:text-forest-500">{brand.name}</Text>
         <Text className="mt-1 text-base text-charcoal-500 dark:text-charcoal-400">Your Next Place. Direct From the Owner.</Text>
@@ -44,7 +47,15 @@ export default function HomeScreen() {
             <Link href="/scouts/dashboard" asChild>
               <Button variant="secondary">My scout dashboard</Button>
             </Link>
-            <Button variant="secondary" onPress={() => logoutAction()}>
+            <Button
+              variant="secondary"
+              onPress={() =>
+                Alert.alert("Log out?", "You'll need to sign in again to message owners or manage your listings.", [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Log out", style: "destructive", onPress: () => logoutAction() },
+                ])
+              }
+            >
               Log out
             </Button>
           </>
@@ -98,7 +109,11 @@ export default function HomeScreen() {
         {recentlyListed.isLoading ? (
           <ActivityIndicator />
         ) : recentlyListed.isError ? (
-          <Text className="text-sm text-error-500">Couldn&apos;t load listings. Pull to refresh.</Text>
+          <ErrorState
+            message="Couldn't load listings. This is a problem on our side, not a sign that there is nothing to rent."
+            onRetry={() => recentlyListed.refetch()}
+            retrying={recentlyListed.isRefetching}
+          />
         ) : recentlyListed.data && recentlyListed.data.length > 0 ? (
           <FlatList
             horizontal
@@ -126,6 +141,7 @@ export default function HomeScreen() {
       <Link href="/scouts" asChild>
         <Button variant="secondary">Become a Scout</Button>
       </Link>
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 }

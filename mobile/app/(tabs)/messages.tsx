@@ -4,6 +4,8 @@ import { Link } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Avatar } from "../../components/ui/Avatar";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { Screen } from "../../components/ui/Screen";
 import { useSession } from "../../lib/auth/session";
 import { formatRelativeDate } from "../../lib/format";
 import { getConversationsForUser, type ConversationRow } from "../../lib/messaging/service";
@@ -37,12 +39,16 @@ export default function MessagesScreen() {
   }
 
   return (
-    <View className="flex-1 bg-canvas pt-16 dark:bg-charcoal-900">
-      <Text className="px-4 pb-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Messages</Text>
+    <Screen>
+      <Text className="px-4 pb-3 pt-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Messages</Text>
       {conversations.isLoading ? (
         <ActivityIndicator />
       ) : conversations.isError ? (
-        <Text className="px-4 text-sm text-error-500">Couldn&apos;t load your conversations. Pull to refresh.</Text>
+        <ErrorState
+          message="Couldn't load your conversations."
+          onRetry={() => conversations.refetch()}
+          retrying={conversations.isRefetching}
+        />
       ) : (
         <FlatList
           data={conversations.data ?? []}
@@ -63,7 +69,7 @@ export default function MessagesScreen() {
           }
         />
       )}
-    </View>
+    </Screen>
   );
 }
 

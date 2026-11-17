@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Link, Stack, router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { PropertyCard } from "../../components/properties/PropertyCard";
@@ -27,6 +27,9 @@ const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning"
 
 export default function PropertyDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  // pagingEnabled snaps to the viewport, so a gallery item must be exactly
+  // as wide as the screen or every page after the first sits off-centre.
+  const { width: screenWidth } = useWindowDimensions();
   const { user, session } = useSession();
   const queryClient = useQueryClient();
 
@@ -133,13 +136,13 @@ export default function PropertyDetailScreen() {
           keyExtractor={(img) => img.id}
           renderItem={({ item }) =>
             brokenImageIds.has(item.id) ? (
-              <View className="h-[260px] w-[390px] items-center justify-center bg-sage-100 dark:bg-charcoal-500">
+              <View style={{ width: screenWidth, height: 260 }} className="items-center justify-center bg-sage-100 dark:bg-charcoal-500">
                 <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">Photo couldn&apos;t load</Text>
               </View>
             ) : (
               <Image
                 source={{ uri: propertyImageUrl(item.storage_path) }}
-                style={{ width: 390, height: 260 }}
+                style={{ width: screenWidth, height: 260 }}
                 contentFit="cover"
                 alt={`Photo of ${p.title}`}
                 onError={() => setBrokenImageIds((prev) => new Set(prev).add(item.id))}

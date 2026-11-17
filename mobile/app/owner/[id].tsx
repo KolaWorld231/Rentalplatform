@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -133,7 +133,24 @@ export default function EditPropertyScreen() {
         </Button>
 
         <View className="mt-2 border-t border-border pt-2 dark:border-charcoal-500">
-          <Button size="sm" variant="ghost" onPress={() => setListingStatus(id, "archived").then(invalidate)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() =>
+              Alert.alert(
+                "Archive this listing?",
+                "It will stop appearing in search and renters won't be able to find it. You can publish it again later.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Archive",
+                    style: "destructive",
+                    onPress: () => setListingStatus(id, "archived").then(invalidate),
+                  },
+                ],
+              )
+            }
+          >
             Archive listing
           </Button>
         </View>
@@ -163,7 +180,16 @@ export default function EditPropertyScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Delete photo"
-                  onPress={() => deletePropertyPhoto(id, item.id, item.storage_path).then(invalidate)}
+                  onPress={() =>
+                    Alert.alert("Delete this photo?", "This can't be undone — you'd need to upload it again.", [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () => deletePropertyPhoto(id, item.id, item.storage_path).then(invalidate),
+                      },
+                    ])
+                  }
                 >
                   <Text className="text-xs text-error-500">Delete</Text>
                 </Pressable>

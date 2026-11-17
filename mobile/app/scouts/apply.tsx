@@ -13,6 +13,7 @@ import {
   verifyScoutApplicationOtp,
 } from "../../lib/scouts/service";
 import { scoutApplicationSchema, SCOUT_CODE_OF_CONDUCT_VERSION, type ScoutApplicationInput } from "../../lib/validation/scouts";
+import { Screen } from "../../components/ui/Screen";
 
 const RELATIONSHIPS = [
   { value: "family", label: "Family" },
@@ -179,7 +180,8 @@ export default function ScoutApplyScreen() {
   const currentAreaId = areaId || areas.data[0].id;
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="gap-4 px-4 pt-16 pb-8">
+    <Screen avoidKeyboard>
+      <ScrollView contentContainerClassName="gap-4 px-4 pt-3 pb-8" keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ headerShown: true, title: `Apply -- ${scoutProgram.name}` }} />
       <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
         Applications are reviewed in the order received. Seats are limited by area.
@@ -291,6 +293,7 @@ export default function ScoutApplyScreen() {
         Submit application
       </Button>
       {!phoneVerified && <Text className="text-center text-xs text-charcoal-400">Verify your phone number above before submitting.</Text>}
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 }
