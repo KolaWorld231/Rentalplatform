@@ -11,7 +11,7 @@ import { PropertyCardSkeleton } from "@/components/ui/Skeleton";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { searchFilterQueryString, searchParamsSchema } from "@/lib/validation/property";
-import { searchProperties } from "@/services/properties";
+import { searchProperties, verifiedFlagsFor } from "@/services/properties";
 
 export const metadata = { title: "Search Properties" };
 
@@ -64,15 +64,7 @@ async function SearchResults({
     favouritedIds = new Set((data ?? []).map((r) => r.property_id));
   }
 
-  const verifiedFlags = await Promise.all(
-    properties.map(async (property) => {
-      const [{ data: ownerVerified }, { data: propertyVerified }] = await Promise.all([
-        supabase.rpc("is_identity_verified", { target_user: property.owner_id }),
-        supabase.rpc("is_property_verified", { target_property: property.id }),
-      ]);
-      return Boolean(ownerVerified || propertyVerified);
-    }),
-  );
+  const verifiedFlags = await verifiedFlagsFor(supabase, properties);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 

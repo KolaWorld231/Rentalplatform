@@ -1,4 +1,4 @@
-import { Home as HomeIcon, MessageCircle, ShieldCheck } from "lucide-react";
+import { CloudOff, Home as HomeIcon, MessageCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { ProcessSteps } from "@/components/marketing/ProcessSteps";
 import { HeroSearch } from "@/components/properties/HeroSearch";
@@ -11,7 +11,7 @@ import { brand, subscriptionPlan } from "@/lib/config/brand";
 import { createClient } from "@/lib/supabase/server";
 import { propertyImageUrl } from "@/lib/supabase/storage";
 import { cn } from "@/lib/utils/cn";
-import type { PropertyWithCover } from "@/services/properties";
+import { verifiedFlagsFor, type PropertyWithCover } from "@/services/properties";
 
 const howItWorks = [
   {
@@ -33,7 +33,7 @@ const howItWorks = [
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const [{ data }, { data: coverageRows }, { count: publishedCount }] = await Promise.all([
+  const [{ data, error: recentError }, { data: coverageRows }, { count: publishedCount }] = await Promise.all([
     supabase
       .from("properties")
       .select("*, property_images(id, storage_path, is_cover)")
@@ -45,15 +45,7 @@ export default async function HomePage() {
   ]);
   const recentProperties = (data ?? []) as unknown as PropertyWithCover[];
 
-  const verifiedFlags = await Promise.all(
-    recentProperties.map(async (property) => {
-      const [{ data: ownerVerified }, { data: propertyVerified }] = await Promise.all([
-        supabase.rpc("is_identity_verified", { target_user: property.owner_id }),
-        supabase.rpc("is_property_verified", { target_property: property.id }),
-      ]);
-      return Boolean(ownerVerified || propertyVerified);
-    }),
-  );
+  const verifiedFlags = await verifiedFlagsFor(supabase, recentProperties);
 
   // Real, database-derived stats only — never fabricated (CLAUDE.md rule #9).
   // A stat with nothing behind it yet is hidden rather than shown as zero.
@@ -143,7 +135,19 @@ export default async function HomePage() {
             </Link>
           </div>
         </Reveal>
-        {recentProperties.length === 0 ? (
+        {recentError ? (
+          <Card className="mt-6 flex flex-col items-center gap-3 p-12 text-center">
+            <CloudOff className="h-10 w-10 text-charcoal-500" aria-hidden="true" />
+            <p className="font-medium text-charcoal-700">We couldn&apos;t load listings just now.</p>
+            <p className="max-w-md text-sm text-charcoal-500">
+              This is a problem on our side, not a sign that there is nothing to rent. Please try
+              again in a moment.
+            </p>
+            <Link href="/" className={cn(buttonVariants({ variant: "secondary" }))}>
+              Try again
+            </Link>
+          </Card>
+        ) : recentProperties.length === 0 ? (
           <Card className="mt-6 flex flex-col items-center gap-3 p-12 text-center">
             <HomeIcon className="h-10 w-10 text-charcoal-400" aria-hidden="true" />
             <p className="font-medium text-charcoal-700">Your next place hasn&apos;t appeared yet.</p>
