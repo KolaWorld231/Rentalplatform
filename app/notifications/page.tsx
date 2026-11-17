@@ -59,7 +59,7 @@ export default async function NotificationsPage() {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-subtle)] ${n.read_at ? "bg-surface" : "bg-sage-100"}`}
+              className={`rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-subtle)] ${n.read_at ? "bg-surface" : "bg-surface-muted"}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

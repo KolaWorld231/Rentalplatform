@@ -42,7 +42,7 @@ export function PropertyCardMedia({
 
   if (paths.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center bg-sage-200 text-sm text-charcoal-400">
+      <div className="flex h-full items-center justify-center bg-surface-muted text-sm text-charcoal-500">
         No photo yet
       </div>
     );

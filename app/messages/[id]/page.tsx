@@ -68,7 +68,7 @@ export default async function ConversationPage({ params }: PageProps) {
         <RealtimeMessageListener conversationId={id} />
         <div className="flex items-center justify-between gap-3 border-b border-border py-4">
           <div className="flex items-center gap-3">
-            <Link href="/messages" className="focus-ring rounded-full p-1.5 hover:bg-sage-100 lg:hidden">
+            <Link href="/messages" className="focus-ring rounded-full p-1.5 hover:bg-surface-muted lg:hidden">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <Avatar name={counterpart} />

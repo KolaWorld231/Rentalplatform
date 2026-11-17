@@ -58,7 +58,7 @@ export default async function OwnerPropertiesPage() {
                   stale && "ring-1 ring-warning-500/40",
                 )}
               >
-                <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-sage-200">
+                <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-surface-muted">
                   {cover && (
                     <Image src={propertyImageUrl(cover.storage_path)} alt="" fill sizes="80px" className="object-cover" />
                   )}

@@ -37,6 +37,28 @@
   --color-surface: #ffffff;
   --color-border: #e5e5e5;
 
+  /*
+    Semantic surface layer.
+
+    The raw ramps below (sage, ivory, charcoal) are NOT theme-aware in
+    the same direction: charcoal flips to light text in dark mode (see
+    the dark block further down) while sage and ivory stay frozen at
+    their light values. Anything that paired the two -- a sage fill
+    under charcoal text -- therefore rendered light-on-light in dark
+    mode, at roughly 1.04:1 contrast.
+
+    These four tokens are the fix: every *neutral* fill (page, card,
+    muted well, overlay panel) reads from one of them and flips with the
+    theme, so a surface and the text on it can never drift apart again.
+    The raw ramps stay available and correct for their other job --
+    light text on a brand-coloured or image surface (text-ivory-50 on
+    bg-brand-800), which is theme-independent by design.
+  */
+  --surface-base: var(--color-ivory-100);
+  --surface-raised: #ffffff;
+  --surface-muted: var(--color-sage-100);
+  --surface-overlay: var(--color-ivory-100);
+
   --color-success-500: #2f8f5b;
   --color-success-100: #e3f3ea;
   --color-warning-500: #b9790f;
@@ -104,6 +126,11 @@
   --color-surface: var(--color-surface);
   --color-border: var(--color-border);
 
+  --color-surface-base: var(--surface-base);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-overlay: var(--surface-overlay);
+
   --color-success-500: var(--color-success-500);
   --color-success-100: var(--color-success-100);
   --color-warning-500: var(--color-warning-500);
@@ -142,6 +169,17 @@
     --color-charcoal-700: #f0f0f0;
     --color-charcoal-500: #a8a8a8;
     --color-charcoal-400: #8c8c8c;
+
+    /*
+      Neutral surfaces flip with the theme. In dark mode a "muted" fill
+      is lighter than the page rather than darker -- that's how elevation
+      reads on a dark ground -- so the relationship to the (now light)
+      charcoal text is preserved in both themes.
+    */
+    --surface-base: var(--color-charcoal-900);
+    --surface-raised: #1a1a1a;
+    --surface-muted: #242424;
+    --surface-overlay: #242424;
   }
 }
 

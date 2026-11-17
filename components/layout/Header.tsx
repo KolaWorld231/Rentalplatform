@@ -80,8 +80,8 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
             aria-label="Messages"
             aria-current={isActivePath(pathname, "/messages") ? "page" : undefined}
             className={cn(
-              "focus-ring rounded-full p-2 hover:bg-sage-100",
-              isActivePath(pathname, "/messages") && "bg-sage-100 text-brand-700",
+              "focus-ring rounded-full p-2 hover:bg-surface-muted",
+              isActivePath(pathname, "/messages") && "bg-surface-muted text-brand-700",
             )}
           >
             <MessageCircle className="h-5 w-5 text-charcoal-500" />
@@ -91,8 +91,8 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
             aria-label="Saved properties"
             aria-current={isActivePath(pathname, "/favourites") ? "page" : undefined}
             className={cn(
-              "focus-ring rounded-full p-2 hover:bg-sage-100",
-              isActivePath(pathname, "/favourites") && "bg-sage-100 text-brand-700",
+              "focus-ring rounded-full p-2 hover:bg-surface-muted",
+              isActivePath(pathname, "/favourites") && "bg-surface-muted text-brand-700",
             )}
           >
             <Heart className="h-5 w-5 text-charcoal-500" />
@@ -101,7 +101,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
             <Link
               href="/account"
               aria-label="Account"
-              className="focus-ring rounded-full p-2 hover:bg-sage-100"
+              className="focus-ring rounded-full p-2 hover:bg-surface-muted"
             >
               <User className="h-5 w-5 text-charcoal-500" />
             </Link>

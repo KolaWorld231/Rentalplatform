@@ -19,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Link
             key={link.href}
             href={link.href}
-            className="focus-ring whitespace-nowrap rounded-[var(--radius-md)] bg-surface px-4 py-2 text-sm font-medium text-charcoal-700 shadow-[var(--shadow-subtle)] hover:bg-sage-100"
+            className="focus-ring whitespace-nowrap rounded-[var(--radius-md)] bg-surface px-4 py-2 text-sm font-medium text-charcoal-700 shadow-[var(--shadow-subtle)] hover:bg-surface-muted"
           >
             {link.label}
           </Link>

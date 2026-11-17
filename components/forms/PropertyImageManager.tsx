@@ -70,7 +70,7 @@ export function PropertyImageManager({
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {images.map((img) => (
-          <div key={img.id} className="group relative aspect-square overflow-hidden rounded-[var(--radius-md)] bg-sage-200">
+          <div key={img.id} className="group relative aspect-square overflow-hidden rounded-[var(--radius-md)] bg-surface-muted">
             <Image src={propertyImageUrl(img.storage_path)} alt="" fill sizes="200px" className="object-cover" />
             {img.is_cover && (
               <span className="absolute left-1.5 top-1.5 rounded-[var(--radius-sm)] bg-brand-600 px-1.5 py-0.5 text-[10px] font-medium text-ivory-50">

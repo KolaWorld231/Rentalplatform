@@ -113,7 +113,7 @@ export default async function DashboardOverviewPage() {
                 <li key={c.id}>
                   <Link
                     href={`/messages/${c.id}`}
-                    className="focus-ring flex items-center gap-3 py-3 hover:bg-sage-100"
+                    className="focus-ring flex items-center gap-3 py-3 hover:bg-surface-muted"
                   >
                     <Avatar name={c.renter_profile?.display_name} size="sm" />
                     <div className="min-w-0 flex-1">

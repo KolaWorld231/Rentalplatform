@@ -42,7 +42,7 @@ export function MessageThread({
             <div
               className={cn(
                 "max-w-[80%] rounded-[var(--radius-lg)] px-4 py-2.5 text-sm",
-                isMine ? "bg-brand-600 text-ivory-50" : "bg-sage-100 text-charcoal-700",
+                isMine ? "bg-brand-600 text-ivory-50" : "bg-surface-muted text-charcoal-700",
               )}
             >
               <p className="whitespace-pre-line">{m.body}</p>

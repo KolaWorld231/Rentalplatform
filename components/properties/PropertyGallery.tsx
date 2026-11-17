@@ -33,7 +33,7 @@ export function PropertyGallery({
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[4/3] items-center justify-center rounded-[var(--radius-xl)] bg-sage-200 text-sm text-charcoal-400">
+      <div className="flex aspect-[4/3] items-center justify-center rounded-[var(--radius-xl)] bg-surface-muted text-sm text-charcoal-500">
         No photos yet
       </div>
     );
@@ -45,7 +45,7 @@ export function PropertyGallery({
         type="button"
         onClick={() => setLightboxOpen(true)}
         aria-label={`Open full-screen photo ${active + 1} of ${images.length}`}
-        className="focus-ring group relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-xl)] bg-sage-200"
+        className="focus-ring group relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-xl)] bg-surface-muted"
       >
         <Image
           src={propertyImageUrl(images[active].storage_path)}

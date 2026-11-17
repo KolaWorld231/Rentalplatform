@@ -11,9 +11,9 @@ export const buttonVariants = cva(
         primary:
           "bg-brand-600 text-ivory-50 shadow-[var(--shadow-raised)] hover:bg-brand-700 active:translate-y-px",
         secondary:
-          "bg-surface text-charcoal-700 border border-border shadow-[var(--shadow-subtle)] hover:bg-sage-100 active:translate-y-px",
+          "bg-surface text-charcoal-700 border border-border shadow-[var(--shadow-subtle)] hover:bg-surface-muted active:translate-y-px",
         clay: "bg-clay-500 text-ivory-50 shadow-[var(--shadow-raised)] hover:bg-clay-600 active:translate-y-px",
-        ghost: "bg-transparent text-charcoal-700 hover:bg-sage-100",
+        ghost: "bg-transparent text-charcoal-700 hover:bg-surface-muted",
         danger: "bg-error-500 text-ivory-50 hover:opacity-90",
       },
       size: {

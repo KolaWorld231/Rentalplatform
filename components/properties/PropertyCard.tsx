@@ -41,7 +41,7 @@ export function PropertyCard({
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-surface shadow-[var(--shadow-raised)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] active:translate-y-0 active:shadow-[var(--shadow-clay-inset)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <Link href={href} className="focus-ring block">
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-sage-200">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface-muted">
           <PropertyCardMedia storagePaths={orderedPaths} alt={property.title} />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
             <Badge variant="neutral" className="bg-surface/90">

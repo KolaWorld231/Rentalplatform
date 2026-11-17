@@ -48,7 +48,7 @@ export function Drawer({ open, onClose, title, children, side = "bottom" }: Draw
         <button
           onClick={onClose}
           aria-label="Close"
-          className="focus-ring rounded-full p-1.5 hover:bg-sage-100"
+          className="focus-ring rounded-full p-1.5 hover:bg-surface-muted"
         >
           <X className="h-5 w-5" />
         </button>

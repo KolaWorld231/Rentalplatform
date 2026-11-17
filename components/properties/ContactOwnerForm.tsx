@@ -37,7 +37,7 @@ export function ContactOwnerForm({
   if (isOwnListing) return null;
 
   return (
-    <div className="rounded-[var(--radius-lg)] bg-sage-100 p-4">
+    <div className="rounded-[var(--radius-lg)] bg-surface-muted p-4">
       <p className="flex items-center gap-2 text-sm font-medium text-charcoal-700">
         <MessageCircle className="h-4 w-4 text-brand-600" aria-hidden="true" />
         Contact the owner
@@ -80,7 +80,7 @@ export function ContactOwnerForm({
 
 export function ContactOwnerGuestPrompt() {
   return (
-    <div className="rounded-[var(--radius-lg)] bg-sage-100 p-4">
+    <div className="rounded-[var(--radius-lg)] bg-surface-muted p-4">
       <p className="flex items-center gap-2 text-sm font-medium text-charcoal-700">
         <MessageCircle className="h-4 w-4 text-brand-600" aria-hidden="true" />
         Contact the owner
