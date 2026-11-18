@@ -475,6 +475,18 @@ dialog[open][data-drawer-side="right"] {
     transform: translateY(0) scale(1);
   }
 }
+/*
+  Hides the horizontal scrollbar on collection rows. The row keeps
+  tabindex and a focus ring so keyboard scrolling still works -- hiding
+  the bar without that would remove the only non-pointer way to move it.
+*/
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 .animate-popover-in {
   animation: popover-in 0.14s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top;
