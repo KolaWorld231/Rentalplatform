@@ -45,7 +45,7 @@ export function PropertyCard({
   const href = `/properties/${property.slug}${searchQuery ? `?${searchQuery}` : ""}`;
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-surface-raised shadow-[var(--shadow-raised)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+    <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] bg-surface-raised shadow-[var(--shadow-raised)] transition-[transform,box-shadow] duration-[var(--motion-base)] ease-standard hover:-translate-y-1 hover:shadow-[var(--shadow-floating)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface-muted">
         <PropertyCardMedia storagePaths={orderedPaths} alt={property.title} />
 

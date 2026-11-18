@@ -70,6 +70,48 @@ canvas, tinted black to match the neutral palette. Not every surface gets
 full clay treatment — flat surfaces are used where density/readability need
 it (e.g. dense list rows, dashboard tables).
 
+## Motion (`app/globals.css`)
+
+Durations used to be chosen per component — 150, 200, 300, 500 and 700ms
+appeared across the app with no rule behind which went where, and the
+codebase contained a single explicit easing. A chip and a full-page
+dialog animated at the same speed, while two identical hover lifts did
+not.
+
+**The rule: duration follows the distance an element travels and the area
+it covers, not how important it is.** A control reacting under the
+pointer must feel instant; a surface crossing the screen needs time to
+be followed.
+
+| Token | Value | Use |
+|---|---|---|
+| `--motion-fast` | 150ms | a control answering the pointer: press, toggle, chip, focus ring |
+| `--motion-base` | 250ms | an element changing in place: card lift, heart fill, image crossfade |
+| `--motion-slow` | 400ms | a surface arriving: dialog, drawer, mobile search sheet |
+| `--motion-reveal` | 600ms | content arriving on scroll (`Reveal`) |
+
+| Easing | Curve | Use |
+|---|---|---|
+| `--ease-entrance` | `cubic-bezier(0.16, 1, 0.3, 1)` | things arriving — decelerates so they settle rather than stop dead |
+| `--ease-exit` | `cubic-bezier(0.4, 0, 1, 1)` | things leaving — accelerates out of the way |
+| `--ease-standard` | `cubic-bezier(0.4, 0, 0.2, 1)` | things moving between two states in place |
+
+Easings are exposed as Tailwind utilities (`ease-entrance`, `ease-exit`,
+`ease-standard`); durations are referenced as
+`duration-[var(--motion-base)]`.
+
+Named keyframes (`dropdown-in`, `popover-in`, `heart-pop`, `hero-drift`)
+draw their timing from the same tokens. Anything decorative and
+long-running — the hero's 38s drift — is deliberately outside the scale,
+since it is ambient rather than a response to an action.
+
+**Reduced motion is handled once, globally.** A single block in
+`globals.css` forces every animation and transition to 0.01ms under
+`prefers-reduced-motion: reduce`, so a new component cannot forget it.
+Components still carry `motion-reduce:` variants where the *end state*
+differs (a hover lift must also not translate, not merely translate
+instantly).
+
 ## Component inventory (`components/ui/`)
 
 - `Button` (`buttonVariants`: primary / secondary / clay / ghost / danger;

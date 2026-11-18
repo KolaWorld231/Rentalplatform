@@ -49,7 +49,7 @@ export function Header({
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur transition-shadow duration-200",
+        "sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur transition-shadow duration-[var(--motion-base)] ease-standard",
         scrolled && "shadow-[var(--shadow-subtle)]",
       )}
     >
