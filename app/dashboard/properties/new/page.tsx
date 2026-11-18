@@ -8,10 +8,10 @@ export default function NewPropertyPage() {
     <div className="max-w-3xl">
       <h1 className="font-display text-2xl font-semibold text-charcoal-700">List a property</h1>
       <p className="mt-1 text-sm text-charcoal-500">
-        Listing is free, always. You can save as a draft and add photos after creating it.
+        Listing is free, always. Start with the essentials — photos and the rest come next.
       </p>
       <div className="mt-6 rounded-[var(--radius-lg)] bg-surface p-6 shadow-[var(--shadow-raised)]">
-        <PropertyForm action={createPropertyAction} submitLabel="Create listing" />
+        <PropertyForm action={createPropertyAction} submitLabel="Create listing" mode="create" />
       </div>
     </div>
   );

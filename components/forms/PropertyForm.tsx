@@ -19,16 +19,34 @@ function Checkbox({ name, label, defaultChecked }: { name: string; label: string
   );
 }
 
+/**
+ * `mode` decides how much of the form is shown, not what the action
+ * accepts -- both modes post to the same schema and anything omitted
+ * simply stays null.
+ *
+ * Creating a listing used to mean 26 fields across five sections,
+ * measuring 2228px on an 844px phone, of which only six were required.
+ * Features and rental terms -- 17 of those fields, every one optional --
+ * stood between an owner and having anything at all. They move to the
+ * edit page, which the owner lands on immediately afterwards and which
+ * already tracks what is missing and holds the publish control.
+ *
+ * So: creating is fast, and quality is encouraged at the point of
+ * publishing, where it actually matters.
+ */
 export function PropertyForm({
   action,
   property,
   submitLabel,
+  mode = "edit",
 }: {
   action: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   property?: Property;
   submitLabel: string;
+  mode?: "create" | "edit";
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const isCreate = mode === "create";
 
   return (
     <form action={formAction} className="flex flex-col gap-8">
@@ -134,6 +152,7 @@ export function PropertyForm({
         </div>
       </section>
 
+      {!isCreate && (
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-lg font-semibold text-charcoal-700">Features</h2>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -157,7 +176,9 @@ export function PropertyForm({
           <Checkbox name="roadAccessible" label="Road accessible" defaultChecked={property?.road_accessible} />
         </div>
       </section>
+      )}
 
+      {!isCreate && (
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-lg font-semibold text-charcoal-700">Rental terms</h2>
         <p className="text-xs text-charcoal-400">
@@ -208,6 +229,14 @@ export function PropertyForm({
           />
         </div>
       </section>
+      )}
+
+      {isCreate && (
+        <p className="text-sm text-charcoal-500">
+          Photos, features and rental terms come next — you&apos;ll add them on the following
+          screen, before publishing.
+        </p>
+      )}
 
       {state.error && <p className="text-sm font-medium text-error">{state.error}</p>}
 
