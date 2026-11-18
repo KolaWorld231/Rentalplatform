@@ -50,7 +50,7 @@ export function PropertyCardMedia({
 
   return (
     <div
-      className="relative h-full w-full transition-transform duration-300 group-hover:scale-[1.03] group-focus-within:scale-[1.03] motion-reduce:transition-none"
+      className="relative h-full w-full transition-transform duration-[var(--motion-base)] ease-standard group-hover:scale-[1.03] group-focus-within:scale-[1.03] motion-reduce:transition-none"
       onMouseEnter={startCycling}
       onMouseLeave={stopCycling}
       onFocus={startCycling}
@@ -64,7 +64,7 @@ export function PropertyCardMedia({
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           className={cn(
-            "object-cover transition-opacity duration-500 motion-reduce:transition-none",
+            "object-cover transition-opacity duration-[var(--motion-base)] ease-standard motion-reduce:transition-none",
             i === activeIndex ? "opacity-100" : "opacity-0",
           )}
           priority={i === 0}

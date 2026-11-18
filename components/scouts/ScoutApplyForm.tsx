@@ -37,7 +37,7 @@ function Textarea({
       <FieldLabel htmlFor={props.id}>{label}</FieldLabel>
       <textarea
         {...props}
-        className="focus-ring min-h-24 rounded-[var(--radius-md)] border border-border bg-surface px-3.5 py-2.5 text-sm text-charcoal-700 shadow-[var(--shadow-clay-inset)] outline-none transition-colors duration-150 placeholder:text-charcoal-400 focus:border-brand-500"
+        className="focus-ring min-h-24 rounded-[var(--radius-md)] border border-border bg-surface px-3.5 py-2.5 text-sm text-charcoal-700 shadow-[var(--shadow-clay-inset)] outline-none transition-colors duration-[var(--motion-fast)] ease-standard placeholder:text-charcoal-400 focus:border-brand-500"
       />
       {hint && !error && <p className="text-xs text-charcoal-400">{hint}</p>}
       {error && (

@@ -173,11 +173,24 @@ export async function verifiedFlagsFor(
   return properties.map((p) => owners.has(p.owner_id) || props.has(p.id));
 }
 
-export function listingCompleteness(property: Partial<Property>): {
+/**
+ * Photos were not among the checks, so a listing with no images at all
+ * reported 100% complete -- the product told owners they were finished
+ * while their listing showed "No photo yet" to every renter. Every
+ * listing currently on the site is in exactly that state.
+ *
+ * It is counted like any other signal rather than being weighted
+ * specially; what matters is that a photo-less listing can no longer
+ * claim to be done.
+ */
+export function listingCompleteness(
+  property: Partial<Property> & { property_images?: unknown[] },
+): {
   percent: number;
   missing: string[];
 } {
   const checks: { label: string; done: boolean }[] = [
+    { label: "Photos", done: (property.property_images?.length ?? 0) > 0 },
     { label: "Description", done: !!property.description && property.description.length > 20 },
     { label: "Price", done: !!property.rent_amount && property.rent_amount > 0 },
     { label: "Location", done: !!property.county && !!property.city },
@@ -190,4 +203,85 @@ export function listingCompleteness(property: Partial<Property>): {
     percent: Math.round((done / checks.length) * 100),
     missing: checks.filter((c) => !c.done).map((c) => c.label),
   };
+}
+
+/**
+ * Builds the homepage's collection rows from real listings.
+ *
+ * Two rules decide what appears, both there to stop the page from
+ * advertising depth it does not have:
+ *
+ *  - A row needs MIN_ROW_ITEMS listings or it is not built at all. A
+ *    carousel holding one card is not a collection; it is the same
+ *    listing shown again under a different heading, and with the
+ *    current inventory almost every category-based row would be exactly
+ *    that.
+ *  - A listing appears in at most one themed row, so three rows cannot
+ *    turn out to be the same properties three times.
+ *
+ * As inventory grows, rows appear on their own. Nothing here invents a
+ * category to fill space.
+ */
+export const MIN_ROW_ITEMS = 3;
+
+export type Collection = {
+  key: string;
+  title: string;
+  subtitle?: string;
+  viewAllHref: string;
+  properties: PropertyWithCover[];
+};
+
+export function buildCollections(
+  all: PropertyWithCover[],
+  /** Ids already on screen (the "Recently listed" row). A themed row has
+   *  to contribute listings the visitor has not just scrolled past, or it
+   *  is padding: with a small catalogue it would otherwise show the same
+   *  four properties again under a place name. */
+  alreadyShown: Iterable<string> = [],
+): Collection[] {
+  const collections: Collection[] = [];
+  const used = new Set<string>(alreadyShown);
+
+  const take = (
+    key: string,
+    title: string,
+    viewAllHref: string,
+    predicate: (p: PropertyWithCover) => boolean,
+    subtitle?: string,
+  ) => {
+    const fresh = all.filter((p) => !used.has(p.id) && predicate(p));
+    if (fresh.length < MIN_ROW_ITEMS) return;
+    fresh.forEach((p) => used.add(p.id));
+    // The row itself shows every match, so it reads as a real collection
+    // rather than a remainder -- the threshold is about whether the row
+    // earns its place, not about hiding listings from it.
+    const items = all.filter(predicate);
+    collections.push({ key, title, subtitle, viewAllHref, properties: items });
+  };
+
+  const byCount = <T extends string>(values: (T | null)[]) =>
+    Object.entries(
+      values.reduce<Record<string, number>>((acc, v) => {
+        if (v) acc[v] = (acc[v] ?? 0) + 1;
+        return acc;
+      }, {}),
+    ).sort((a, b) => b[1] - a[1]);
+
+  for (const [city] of byCount(all.map((p) => p.city))) {
+    take(`city-${city}`, `Places to rent in ${city}`, `/search?city=${encodeURIComponent(city)}`, (p) => p.city === city);
+  }
+
+  for (const [county] of byCount(all.map((p) => p.county))) {
+    take(
+      `county-${county}`,
+      `Across ${county} County`,
+      `/search?county=${encodeURIComponent(county)}`,
+      (p) => p.county === county,
+    );
+  }
+
+  take("furnished", "Move in furnished", "/search?furnished=true", (p) => p.furnished === true);
+
+  return collections;
 }

@@ -4,7 +4,7 @@ import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Header, MobileTabBar } from "@/components/layout/Header";
 import { brand } from "@/lib/config/brand";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser, getCurrentUserRoles } from "@/lib/auth/session";
 
 const interfaceFont = Manrope({
   variable: "--font-interface",
@@ -54,6 +54,9 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
+  // The header's menu hides destinations a person cannot use. These are
+  // for display only -- requireRole still guards every route behind them.
+  const roles = user ? await getCurrentUserRoles() : [];
 
   return (
     <html
@@ -67,7 +70,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         >
           Skip to content
         </a>
-        <Header isAuthenticated={!!user} />
+        <Header
+          isAuthenticated={!!user}
+          isOwner={roles.includes("owner")}
+          isAdmin={roles.includes("admin")}
+          displayName={(user?.user_metadata?.display_name as string | undefined) ?? null}
+        />
         <main id="main-content" className="flex-1 pb-16 md:pb-0">
           {children}
         </main>

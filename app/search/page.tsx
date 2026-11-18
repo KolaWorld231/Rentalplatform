@@ -2,8 +2,9 @@ import { ChevronLeft, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
-import { SearchBar } from "@/components/properties/SearchBar";
-import { SearchFilters } from "@/components/properties/SearchFilters";
+import { ActiveFilterChips } from "@/components/properties/ActiveFilterChips";
+import { SegmentedSearch } from "@/components/properties/SegmentedSearch";
+import { CategoryNav } from "@/components/properties/CategoryNav";
 import { SortSelect } from "@/components/properties/SortSelect";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -53,10 +54,33 @@ async function SearchResults({
   const searchQueryString = searchFilterQueryString(params);
 
   const supabase = await createClient();
-  const [{ properties, total, page, pageSize }, user] = await Promise.all([
+  const [{ properties, total, page, pageSize }, user, { data: coverageRows }] = await Promise.all([
     searchProperties(supabase, params),
     getCurrentUser(),
+    supabase.from("properties").select("county, city, community, category").eq("listing_status", "published"),
   ]);
+
+  const counties = [...new Set((coverageRows ?? []).map((r) => r.county))].sort();
+  const categoryCounts = Object.entries(
+    (coverageRows ?? []).reduce<Record<string, number>>((acc, r) => {
+      if (r.category) acc[r.category] = (acc[r.category] ?? 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count);
+  const communities = [
+    ...new Set(
+      (coverageRows ?? [])
+        .flatMap((r) => [r.community, r.city])
+        .filter((v): v is string => typeof v === "string" && v.trim().length > 0),
+    ),
+  ].sort();
+
+  // Naming the place in the heading matters most when the result set is
+  // empty: "No properties in Sinkor under $200" is a filter problem the
+  // renter can act on, where a bare "no results" reads as "nothing exists".
+  const placeLabel = params.city || (params.county ? `${params.county} County` : null);
 
   let favouritedIds = new Set<string>();
   if (user) {
@@ -71,14 +95,34 @@ async function SearchResults({
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6">
-        <SearchBar />
+        <SegmentedSearch counties={counties} communities={communities} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <aside className="lg:sticky lg:top-20 lg:self-start">
-          <SearchFilters resultCount={total} />
-        </aside>
+      <div className="mb-5 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-display text-xl font-semibold text-charcoal-700">
+            {total === 0
+              ? "No properties match"
+              : `${total} ${total === 1 ? "property" : "properties"}`}
+            {placeLabel && <span className="text-charcoal-500"> in {placeLabel}</span>}
+          </h1>
+          {total > 0 && <SortSelect />}
+        </div>
+        <ActiveFilterChips params={params} />
+      </div>
 
+      <div className="mb-6">
+        <CategoryNav categories={categoryCounts} active={params.category} />
+      </div>
+
+      {/*
+        The sidebar was a third copy of the same filters -- the segmented
+        search sets them, the chips show and remove them, and the sidebar
+        repeated all of it again while squeezing the results into 60% of
+        the width. On a 1280px screen that meant one card in a large empty
+        area. The grid now takes the full width.
+      */}
+      <div>
         <div>
           {properties.length === 0 ? (
             <Card className="flex flex-col items-center gap-3 p-12 text-center">
@@ -94,11 +138,7 @@ async function SearchResults({
             </Card>
           ) : (
             <>
-              <div className="mb-4 flex items-center justify-end">
-                <SortSelect />
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {properties.map((property, i) => (
                   <PropertyCard
                     key={property.id}

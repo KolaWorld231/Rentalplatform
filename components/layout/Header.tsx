@@ -1,11 +1,12 @@
 "use client";
 
-import { Heart, Home, Menu, MessageCircle, Search, User, X } from "lucide-react";
+import { Heart, Home, Menu, MessageCircle, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { AccountMenu } from "@/components/layout/AccountMenu";
 import { IntentChoiceDialog } from "@/components/auth/IntentChoiceDialog";
 import { brand } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
@@ -21,7 +22,17 @@ function isActivePath(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function Header({
+  isAuthenticated,
+  isOwner = false,
+  isAdmin = false,
+  displayName = null,
+}: {
+  isAuthenticated: boolean;
+  isOwner?: boolean;
+  isAdmin?: boolean;
+  displayName?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -38,7 +49,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur transition-shadow duration-200",
+        "sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur transition-shadow duration-[var(--motion-base)] ease-standard",
         scrolled && "shadow-[var(--shadow-subtle)]",
       )}
     >
@@ -97,24 +108,17 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
           >
             <Heart className="h-5 w-5 text-charcoal-500" />
           </Link>
-          {isAuthenticated ? (
-            <Link
-              href="/account"
-              aria-label="Account"
-              className="focus-ring rounded-full p-2 hover:bg-surface-muted"
-            >
-              <User className="h-5 w-5 text-charcoal-500" />
-            </Link>
-          ) : (
-            <>
-              <Link href="/login" className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
-                Log in
-              </Link>
-              <IntentChoiceDialog className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
-                Get started
-              </IntentChoiceDialog>
-            </>
+          {!isAuthenticated && (
+            <IntentChoiceDialog className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
+              Get started
+            </IntentChoiceDialog>
           )}
+          <AccountMenu
+            isAuthenticated={isAuthenticated}
+            isOwner={isOwner}
+            isAdmin={isAdmin}
+            displayName={displayName}
+          />
         </div>
 
         <button
