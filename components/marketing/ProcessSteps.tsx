@@ -24,7 +24,7 @@ export function ProcessSteps({
   /** Zig-zag left/right on wide layouts; set false in a narrow column where it has no room to swing. */
   alternate?: boolean;
 }) {
-  const accentText = accent === "brand" ? "text-brand-600" : "text-clay-600";
+  const accentText = accent === "brand" ? "text-accent-text" : "text-accent-text";
   const accentBg = accent === "brand" ? "bg-brand-600" : "bg-clay-500";
 
   return (

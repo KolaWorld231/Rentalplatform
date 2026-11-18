@@ -96,7 +96,7 @@ export function PropertyImageManager({
                 onClick={() => startTransition(() => deletePropertyImageAction(propertyId, img.id, img.storage_path))}
                 className="focus-ring rounded-full bg-surface p-1.5"
               >
-                <Trash2 className="h-3.5 w-3.5 text-error-500" />
+                <Trash2 className="h-3.5 w-3.5 text-error" />
               </button>
             </div>
           </div>
@@ -107,7 +107,7 @@ export function PropertyImageManager({
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
           className={cn(
-            "focus-ring flex aspect-square flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border-2 border-dashed border-border text-xs text-charcoal-400 hover:border-brand-500 hover:text-brand-600",
+            "focus-ring flex aspect-square flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border-2 border-dashed border-border text-xs text-charcoal-400 hover:border-brand-500 hover:text-accent-text",
             uploading && "opacity-60",
           )}
         >
@@ -125,7 +125,7 @@ export function PropertyImageManager({
         onChange={(e) => e.target.files && handleFiles(e.target.files)}
       />
 
-      {error && <p className="text-sm font-medium text-error-500">{error}</p>}
+      {error && <p className="text-sm font-medium text-error">{error}</p>}
       <p className="text-xs text-charcoal-400">JPEG, PNG, or WebP. Up to 8MB each.</p>
     </div>
   );

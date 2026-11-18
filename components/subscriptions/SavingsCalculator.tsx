@@ -18,7 +18,7 @@ export function SavingsCalculator({
     <div className="rounded-[var(--radius-lg)] bg-surface-overlay p-6 shadow-[var(--shadow-clay-inset)]">
       <label htmlFor="property-count" className="flex items-center justify-between text-sm font-medium text-charcoal-700">
         <span>Properties you&apos;d want to contact</span>
-        <span className="font-display text-lg font-semibold text-brand-800">{propertyCount}</span>
+        <span className="font-display text-lg font-semibold text-accent-text">{propertyCount}</span>
       </label>
       <input
         id="property-count"
@@ -40,12 +40,12 @@ export function SavingsCalculator({
         </div>
         <div>
           <p className="text-xs text-charcoal-400">With the Direct Access Pass</p>
-          <p className="mt-1 font-display text-xl font-semibold text-brand-800">{formatUsd(passPriceUsd)}</p>
+          <p className="mt-1 font-display text-xl font-semibold text-accent-text">{formatUsd(passPriceUsd)}</p>
         </div>
       </div>
 
       {savings > 0 && (
-        <p className="mt-4 text-center text-sm font-medium text-success-500">
+        <p className="mt-4 text-center text-sm font-medium text-success">
           You&apos;d save {formatUsd(savings)} by contacting those {propertyCount} owners directly.
         </p>
       )}

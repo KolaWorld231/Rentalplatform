@@ -43,7 +43,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold text-brand-800">
+        <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold text-accent-text">
           <BrandMark className="h-7 w-7" />
           {brand.name}
         </Link>
@@ -58,7 +58,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "focus-ring relative rounded-[var(--radius-sm)] pb-1 text-sm font-medium transition-colors",
-                  active ? "text-brand-700" : "text-charcoal-500 hover:text-brand-700",
+                  active ? "text-accent-text" : "text-charcoal-500 hover:text-accent-text",
                 )}
               >
                 {link.label}
@@ -81,7 +81,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
             aria-current={isActivePath(pathname, "/messages") ? "page" : undefined}
             className={cn(
               "focus-ring rounded-full p-2 hover:bg-surface-muted",
-              isActivePath(pathname, "/messages") && "bg-surface-muted text-brand-700",
+              isActivePath(pathname, "/messages") && "bg-surface-muted text-accent-text",
             )}
           >
             <MessageCircle className="h-5 w-5 text-charcoal-500" />
@@ -92,7 +92,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
             aria-current={isActivePath(pathname, "/favourites") ? "page" : undefined}
             className={cn(
               "focus-ring rounded-full p-2 hover:bg-surface-muted",
-              isActivePath(pathname, "/favourites") && "bg-surface-muted text-brand-700",
+              isActivePath(pathname, "/favourites") && "bg-surface-muted text-accent-text",
             )}
           >
             <Heart className="h-5 w-5 text-charcoal-500" />
@@ -142,7 +142,7 @@ export function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "block py-1.5 text-sm font-medium",
-                      active ? "text-brand-700" : "text-charcoal-700",
+                      active ? "text-accent-text" : "text-charcoal-700",
                     )}
                     onClick={() => setOpen(false)}
                   >
@@ -201,7 +201,7 @@ export function MobileTabBar() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors",
-              active ? "font-semibold text-brand-700" : "text-charcoal-500",
+              active ? "font-semibold text-accent-text" : "text-charcoal-500",
             )}
           >
             <tab.icon className="h-5 w-5" />

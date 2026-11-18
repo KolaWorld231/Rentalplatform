@@ -55,7 +55,7 @@ export default async function ScoutDashboardPage() {
           <Card className="p-6">
             <p className="text-sm text-charcoal-700">
               No scout account is linked here yet. If you&apos;ve been approved, make sure the phone number on your{" "}
-              <Link href="/account" className="font-medium text-brand-700">
+              <Link href="/account" className="font-medium text-accent-text">
                 account
               </Link>{" "}
               matches the one on your application.

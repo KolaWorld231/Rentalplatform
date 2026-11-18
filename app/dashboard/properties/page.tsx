@@ -75,7 +75,7 @@ export default async function OwnerPropertiesPage() {
                   <p className="text-xs text-charcoal-400">{p.city}, {p.county}</p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <p className="text-sm font-semibold text-brand-800">{formatUsd(p.rent_amount)}</p>
+                  <p className="text-sm font-semibold text-accent-text">{formatUsd(p.rent_amount)}</p>
                   <Badge variant={p.listing_status === "published" ? "success" : "neutral"}>
                     {p.listing_status.replace("_", " ")}
                   </Badge>

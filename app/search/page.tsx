@@ -130,7 +130,7 @@ async function SearchResults({
                           <Link
                             href={`/search?${prevParams.toString()}`}
                             aria-label="Previous page"
-                            className="focus-ring flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-surface text-charcoal-600 shadow-[var(--shadow-subtle)] hover:text-brand-700"
+                            className="focus-ring flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-surface text-charcoal-600 shadow-[var(--shadow-subtle)] hover:text-accent-text"
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </Link>
@@ -148,7 +148,7 @@ async function SearchResults({
                           <Link
                             href={`/search?${nextParams.toString()}`}
                             aria-label="Next page"
-                            className="focus-ring flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-surface text-charcoal-600 shadow-[var(--shadow-subtle)] hover:text-brand-700"
+                            className="focus-ring flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-surface text-charcoal-600 shadow-[var(--shadow-subtle)] hover:text-accent-text"
                           >
                             <ChevronRight className="h-4 w-4" />
                           </Link>

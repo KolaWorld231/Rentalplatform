@@ -37,14 +37,14 @@ export function MomoPendingStatus({ reference }: { reference: string }) {
   }, [attempt, reference, router]);
 
   if (error) {
-    return <p className="text-sm font-medium text-error-500">{error}</p>;
+    return <p className="text-sm font-medium text-error">{error}</p>;
   }
 
   if (attempt >= MAX_POLLS) {
     return (
       <p className="text-sm text-charcoal-500">
         This is taking longer than expected. If you approved the payment on your phone, check back on{" "}
-        <a href="/pricing" className="font-medium text-brand-700">
+        <a href="/pricing" className="font-medium text-accent-text">
           the pricing page
         </a>{" "}
         in a minute.
@@ -54,7 +54,7 @@ export function MomoPendingStatus({ reference }: { reference: string }) {
 
   return (
     <div className="flex flex-col items-center gap-2 text-center">
-      <Loader2 className="h-6 w-6 animate-spin text-brand-600" aria-hidden="true" />
+      <Loader2 className="h-6 w-6 animate-spin text-accent-text" aria-hidden="true" />
       <p className="text-sm text-charcoal-500">Waiting for you to approve the payment on your phone…</p>
     </div>
   );

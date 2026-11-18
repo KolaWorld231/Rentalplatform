@@ -64,7 +64,7 @@ export function ReportConversationButton({
               placeholder="Additional details (optional)"
               className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface p-3 text-sm shadow-[var(--shadow-clay-inset)]"
             />
-            {state.error && <p className="text-sm font-medium text-error-500">{state.error}</p>}
+            {state.error && <p className="text-sm font-medium text-error">{state.error}</p>}
             <Button type="submit" loading={pending} className="w-full">
               Submit report
             </Button>

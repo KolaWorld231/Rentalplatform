@@ -25,8 +25,8 @@ export function HeroSearch({ counties = [] }: { counties?: string[] }) {
               className={cn(
                 "focus-ring rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
                 c === county
-                  ? "border-clay-500 bg-clay-500 text-ivory-50"
-                  : "border-ivory-50/40 bg-ivory-50/10 text-ivory-50 hover:border-ivory-50/70",
+                  ? "border-brand-600 bg-accent-soft text-accent-on-soft"
+                  : "border-border bg-surface-raised text-charcoal-700 hover:border-charcoal-400",
               )}
             >
               {c}

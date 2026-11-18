@@ -41,7 +41,7 @@ function Textarea({
       />
       {hint && !error && <p className="text-xs text-charcoal-400">{hint}</p>}
       {error && (
-        <p role="alert" className="text-xs font-medium text-error-500">
+        <p role="alert" className="text-xs font-medium text-error">
           {error}
         </p>
       )}
@@ -72,7 +72,7 @@ function Checkbox({
         {children}
       </label>
       {error && (
-        <p role="alert" className="mt-1 text-xs font-medium text-error-500">
+        <p role="alert" className="mt-1 text-xs font-medium text-error">
           {error}
         </p>
       )}
@@ -189,7 +189,7 @@ export function ScoutApplyForm({ areas }: { areas: ScoutArea[] }) {
               </option>
             ))}
           </select>
-          {state.fieldErrors?.areaId && <p className="text-xs font-medium text-error-500">{state.fieldErrors.areaId}</p>}
+          {state.fieldErrors?.areaId && <p className="text-xs font-medium text-error">{state.fieldErrors.areaId}</p>}
         </div>
 
         <Textarea
@@ -263,7 +263,7 @@ export function ScoutApplyForm({ areas }: { areas: ScoutArea[] }) {
             />
           </div>
         ))}
-        {state.fieldErrors?.references && <p className="text-xs font-medium text-error-500">{state.fieldErrors.references}</p>}
+        {state.fieldErrors?.references && <p className="text-xs font-medium text-error">{state.fieldErrors.references}</p>}
       </Card>
 
       <Card className="flex flex-col gap-3 p-6">
@@ -276,7 +276,7 @@ export function ScoutApplyForm({ areas }: { areas: ScoutArea[] }) {
       </Card>
 
       {state.error && (
-        <p role="alert" className="text-sm font-medium text-error-500">
+        <p role="alert" className="text-sm font-medium text-error">
           {state.error}
         </p>
       )}

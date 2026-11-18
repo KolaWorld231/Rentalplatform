@@ -52,22 +52,22 @@ export default async function PricingPage({
       </div>
 
       {payment === "success" && (
-        <p className="mt-6 rounded-[var(--radius-md)] bg-success-100 px-4 py-3 text-sm text-success-500">
+        <p className="mt-6 rounded-[var(--radius-md)] bg-success-soft px-4 py-3 text-sm text-success">
           Payment confirmed — your Direct Access Pass is active.
         </p>
       )}
       {payment === "failed" && (
-        <p className="mt-6 rounded-[var(--radius-md)] bg-error-100 px-4 py-3 text-sm text-error-500">
+        <p className="mt-6 rounded-[var(--radius-md)] bg-error-soft px-4 py-3 text-sm text-error">
           That payment wasn&apos;t confirmed. No charge was applied — you can try again below.
         </p>
       )}
       {error === "checkout_failed" && (
-        <p className="mt-6 rounded-[var(--radius-md)] bg-error-100 px-4 py-3 text-sm text-error-500">
+        <p className="mt-6 rounded-[var(--radius-md)] bg-error-soft px-4 py-3 text-sm text-error">
           Couldn&apos;t start checkout. Please try again.
         </p>
       )}
       {error === "phone_required" && (
-        <p className="mt-6 rounded-[var(--radius-md)] bg-error-100 px-4 py-3 text-sm text-error-500">
+        <p className="mt-6 rounded-[var(--radius-md)] bg-error-soft px-4 py-3 text-sm text-error">
           Enter the mobile money phone number you want to pay with below.
         </p>
       )}
@@ -88,7 +88,7 @@ export default async function PricingPage({
           <ul className="mt-4 flex flex-col gap-2.5">
             {agentColumn.map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-charcoal-500">
-                <X className="mt-0.5 h-4 w-4 shrink-0 text-error-500" aria-hidden="true" />
+                <X className="mt-0.5 h-4 w-4 shrink-0 text-error" aria-hidden="true" />
                 {item}
               </li>
             ))}
@@ -99,8 +99,8 @@ export default async function PricingPage({
           <Badge variant="brand" className="absolute right-4 top-4">
             Best value
           </Badge>
-          <p className="text-sm font-semibold text-brand-700">{subscriptionPlan.name}</p>
-          <p className="mt-2 font-display text-3xl font-semibold text-brand-800">
+          <p className="text-sm font-semibold text-accent-text">{subscriptionPlan.name}</p>
+          <p className="mt-2 font-display text-3xl font-semibold text-accent-text">
             Unlimited messaging
             <span className="block text-base font-normal text-charcoal-400">
               for {subscriptionPlan.durationDays} days
@@ -109,7 +109,7 @@ export default async function PricingPage({
           <ul className="mt-4 flex flex-col gap-2.5">
             {passColumn.map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-charcoal-600">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" aria-hidden="true" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
                 {item}
               </li>
             ))}
@@ -159,7 +159,7 @@ export default async function PricingPage({
 
       <p className="mt-10 text-center text-xs text-charcoal-400">
         Questions about payment? Visit{" "}
-        <a href="/help" className="font-medium text-brand-700">
+        <a href="/help" className="font-medium text-accent-text">
           Help &amp; Support
         </a>
         .

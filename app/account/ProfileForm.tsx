@@ -34,7 +34,7 @@ export function ProfileForm({
         error={state.fieldErrors?.phone}
       />
       {state.error && (
-        <p role="alert" className="text-sm font-medium text-error-500">
+        <p role="alert" className="text-sm font-medium text-error">
           {state.error}
         </p>
       )}

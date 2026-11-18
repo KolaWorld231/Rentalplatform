@@ -147,22 +147,22 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
             <dl className="mt-3 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
               {property.floor_area_sqm !== null && (
                 <div className="flex items-center gap-2 text-charcoal-600">
-                  <Ruler className="h-4 w-4 text-brand-600" aria-hidden="true" /> {property.floor_area_sqm} m²
+                  <Ruler className="h-4 w-4 text-accent-text" aria-hidden="true" /> {property.floor_area_sqm} m²
                 </div>
               )}
               {property.bedrooms !== null && (
                 <div className="flex items-center gap-2 text-charcoal-600">
-                  <BedDouble className="h-4 w-4 text-brand-600" aria-hidden="true" /> {property.bedrooms} bedrooms
+                  <BedDouble className="h-4 w-4 text-accent-text" aria-hidden="true" /> {property.bedrooms} bedrooms
                 </div>
               )}
               {property.bathrooms !== null && (
                 <div className="flex items-center gap-2 text-charcoal-600">
-                  <Bath className="h-4 w-4 text-brand-600" aria-hidden="true" /> {property.bathrooms} bathrooms
+                  <Bath className="h-4 w-4 text-accent-text" aria-hidden="true" /> {property.bathrooms} bathrooms
                 </div>
               )}
               {AMENITIES.filter((a) => property[a.key] === true).map((a) => (
                 <div key={String(a.key)} className="flex items-center gap-2 text-charcoal-600">
-                  <a.icon className="h-4 w-4 text-brand-600" aria-hidden="true" /> {a.label}
+                  <a.icon className="h-4 w-4 text-accent-text" aria-hidden="true" /> {a.label}
                 </div>
               ))}
             </dl>
@@ -188,14 +188,14 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
               </div>
             )}
 
-            <p className="font-display text-3xl font-semibold text-brand-800">
+            <p className="font-display text-3xl font-semibold text-accent-text">
               {formatUsd(property.rent_amount)}{" "}
               <span className="text-base font-normal text-charcoal-400">
                 {formatRentalFrequency(property.rental_frequency)}
               </span>
             </p>
             {property.last_availability_confirmed_at && (
-              <p className="mt-1 text-xs font-medium text-success-500">
+              <p className="mt-1 text-xs font-medium text-success">
                 Availability reconfirmed {formatRelativeDate(property.last_availability_confirmed_at)}
               </p>
             )}
@@ -262,7 +262,7 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
       <p className="mt-10 text-xs text-charcoal-400">
         A listing does not by itself prove ownership. Verify the property and the person offering
         it, inspect before committing, and get written terms. Read our{" "}
-        <Link href="/safety" className="font-medium text-brand-700">
+        <Link href="/safety" className="font-medium text-accent-text">
           safety guidance
         </Link>
         .

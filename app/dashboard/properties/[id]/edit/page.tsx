@@ -49,7 +49,7 @@ export default async function EditPropertyPage({ params }: PageProps) {
             <Badge variant="neutral">{completeness.percent}% complete</Badge>
           </div>
         </div>
-        <Link href={`/properties/${property.slug}`} className="text-sm font-medium text-brand-700">
+        <Link href={`/properties/${property.slug}`} className="text-sm font-medium text-accent-text">
           View public listing
         </Link>
       </div>
@@ -69,8 +69,8 @@ export default async function EditPropertyPage({ params }: PageProps) {
         <h2 className="font-display text-lg font-semibold text-charcoal-700">Status</h2>
 
         {property.listing_status === "published" && isStale && (
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-[var(--radius-md)] bg-warning-100 p-3">
-            <p className="text-sm text-warning-500">
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-[var(--radius-md)] bg-warning-soft p-3">
+            <p className="text-sm text-warning">
               {daysSinceConfirmed === null
                 ? "Availability has never been confirmed."
                 : `Availability hasn't been reconfirmed in ${daysSinceConfirmed} days.`}
@@ -131,7 +131,7 @@ export default async function EditPropertyPage({ params }: PageProps) {
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Danger zone</p>
             <div className="mt-2">
               <form action={async () => { "use server"; await setListingStatusAction(id, "archived"); }}>
-                <Button type="submit" variant="ghost" size="sm" className="text-error-500 hover:bg-error-100">
+                <Button type="submit" variant="ghost" size="sm" className="text-error hover:bg-error-soft">
                   Archive this listing
                 </Button>
               </form>

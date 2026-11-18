@@ -53,8 +53,8 @@ export default async function DashboardOverviewPage() {
       <h1 className="font-display text-2xl font-semibold text-charcoal-700">Dashboard</h1>
 
       {staleCount > 0 && (
-        <Card className="mt-6 flex items-center gap-3 border-l-4 border-warning-500 bg-warning-100 p-4">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-warning-500" aria-hidden="true" />
+        <Card className="mt-6 flex items-center gap-3 border-l-4 border-warning-500 bg-warning-soft p-4">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
           <div className="flex-1">
             <p className="text-sm font-medium text-charcoal-700">
               {staleCount} {staleCount === 1 ? "listing needs" : "listings need"} availability reconfirmed
@@ -63,7 +63,7 @@ export default async function DashboardOverviewPage() {
               Renters trust listings more when availability was recently confirmed.
             </p>
           </div>
-          <Link href="/dashboard/properties" className="shrink-0 text-sm font-medium text-brand-700">
+          <Link href="/dashboard/properties" className="shrink-0 text-sm font-medium text-accent-text">
             Review →
           </Link>
         </Card>
@@ -72,12 +72,12 @@ export default async function DashboardOverviewPage() {
       <Card className="mt-6 grid grid-cols-1 divide-y divide-border sm:grid-cols-5 sm:divide-x sm:divide-y-0">
         {stats.map((s) => (
           <div key={s.label} className="flex items-center gap-3 p-4">
-            <s.icon className={s.lead ? "h-5 w-5 shrink-0 text-brand-700" : "h-5 w-5 shrink-0 text-brand-600"} aria-hidden="true" />
+            <s.icon className={s.lead ? "h-5 w-5 shrink-0 text-accent-text" : "h-5 w-5 shrink-0 text-accent-text"} aria-hidden="true" />
             <div>
               <p
                 className={cn(
                   "font-display text-2xl font-semibold",
-                  s.lead ? "text-brand-800" : "text-charcoal-700",
+                  s.lead ? "text-accent-text" : "text-charcoal-700",
                 )}
               >
                 {s.value}
@@ -91,11 +91,11 @@ export default async function DashboardOverviewPage() {
       <Card className="mt-6 p-6">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 text-sm font-medium text-charcoal-700">
-            <MessageCircle className="h-4 w-4 text-brand-600" aria-hidden="true" />
+            <MessageCircle className="h-4 w-4 text-accent-text" aria-hidden="true" />
             Recent inquiries
           </p>
           {inquiries && inquiries.length > 0 && (
-            <Link href="/messages" className="text-xs font-medium text-brand-700">
+            <Link href="/messages" className="text-xs font-medium text-accent-text">
               View all
             </Link>
           )}
@@ -135,7 +135,7 @@ export default async function DashboardOverviewPage() {
       </Card>
 
       <div className="mt-6">
-        <Link href="/dashboard/properties" className="text-sm font-medium text-brand-700">
+        <Link href="/dashboard/properties" className="text-sm font-medium text-accent-text">
           Manage your properties →
         </Link>
       </div>

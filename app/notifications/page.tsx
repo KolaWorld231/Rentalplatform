@@ -71,7 +71,7 @@ export default async function NotificationsPage() {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {n.link && (
-                    <Link href={n.link} className="text-xs font-medium text-brand-700">
+                    <Link href={n.link} className="text-xs font-medium text-accent-text">
                       View
                     </Link>
                   )}

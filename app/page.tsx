@@ -65,7 +65,19 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-brand-800 px-4 py-16 text-ivory-50 sm:px-6 lg:px-8 lg:py-24">
+      {/*
+        The hero used to be a full-bleed wall of brand red with centred
+        text. Two problems with that: it made red roughly half the first
+        screen, so red could no longer signal anything (the primary
+        Search button sat red-on-red and disappeared), and it was the one
+        region that ignored the theme entirely -- hardcoded dark in both
+        light and dark mode.
+
+        It now sits on the same warm ground as the rest of the page and
+        spends red only where red means something: the search action and
+        the live stat figures.
+      */}
+      <section className="relative overflow-hidden border-b border-border bg-surface-base px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           {heroPhotos.map((img, i) => (
             // eslint-disable-next-line @next/next/no-img-element
@@ -74,7 +86,7 @@ export default async function HomePage() {
               src={propertyImageUrl(img.storage_path)}
               alt=""
               className={cn(
-                "absolute hidden object-cover opacity-20 blur-md saturate-50 lg:block animate-hero-drift motion-reduce:animate-none",
+                "absolute hidden object-cover opacity-[0.14] blur-xl saturate-50 lg:block animate-hero-drift motion-reduce:animate-none",
                 i === 0 && "right-[-4rem] top-[-2rem] h-72 w-96 rotate-6 rounded-[var(--radius-2xl)]",
                 i === 1 && "right-24 top-56 h-56 w-72 -rotate-3 rounded-[var(--radius-2xl)]",
                 i === 2 && "right-[28rem] top-8 h-48 w-64 rotate-2 rounded-[var(--radius-2xl)]",
@@ -83,43 +95,44 @@ export default async function HomePage() {
           ))}
         </div>
 
-        <div className="relative mx-auto max-w-4xl text-center">
-          <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
-            {brand.heroHeading}
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-sage-100">{brand.heroSupportingCopy}</p>
+        <div className="relative mx-auto flex max-w-7xl flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <h1 className="max-w-3xl text-balance font-display text-display-xl font-semibold text-charcoal-700">
+              {brand.heroHeading}
+            </h1>
+            <p className="mt-5 max-w-xl text-lg text-charcoal-500">{brand.heroSupportingCopy}</p>
 
-          <div className="mx-auto mt-8 max-w-2xl">
-            <HeroSearch counties={counties} />
-          </div>
+            <div className="mt-8 max-w-3xl">
+              <HeroSearch counties={counties} />
+            </div>
 
-          <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/register?intent=owner"
-              className={cn(
-                buttonVariants({ variant: "secondary", size: "md" }),
-                "bg-ivory-50/10 text-ivory-50 hover:bg-ivory-50/20",
-              )}
-            >
-              {brand.secondaryCta}
-            </Link>
-            <p className="text-sm text-sage-200">
-              Renters subscribe for {subscriptionPlan.durationDays} days of unlimited direct
-              messaging.
-            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/register?intent=owner"
+                className={cn(buttonVariants({ variant: "secondary", size: "md" }))}
+              >
+                {brand.secondaryCta}
+              </Link>
+              <p className="text-sm text-charcoal-500">
+                Renters subscribe for {subscriptionPlan.durationDays} days of unlimited direct
+                messaging.
+              </p>
+            </div>
           </div>
 
           {stats.length > 0 && (
-            <div className="mx-auto mt-10 flex max-w-xl flex-wrap items-center justify-center gap-x-10 gap-y-4 border-t border-ivory-50/15 pt-6">
+            <dl className="flex shrink-0 gap-8 border-t border-border pt-6 lg:flex-col lg:gap-6 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
               {stats.map((stat) => (
                 <div key={stat.label}>
-                  <p className="font-display text-2xl font-semibold">
+                  <dt className="text-xs uppercase tracking-wide text-charcoal-400">
+                    {stat.label}
+                  </dt>
+                  <dd className="font-display text-display-sm font-semibold text-accent-text">
                     <CountUp value={stat.value} />+
-                  </p>
-                  <p className="text-xs text-sage-200">{stat.label}</p>
+                  </dd>
                 </div>
               ))}
-            </div>
+            </dl>
           )}
         </div>
       </section>
@@ -130,7 +143,7 @@ export default async function HomePage() {
             <h2 className="font-display text-2xl font-semibold text-charcoal-700">
               Recently listed
             </h2>
-            <Link href="/search" className="text-sm font-medium text-brand-700">
+            <Link href="/search" className="text-sm font-medium text-accent-text">
               View all
             </Link>
           </div>

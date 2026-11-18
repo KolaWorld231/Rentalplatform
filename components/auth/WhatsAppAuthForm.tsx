@@ -59,7 +59,7 @@ export function WhatsAppAuthForm({
           error={startState.fieldErrors?.phone}
         />
         {startState.error && (
-          <p role="alert" className="text-sm font-medium text-error-500">
+          <p role="alert" className="text-sm font-medium text-error">
             {startState.error}
           </p>
         )}
@@ -85,7 +85,7 @@ export function WhatsAppAuthForm({
         error={verifyState.fieldErrors?.code}
       />
       {verifyState.error && (
-        <p role="alert" className="text-sm font-medium text-error-500">
+        <p role="alert" className="text-sm font-medium text-error">
           {verifyState.error}
         </p>
       )}
@@ -95,7 +95,7 @@ export function WhatsAppAuthForm({
       <button
         type="button"
         onClick={() => setResetToPhone(true)}
-        className="focus-ring text-left text-xs font-medium text-charcoal-500 hover:text-brand-700"
+        className="focus-ring text-left text-xs font-medium text-charcoal-500 hover:text-accent-text"
       >
         Use a different number
       </button>

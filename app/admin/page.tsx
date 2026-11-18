@@ -19,7 +19,7 @@ function MetricStrip({
       <Card className="mt-2 grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
         {metrics.map((m) => (
           <div key={m.label} className="flex items-center gap-3 p-4">
-            <m.icon className="h-5 w-5 shrink-0 text-brand-600" aria-hidden="true" />
+            <m.icon className="h-5 w-5 shrink-0 text-accent-text" aria-hidden="true" />
             <div>
               <p className="font-display text-2xl font-semibold text-charcoal-700">{m.value}</p>
               <p className="text-xs text-charcoal-400">{m.label}</p>
@@ -111,7 +111,7 @@ export default async function AdminOverviewPage() {
       {isAdmin && (
         <Card className="mt-6 p-6 shadow-[var(--shadow-clay-raised)]">
           <p className="text-sm font-medium text-charcoal-700">Total confirmed subscription revenue</p>
-          <p className="mt-1 font-display text-3xl font-semibold text-brand-800">{formatUsd(revenue)}</p>
+          <p className="mt-1 font-display text-3xl font-semibold text-accent-text">{formatUsd(revenue)}</p>
           <p className="mt-1 text-xs text-charcoal-400">Sum of all `confirmed` payment_transactions.</p>
         </Card>
       )}

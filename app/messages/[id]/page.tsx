@@ -77,7 +77,7 @@ export default async function ConversationPage({ params }: PageProps) {
               {conversation.properties && (
                 <Link
                   href={`/properties/${conversation.properties.slug}`}
-                  className="text-xs text-charcoal-400 hover:text-brand-700"
+                  className="text-xs text-charcoal-400 hover:text-accent-text"
                 >
                   {conversation.properties.title}
                 </Link>

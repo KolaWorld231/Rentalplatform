@@ -29,14 +29,14 @@ export default function SafetyPage() {
         <ul className="flex flex-col gap-3">
           {checklist.map((item) => (
             <li key={item} className="flex items-start gap-2 text-sm text-charcoal-600">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" aria-hidden="true" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
               {item}
             </li>
           ))}
         </ul>
       </Card>
 
-      <div className="mt-6 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-100 p-3 text-xs text-warning-500">
+      <div className="mt-6 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-soft p-3 text-xs text-warning">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>
           If something feels wrong — a seller asking for payment before a viewing, a price that

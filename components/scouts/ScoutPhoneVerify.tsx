@@ -30,7 +30,7 @@ export function ScoutPhoneVerify({
   }, [verifyState.verified]);
 
   if (verified) {
-    return <p className="text-sm font-medium text-success-500">Phone number verified.</p>;
+    return <p className="text-sm font-medium text-success">Phone number verified.</p>;
   }
 
   const step: "phone" | "otp" = startState.otpSent && !resetToPhone ? "otp" : "phone";
@@ -40,7 +40,7 @@ export function ScoutPhoneVerify({
       <form action={startFormAction} onSubmit={() => setResetToPhone(false)} className="flex flex-col gap-2">
         <input type="hidden" name="phone" value={phone} />
         {startState.error && (
-          <p role="alert" className="text-sm font-medium text-error-500">
+          <p role="alert" className="text-sm font-medium text-error">
             {startState.error}
           </p>
         )}
@@ -65,7 +65,7 @@ export function ScoutPhoneVerify({
         error={verifyState.fieldErrors?.code}
       />
       {verifyState.error && (
-        <p role="alert" className="text-sm font-medium text-error-500">
+        <p role="alert" className="text-sm font-medium text-error">
           {verifyState.error}
         </p>
       )}
@@ -75,7 +75,7 @@ export function ScoutPhoneVerify({
       <button
         type="button"
         onClick={() => setResetToPhone(true)}
-        className="focus-ring text-left text-xs font-medium text-charcoal-500 hover:text-brand-700"
+        className="focus-ring text-left text-xs font-medium text-charcoal-500 hover:text-accent-text"
       >
         Use a different number
       </button>
