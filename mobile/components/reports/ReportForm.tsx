@@ -52,7 +52,7 @@ export function ReportForm({
   }
 
   return (
-    <View className="gap-2 rounded-md border border-border p-3 dark:border-charcoal-500">
+    <View className="gap-2 rounded-md border border-border-themed p-3">
       <Text className="text-sm font-sans-semibold text-content-strong">{label}</Text>
       <View className="flex-row flex-wrap gap-1.5">
         {REASONS.map(([value, reasonLabel]) => (
@@ -65,7 +65,7 @@ export function ReportForm({
             className={
               reason === value
                 ? "rounded-full border border-forest-600 bg-forest-100 px-2.5 py-1 dark:bg-forest-900/40"
-                : "rounded-full border border-border px-2.5 py-1 dark:border-charcoal-500"
+                : "rounded-full border border-border-themed px-2.5 py-1"
             }
           >
             <Text

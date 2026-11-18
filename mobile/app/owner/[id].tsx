@@ -132,7 +132,7 @@ export default function EditPropertyScreen() {
           Reconfirm availability now
         </Button>
 
-        <View className="mt-2 border-t border-border pt-2 dark:border-charcoal-500">
+        <View className="mt-2 border-t border-border-themed pt-2">
           <Button
             size="sm"
             variant="ghost"

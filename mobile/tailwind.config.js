@@ -71,10 +71,6 @@ module.exports = {
         "accent-text": withOpacity("--accent-text"),
         "accent-soft": withOpacity("--accent-soft"),
         "accent-on-soft": withOpacity("--accent-on-soft"),
-        // One step darker than surface/charcoal-700 -- used to fake an
-        // inset/recessed look on Input, since RN has no inset-shadow
-        // support (see mobile Input.tsx).
-        well: { light: "#f1ece6", dark: "#171310" },
         success: { 500: "#2f8f5b", 100: "#e3f3ea", DEFAULT: withOpacity("--success-text"), soft: withOpacity("--success-soft") },
         warning: { 500: "#b9790f", 100: "#fbf0dc", DEFAULT: withOpacity("--warning-text"), soft: withOpacity("--warning-soft") },
         error: { 500: "#c23f3f", 100: "#fae7e7", DEFAULT: withOpacity("--error-text"), soft: withOpacity("--error-soft") },

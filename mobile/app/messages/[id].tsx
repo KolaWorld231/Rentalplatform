@@ -12,8 +12,10 @@ import { reportMessage } from "../../lib/reports/service";
 import { supabase } from "../../lib/supabase";
 import { ReportForm } from "../../components/reports/ReportForm";
 import type { Message, ReportReason } from "../../lib/database.types";
+import { usePlaceholderColor } from "../../lib/theme";
 
 export default function ConversationScreen() {
+  const placeholderColor = usePlaceholderColor();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, session } = useSession();
   const queryClient = useQueryClient();
@@ -110,7 +112,7 @@ export default function ConversationScreen() {
           return (
             <View className={mine ? "flex-row justify-end" : "flex-row items-end gap-2"}>
               {!mine && <Avatar name={counterpartName} size="sm" />}
-              <View className={mine ? "max-w-[75%] rounded-lg bg-forest-600 px-3 py-2" : "max-w-[75%] rounded-lg bg-surface px-3 py-2 dark:bg-charcoal-700"}>
+              <View className={mine ? "max-w-[75%] rounded-lg bg-forest-600 px-3 py-2" : "max-w-[75%] rounded-lg bg-surface-raised px-3 py-2"}>
                 <Text className={mine ? "text-ivory-50" : "text-content-strong"}>{item.body}</Text>
                 <Text className={mine ? "mt-1 text-xs text-ivory-50/70" : "mt-1 text-xs text-content-muted"}>
                   {formatRelativeDate(item.sent_at)}
@@ -126,15 +128,15 @@ export default function ConversationScreen() {
         }
       />
 
-      <View className="flex-row items-end gap-2 border-t border-border p-3 dark:border-charcoal-500">
+      <View className="flex-row items-end gap-2 border-t border-border-themed p-3">
         <TextInput
           value={draft}
           onChangeText={setDraft}
           placeholder="Write a message…"
-          placeholderTextColor="#737373"
+          placeholderTextColor={placeholderColor}
           accessibilityLabel="Write a message"
           multiline
-          className="flex-1 max-h-28 rounded-md border border-border bg-surface px-3 py-2 text-base text-content-strong dark:border-charcoal-500 dark:bg-charcoal-700 "
+          className="flex-1 max-h-28 rounded-md border border-border-themed bg-surface-raised px-3 py-2 text-base text-content-strong "
         />
         <Pressable
           accessibilityRole="button"

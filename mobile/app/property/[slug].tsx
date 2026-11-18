@@ -16,6 +16,7 @@ import { isIdentityVerified, isPropertyVerified } from "../../lib/verification/s
 import { VerificationBadge } from "../../components/verification/VerificationBadge";
 import { ReportForm } from "../../components/reports/ReportForm";
 import type { ReportReason } from "../../lib/database.types";
+import { usePlaceholderColor } from "../../lib/theme";
 
 const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning" | "has_parking" | "has_security"; label: string }[] = [
   { key: "has_electricity", label: "Electricity" },
@@ -26,6 +27,7 @@ const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning"
 ];
 
 export default function PropertyDetailScreen() {
+  const placeholderColor = usePlaceholderColor();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   // pagingEnabled snaps to the viewport, so a gallery item must be exactly
   // as wide as the screen or every page after the first sits off-centre.
@@ -151,8 +153,12 @@ export default function PropertyDetailScreen() {
           }
         />
       ) : (
-        <View className="h-64 items-center justify-center bg-surface-muted">
-          <Text className="text-sm text-content-muted">No photos yet</Text>
+        /* Reserving a full frame only makes sense when something will
+           fill it; an empty 256px block just pushed the title down. */
+        <View className="items-center justify-center bg-surface-muted px-5 py-5">
+          <Text className="text-sm text-content-muted">
+            The owner hasn&apos;t added photos to this listing yet.
+          </Text>
         </View>
       )}
 
@@ -180,26 +186,20 @@ export default function PropertyDetailScreen() {
         </View>
 
         <Card className="gap-1 p-4">
-          {(identityVerified.data || propertyVerified.data) && (
-            <View className="mb-2 flex-row flex-wrap gap-2">
-              {identityVerified.data && <VerificationBadge kind="identity" />}
-              {propertyVerified.data && <VerificationBadge kind="property" />}
-            </View>
-          )}
           <Text className="font-display-bold text-2xl text-accent-text">
             {formatUsd(p.rent_amount)}
             <Text className="font-sans text-base text-content-subtle"> {formatRentalFrequency(p.rental_frequency)}</Text>
           </Text>
           {upfrontItems.length > 0 && (
-            <View className="mt-3 gap-1 border-t border-border pt-3 dark:border-charcoal-500">
+            <View className="mt-3 gap-1 border-t border-border-themed pt-3">
               <Text className="font-sans-semibold text-sm text-content-strong">Disclosed move-in costs</Text>
               <CostRow label={`First ${formatRentalFrequency(p.rental_frequency).replace("/ ", "")} rent`} value={p.rent_amount} />
               {upfrontItems.map((i) => (
                 <CostRow key={i.label} label={i.label} value={i.value} />
               ))}
-              <View className="mt-1 flex-row justify-between border-t border-border pt-1 dark:border-charcoal-500">
+              <View className="mt-2 flex-row items-baseline justify-between border-t border-border-themed pt-2">
                 <Text className="font-sans-semibold text-content-strong">Total upfront</Text>
-                <Text className="font-sans-semibold text-content-strong">{formatUsd(totalUpfront)}</Text>
+                <Text className="font-display-bold text-base text-content-strong">{formatUsd(totalUpfront)}</Text>
               </View>
             </View>
           )}
@@ -208,17 +208,23 @@ export default function PropertyDetailScreen() {
         {!isOwnListing && (
           <Card className="gap-2 p-4">
             <Text className="font-sans-semibold text-sm text-content-strong">Contact the owner</Text>
+            {(identityVerified.data || propertyVerified.data) && (
+              <View className="flex-row flex-wrap gap-2">
+                {identityVerified.data && <VerificationBadge kind="identity" />}
+                {propertyVerified.data && <VerificationBadge kind="property" />}
+              </View>
+            )}
             {user ? (
               <>
                 <TextInput
                   value={messageDraft}
                   onChangeText={setMessageDraft}
                   placeholder="Hi, I'm interested in this property. Is it still available?"
-                  placeholderTextColor="#737373"
+                  placeholderTextColor={placeholderColor}
                   multiline
                   numberOfLines={3}
                   accessibilityLabel="Message to the owner"
-                  className="rounded-md border border-border bg-surface p-3 text-sm text-content-strong dark:border-charcoal-500 dark:bg-charcoal-700 "
+                  className="rounded-md border border-border-themed bg-surface-raised p-3 text-sm text-content-strong"
                 />
                 {contactError && <Text className="text-sm text-error-500">{contactError}</Text>}
                 <Button variant="clay" loading={sendingMessage} onPress={onSendMessage} disabled={!messageDraft.trim()}>
@@ -295,7 +301,7 @@ function CostRow({ label, value }: { label: string; value: number }) {
 
 function Chip({ label }: { label: string }) {
   return (
-    <View className="rounded-full border border-border px-3 py-1 dark:border-charcoal-500">
+    <View className="rounded-full border border-border-themed px-3 py-1">
       <Text className="text-xs text-content-strong">{label}</Text>
     </View>
   );

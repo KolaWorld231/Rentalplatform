@@ -255,7 +255,7 @@ export default function ScoutApplyScreen() {
       <Card className="gap-4 p-5">
         <Text className="text-sm font-sans-semibold text-content-strong">Two references</Text>
         {references.map((ref, i) => (
-          <View key={i} className="gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0 dark:border-charcoal-500">
+          <View key={i} className="gap-3 border-t border-border-themed pt-3 first:border-t-0 first:pt-0">
             <Input label={`Reference ${i + 1} name`} value={ref.fullName} onChangeText={(v) => updateReference(i, { fullName: v })} />
             <Text className="text-sm font-medium text-content-strong">Relationship</Text>
             <View className="flex-row flex-wrap gap-2">

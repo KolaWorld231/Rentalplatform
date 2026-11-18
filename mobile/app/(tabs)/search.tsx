@@ -11,6 +11,7 @@ import { LIBERIA_COUNTIES, PROPERTY_CATEGORIES } from "../../lib/database.types"
 import { formatCategory } from "../../lib/format";
 import { searchProperties } from "../../lib/properties/service";
 import { searchParamsSchema, type SearchParamsInput } from "../../lib/validation/property";
+import { usePlaceholderColor } from "../../lib/theme";
 
 const SORT_OPTIONS: { value: SearchParamsInput["sort"]; label: string }[] = [
   { value: "newest", label: "Newest first" },
@@ -19,6 +20,7 @@ const SORT_OPTIONS: { value: SearchParamsInput["sort"]; label: string }[] = [
 ];
 
 export default function SearchScreen() {
+  const placeholderColor = usePlaceholderColor();
   const { user } = useSession();
   const [q, setQ] = useState("");
   const [county, setCounty] = useState<string | undefined>(undefined);
@@ -45,14 +47,14 @@ export default function SearchScreen() {
       <View className="gap-3 px-4 pb-3 pt-3">
         <TextInput
           placeholder="Search by title (e.g. Sinkor apartment)"
-          placeholderTextColor="#737373"
+          placeholderTextColor={placeholderColor}
           accessibilityLabel="Search properties by title"
           value={q}
           onChangeText={(v) => {
             setQ(v);
             resetToFirstPage();
           }}
-          className="h-12 rounded-md border border-border bg-surface px-4 text-base text-content-strong dark:border-charcoal-500 dark:bg-charcoal-700 "
+          className="h-12 rounded-md border border-border-themed bg-surface-raised px-4 text-base text-content-strong "
         />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
@@ -121,7 +123,7 @@ export default function SearchScreen() {
         {/* Swipe mode is an optional, logged-in-only way to browse the same
             filtered results -- guests only ever see the plain grid below. */}
         {user && (
-          <View className="flex-row self-start rounded-full border border-border p-0.5 dark:border-charcoal-500">
+          <View className="flex-row self-start rounded-full border border-border-themed p-0.5">
             <Pressable onPress={() => setMode("list")} className={cn("rounded-full px-3 py-1", mode === "list" && "bg-forest-600")}>
               <Text className={cn("text-xs font-sans-semibold", mode === "list" ? "text-ivory-50" : "text-content-strong")}>
                 Grid

@@ -85,7 +85,7 @@ function ConversationRowItem({ conversation: c, currentUserId }: { conversation:
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Conversation with ${name ?? "Unknown user"}${unread ? ", unread" : ""}`}
-        className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-sage-100 dark:border-charcoal-500 dark:active:bg-charcoal-700"
+        className="flex-row items-center gap-3 border-b border-border-themed px-4 py-3 active:bg-surface-muted active:bg-surface-muted"
       >
         <Avatar name={name} />
         <View className="flex-1">

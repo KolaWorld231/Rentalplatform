@@ -81,7 +81,7 @@ export default function PricingScreen() {
             <Text className="font-sans text-base text-content-subtle"> for {subscriptionPlan.durationDays} days</Text>
           </Text>
 
-          <View className="gap-2 border-t border-border pt-3 dark:border-charcoal-500">
+          <View className="gap-2 border-t border-border-themed pt-3">
             {BENEFITS.map((b) => (
               <Text key={b} className="text-sm text-content-muted">
                 • {b}
