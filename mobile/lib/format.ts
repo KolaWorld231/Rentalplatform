@@ -63,3 +63,38 @@ export function formatExpiryDate(iso: string): string {
   if (daysRemaining < 30) return `in ${daysRemaining} days`;
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+
+/**
+ * Hand-mirrored from web's lib/utils/format.ts (no shared package between
+ * web and mobile -- see mobile/README.md). Keep the two in sync.
+ *
+ * Day label for a message thread's date separators. Compares calendar
+ * days in the viewer's local zone, not elapsed hours -- 11pm and 1am are
+ * different days even though they are two hours apart.
+ */
+export function formatDayLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOf(today) - startOf(d)) / 86_400_000);
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    ...(d.getFullYear() === today.getFullYear() ? {} : { year: "numeric" }),
+  });
+}
+
+/** True when the two timestamps fall on different calendar days locally. */
+export function isNewDay(iso: string, prevIso: string | null | undefined): boolean {
+  if (!prevIso) return true;
+  const a = new Date(iso);
+  const b = new Date(prevIso);
+  return (
+    a.getFullYear() !== b.getFullYear() ||
+    a.getMonth() !== b.getMonth() ||
+    a.getDate() !== b.getDate()
+  );
+}

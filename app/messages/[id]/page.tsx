@@ -1,10 +1,12 @@
 import { ArrowLeft } from "lucide-react";
+import { after } from "next/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConversationList, getConversationsForUser } from "@/components/messaging/ConversationList";
 import { MessageComposer } from "@/components/messaging/MessageComposer";
 import { MessageThread } from "@/components/messaging/MessageThread";
 import { RealtimeMessageListener } from "@/components/messaging/RealtimeMessageListener";
+import { ScrollToLatest } from "@/components/messaging/ScrollToLatest";
 import { ReportConversationButton } from "@/components/messaging/ReportConversationButton";
 import { Avatar } from "@/components/ui/Avatar";
 import { requireUser } from "@/lib/auth/session";
@@ -50,7 +52,10 @@ export default async function ConversationPage({ params }: PageProps) {
     .eq("conversation_id", id)
     .order("sent_at", { ascending: true })) as { data: Message[] | null };
 
-  await markConversationReadAction(id, isRenter ? "renter" : "owner");
+  // Marking read is bookkeeping for the person who just opened the page;
+  // it was awaited before any HTML was sent. `after` runs it once the
+  // response is out.
+  after(() => markConversationReadAction(id, isRenter ? "renter" : "owner"));
 
   const counterpart = isRenter ? conversation.owner_profile?.display_name : conversation.renter_profile?.display_name;
   const lastMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
@@ -88,7 +93,13 @@ export default async function ConversationPage({ params }: PageProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-4">
-          <MessageThread messages={messages ?? []} currentUserId={user.id} counterpartName={counterpart ?? null} />
+          <MessageThread
+            messages={messages ?? []}
+            currentUserId={user.id}
+            counterpartName={counterpart ?? null}
+            propertyTitle={conversation.properties?.title ?? null}
+          />
+          <ScrollToLatest messageId={lastMessage?.id ?? null} />
         </div>
 
         <div className="pb-4">

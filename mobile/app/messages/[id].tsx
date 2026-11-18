@@ -6,7 +6,7 @@ import { Avatar } from "../../components/ui/Avatar";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { Screen } from "../../components/ui/Screen";
 import { useSession } from "../../lib/auth/session";
-import { formatRelativeDate } from "../../lib/format";
+import { formatDayLabel, isNewDay } from "../../lib/format";
 import { getConversationDetail, getMessages, markConversationRead, sendMessage } from "../../lib/messaging/service";
 import { reportMessage } from "../../lib/reports/service";
 import { supabase } from "../../lib/supabase";
@@ -107,23 +107,49 @@ export default function ConversationScreen() {
         keyExtractor={(m) => m.id}
         contentContainerClassName="gap-2 p-4"
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const mine = item.sender_id === user?.id;
+          const prev = messages.data?.[index - 1];
+          const startsNewDay = isNewDay(item.sent_at, prev?.sent_at);
           return (
-            <View className={mine ? "flex-row justify-end" : "flex-row items-end gap-2"}>
-              {!mine && <Avatar name={counterpartName} size="sm" />}
-              <View className={mine ? "max-w-[75%] rounded-lg bg-forest-600 px-3 py-2" : "max-w-[75%] rounded-lg bg-surface-raised px-3 py-2"}>
-                <Text className={mine ? "text-ivory-50" : "text-content-strong"}>{item.body}</Text>
-                <Text className={mine ? "mt-1 text-xs text-ivory-50/70" : "mt-1 text-xs text-content-muted"}>
-                  {formatRelativeDate(item.sent_at)}
-                </Text>
+            <View>
+              {/* Every bubble used to carry its own "2 days ago", which is
+                  noisy on each line and still never gives a clock time.
+                  A separator states the day once; the bubble states the
+                  time, matching web. */}
+              {startsNewDay && (
+                <View className="my-3 flex-row items-center gap-3">
+                  <View className="h-px flex-1 bg-border-themed" />
+                  <Text className="text-xs font-sans-semibold text-content-subtle">
+                    {formatDayLabel(item.sent_at)}
+                  </Text>
+                  <View className="h-px flex-1 bg-border-themed" />
+                </View>
+              )}
+              <View className={mine ? "flex-row justify-end" : "flex-row items-end gap-2"}>
+                {!mine && <Avatar name={counterpartName} size="sm" />}
+                {/* Own messages were a solid saturated accent fill, so a
+                    real conversation became a wall of red -- drowning out
+                    the places red is meant to signal something, and reading
+                    as "error" in a messaging context. The soft accent keeps
+                    the sender distinction without shouting. Its timestamp
+                    was also ivory-50/70 on that fill: 3.03:1, under AA. */}
+                <View className={mine ? "max-w-[75%] rounded-lg bg-accent-soft px-3 py-2" : "max-w-[75%] rounded-lg bg-surface-raised px-3 py-2"}>
+                  <Text className={mine ? "text-accent-on-soft" : "text-content-strong"}>{item.body}</Text>
+                  <Text className={mine ? "mt-1 text-xs text-accent-on-soft" : "mt-1 text-xs text-content-muted"}>
+                    {new Date(item.sent_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </Text>
+                </View>
               </View>
             </View>
           );
         }}
         ListEmptyComponent={
-          <View className="items-center p-10">
-            <Text className="text-sm text-content-muted">No messages yet. Say hello.</Text>
+          <View className="items-center gap-1 p-10">
+            <Text className="font-sans-semibold text-sm text-content-strong">No messages yet.</Text>
+            <Text className="text-center text-sm text-content-muted">
+              Ask whether it&apos;s still available, and what the move-in costs include.
+            </Text>
           </View>
         }
       />
