@@ -4,12 +4,12 @@ import { Text, View } from "react-native";
 import { cn } from "../../lib/cn";
 
 const PALETTE = [
-  "bg-forest-600",
-  "bg-clay-500",
-  "bg-info-500",
-  "bg-sage-300",
+ "bg-forest-600",
+ "bg-clay-500",
+ "bg-info-500",
+ "bg-sage-300",
 ];
-const PALETTE_TEXT = ["text-ivory-50", "text-ivory-50", "text-ivory-50", "text-charcoal-700"];
+const PALETTE_TEXT = ["text-ivory-50", "text-ivory-50", "text-ivory-50", "text-content-strong"];
 
 function indexFor(name: string): number {
   let hash = 0;

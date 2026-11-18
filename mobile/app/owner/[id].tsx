@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -93,7 +93,7 @@ export default function EditPropertyScreen() {
 
   if (property.isLoading || !property.data) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <Stack.Screen options={{ headerShown: true, title: "Edit listing" }} />
       </View>
     );
@@ -102,11 +102,11 @@ export default function EditPropertyScreen() {
   const p = property.data;
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="gap-4 p-4 pb-10">
+    <ScrollView className="flex-1 bg-surface-base" contentContainerClassName="gap-4 p-4 pb-10">
       <Stack.Screen options={{ headerShown: true, title: "Edit listing" }} />
 
       <Card className="gap-3 p-4">
-        <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Visibility</Text>
+        <Text className="font-sans-semibold text-content-strong">Visibility</Text>
         <View className="flex-row gap-2">
           <Button size="sm" variant={p.listing_status === "published" ? "primary" : "secondary"} onPress={() => setListingStatus(id, "published").then(invalidate)}>
             Publish
@@ -116,7 +116,7 @@ export default function EditPropertyScreen() {
           </Button>
         </View>
 
-        <Text className="mt-2 font-sans-semibold text-charcoal-700 dark:text-ivory-100">Availability</Text>
+        <Text className="mt-2 font-sans-semibold text-content-strong">Availability</Text>
         <View className="flex-row gap-2">
           <Button size="sm" variant={p.availability_status === "rented" ? "primary" : "secondary"} onPress={() => setAvailability(id, "rented").then(invalidate)}>
             Mark rented
@@ -126,21 +126,38 @@ export default function EditPropertyScreen() {
           </Button>
         </View>
         {p.last_availability_confirmed_at && (
-          <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">Reconfirmed {formatRelativeDate(p.last_availability_confirmed_at)}</Text>
+          <Text className="text-xs text-content-muted">Reconfirmed {formatRelativeDate(p.last_availability_confirmed_at)}</Text>
         )}
         <Button size="sm" variant="ghost" onPress={() => confirmAvailability(id).then(invalidate)}>
           Reconfirm availability now
         </Button>
 
-        <View className="mt-2 border-t border-border pt-2 dark:border-charcoal-500">
-          <Button size="sm" variant="ghost" onPress={() => setListingStatus(id, "archived").then(invalidate)}>
+        <View className="mt-2 border-t border-border-themed pt-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() =>
+              Alert.alert(
+ "Archive this listing?",
+ "It will stop appearing in search and renters won't be able to find it. You can publish it again later.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Archive",
+                    style: "destructive",
+                    onPress: () => setListingStatus(id, "archived").then(invalidate),
+                  },
+                ],
+              )
+            }
+          >
             Archive listing
           </Button>
         </View>
       </Card>
 
       <Card className="gap-3 p-4">
-        <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Photos</Text>
+        <Text className="font-sans-semibold text-content-strong">Photos</Text>
         <FlatList
           horizontal
           data={p.property_images}
@@ -157,13 +174,22 @@ export default function EditPropertyScreen() {
                     accessibilityLabel="Set as cover photo"
                     onPress={() => setCoverPhoto(id, item.id).then(invalidate)}
                   >
-                    <Text className="text-xs text-forest-700 dark:text-forest-500">Set cover</Text>
+                    <Text className="text-xs text-accent-text">Set cover</Text>
                   </Pressable>
                 )}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Delete photo"
-                  onPress={() => deletePropertyPhoto(id, item.id, item.storage_path).then(invalidate)}
+                  onPress={() =>
+                    Alert.alert("Delete this photo?", "This can't be undone — you'd need to upload it again.", [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () => deletePropertyPhoto(id, item.id, item.storage_path).then(invalidate),
+                      },
+                    ])
+                  }
                 >
                   <Text className="text-xs text-error-500">Delete</Text>
                 </Pressable>

@@ -11,7 +11,7 @@ export function Switch({ label, ...inputProps }: SwitchProps) {
         <input type="checkbox" className="peer sr-only" {...inputProps} />
         <span
           aria-hidden="true"
-          className="absolute inset-0 rounded-full bg-sage-200 shadow-[var(--shadow-clay-inset)] transition-colors peer-checked:bg-brand-600 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-600"
+          className="absolute inset-0 rounded-full bg-surface-muted shadow-[var(--shadow-clay-inset)] transition-colors peer-checked:bg-brand-600 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-600"
         />
         <span
           aria-hidden="true"

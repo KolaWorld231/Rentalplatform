@@ -59,7 +59,7 @@ export default async function NotificationsPage() {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-subtle)] ${n.read_at ? "bg-surface" : "bg-sage-100"}`}
+              className={`rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-subtle)] ${n.read_at ? "bg-surface" : "bg-surface-muted"}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -71,7 +71,7 @@ export default async function NotificationsPage() {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {n.link && (
-                    <Link href={n.link} className="text-xs font-medium text-brand-700">
+                    <Link href={n.link} className="text-xs font-medium text-accent-text">
                       View
                     </Link>
                   )}

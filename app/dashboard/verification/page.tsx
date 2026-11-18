@@ -27,9 +27,9 @@ const STATUS_COPY: Record<string, { label: string; variant: "success" | "warning
 };
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === "verified") return <CheckCircle2 className="h-5 w-5 text-success-500" aria-hidden="true" />;
-  if (status === "rejected") return <ShieldAlert className="h-5 w-5 text-error-500" aria-hidden="true" />;
-  return <Clock className="h-5 w-5 text-warning-500" aria-hidden="true" />;
+  if (status === "verified") return <CheckCircle2 className="h-5 w-5 text-success" aria-hidden="true" />;
+  if (status === "rejected") return <ShieldAlert className="h-5 w-5 text-error" aria-hidden="true" />;
+  return <Clock className="h-5 w-5 text-warning" aria-hidden="true" />;
 }
 
 export default async function VerificationCenterPage() {
@@ -75,7 +75,7 @@ export default async function VerificationCenterPage() {
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-charcoal-700">
             <ShieldCheck
-              className={cn("h-5 w-5", identity?.status === "verified" ? "text-success-500" : "text-brand-600")}
+              className={cn("h-5 w-5", identity?.status === "verified" ? "text-success" : "text-accent-text")}
             />
             Identity verification
           </h2>
@@ -134,7 +134,7 @@ export default async function VerificationCenterPage() {
                 key={property.id}
                 className={cn(
                   "rounded-[var(--radius-md)] border border-border p-4",
-                  verified && "border-success-500/40 bg-success-100/30",
+                  verified && "border-success-500/40 bg-success-soft/30",
                 )}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">

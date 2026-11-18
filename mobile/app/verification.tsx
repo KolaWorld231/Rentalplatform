@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { ErrorState } from "../components/ui/ErrorState";
 import { useSession } from "../lib/auth/session";
 import { supabase } from "../lib/supabase";
 import {
@@ -46,9 +47,9 @@ export default function VerificationScreen() {
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
         <Stack.Screen options={{ headerShown: true, title: "Verification" }} />
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">Log in to verify your identity.</Text>
+        <Text className="text-center text-base text-content-strong">Log in to verify your identity.</Text>
         <Link href="/(auth)/login" asChild>
           <Button>Log in</Button>
         </Link>
@@ -57,9 +58,9 @@ export default function VerificationScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="gap-5 p-4 pb-10">
+    <ScrollView className="flex-1 bg-surface-base" contentContainerClassName="gap-5 p-4 pb-10">
       <Stack.Screen options={{ headerShown: true, title: "Verification" }} />
-      <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+      <Text className="text-sm text-content-muted">
         Verification is an evidence-based review process, not a guarantee of legal ownership. Documents are stored
         privately and reviewed only by our moderation team.
       </Text>
@@ -71,12 +72,16 @@ export default function VerificationScreen() {
       )}
 
       {myProperties.isError && (
-        <Text className="text-sm text-error-500">Couldn&apos;t load your properties. Pull to refresh.</Text>
+        <ErrorState
+          message="Couldn't load your properties."
+          onRetry={() => myProperties.refetch()}
+          retrying={myProperties.isRefetching}
+        />
       )}
 
       {myProperties.data && myProperties.data.length > 0 && (
         <View className="gap-3">
-          <Text className="font-display-bold text-lg text-charcoal-700 dark:text-ivory-100">Your properties</Text>
+          <Text className="font-display-bold text-lg text-content-strong">Your properties</Text>
           {myProperties.data.map((p) => (
             <PropertyVerificationCard key={p.id} propertyId={p.id} title={p.title} applicantId={user.id} />
           ))}
@@ -135,13 +140,13 @@ function IdentityCard({
   return (
     <Card className={request?.status === "verified" ? "gap-3 p-5 shadow-floating" : "gap-3 p-5"}>
       <View className="flex-row items-center justify-between">
-        <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Identity verification</Text>
-        {request && <Text className="text-xs font-sans-semibold text-forest-700 dark:text-forest-500">{STATUS_COPY[request.status]}</Text>}
+        <Text className="font-sans-semibold text-content-strong">Identity verification</Text>
+        {request && <Text className="text-xs font-sans-semibold text-accent-text">{STATUS_COPY[request.status]}</Text>}
       </View>
 
       {!request ? (
         <>
-          <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-sm text-content-muted">
             Submit a government-issued ID so renters know you&apos;re a verified owner.
           </Text>
           <Button loading={submitting} onPress={onStart}>
@@ -151,7 +156,7 @@ function IdentityCard({
       ) : (
         <>
           {documents.data && documents.data.length > 0 && (
-            <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">
+            <Text className="text-xs text-content-muted">
               {documents.data.length} document{documents.data.length === 1 ? "" : "s"} uploaded
             </Text>
           )}
@@ -209,10 +214,10 @@ function PropertyVerificationCard({ propertyId, title, applicantId }: { property
   return (
     <Card className="gap-2 p-4">
       <View className="flex-row items-center justify-between">
-        <Text className="flex-1 font-sans-semibold text-charcoal-700 dark:text-ivory-100" numberOfLines={1}>
+        <Text className="flex-1 font-sans-semibold text-content-strong" numberOfLines={1}>
           {title}
         </Text>
-        {request.data && <Text className="text-xs font-sans-semibold text-forest-700 dark:text-forest-500">{STATUS_COPY[request.data.status]}</Text>}
+        {request.data && <Text className="text-xs font-sans-semibold text-accent-text">{STATUS_COPY[request.data.status]}</Text>}
       </View>
 
       {request.isLoading ? (
@@ -224,7 +229,7 @@ function PropertyVerificationCard({ propertyId, title, applicantId }: { property
       ) : request.data.status !== "verified" ? (
         <>
           {documents.data && documents.data.length > 0 && (
-            <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">{documents.data.length} document(s) uploaded</Text>
+            <Text className="text-xs text-content-muted">{documents.data.length} document(s) uploaded</Text>
           )}
           {error && <Text className="text-sm text-error-500">{error}</Text>}
           <Button size="sm" variant="secondary" loading={uploading} onPress={onUpload}>

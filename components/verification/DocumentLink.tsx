@@ -22,11 +22,11 @@ export function DocumentLink({ documentId, filename }: { documentId: string; fil
           window.open(result.url, "_blank", "noopener,noreferrer");
         })
       }
-      className="focus-ring flex items-center gap-1.5 text-sm text-brand-700 hover:underline disabled:opacity-60"
+      className="focus-ring flex items-center gap-1.5 text-sm text-accent-text hover:underline disabled:opacity-60"
     >
       <FileText className="h-4 w-4" />
       {pending ? "Opening…" : (filename ?? "View document")}
-      {error && <span className="text-xs text-error-500">({error})</span>}
+      {error && <span className="text-xs text-error">({error})</span>}
     </button>
   );
 }

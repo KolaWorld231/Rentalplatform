@@ -32,10 +32,10 @@ export default function LoginScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="px-4 pt-20 pb-8 gap-6">
+    <ScrollView className="flex-1 bg-surface-base" contentContainerClassName="px-4 pt-20 pb-8 gap-6">
       <View>
-        <Text className="font-display-bold text-2xl text-charcoal-700 dark:text-ivory-100">Log in</Text>
-        <Text className="mt-1 text-base text-charcoal-500 dark:text-charcoal-400">Welcome back to {brand.name}.</Text>
+        <Text className="font-display-bold text-2xl text-content-strong">Log in</Text>
+        <Text className="mt-1 text-base text-content-muted">Welcome back to {brand.name}.</Text>
       </View>
 
       <Card className="gap-4 p-5">
@@ -46,11 +46,11 @@ export default function LoginScreen() {
             accessibilityState={{ selected: method === "password" }}
             onPress={() => setMethod("password")}
             className={cn(
-              "flex-1 items-center rounded-md border py-2",
-              method === "password" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+ "flex-1 items-center rounded-md border py-2",
+              method === "password" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed",
             )}
           >
-            <Text className={cn("text-sm font-sans-semibold", method === "password" ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+            <Text className={cn("text-sm font-sans-semibold", method === "password" ? "text-accent-text" : "text-content-strong")}>
               Password
             </Text>
           </Pressable>
@@ -60,11 +60,11 @@ export default function LoginScreen() {
             accessibilityState={{ selected: method === "whatsapp" }}
             onPress={() => setMethod("whatsapp")}
             className={cn(
-              "flex-1 items-center rounded-md border py-2",
-              method === "whatsapp" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+ "flex-1 items-center rounded-md border py-2",
+              method === "whatsapp" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed",
             )}
           >
-            <Text className={cn("text-sm font-sans-semibold", method === "whatsapp" ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+            <Text className={cn("text-sm font-sans-semibold", method === "whatsapp" ? "text-accent-text" : "text-content-strong")}>
               WhatsApp
             </Text>
           </Pressable>
@@ -110,8 +110,8 @@ export default function LoginScreen() {
       </Card>
 
       <View className="flex-row justify-center gap-1">
-        <Text className="text-charcoal-500 dark:text-charcoal-400">New to {brand.name}?</Text>
-        <Link href="/(auth)/register" className="font-medium text-forest-700 dark:text-forest-500">
+        <Text className="text-content-muted">New to {brand.name}?</Text>
+        <Link href="/(auth)/register" className="font-medium text-accent-text">
           Create an account
         </Link>
       </View>

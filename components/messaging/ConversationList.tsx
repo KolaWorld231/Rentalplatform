@@ -67,7 +67,7 @@ export function ConversationList({
             href={`/messages/${c.id}`}
             className={cn(
               "focus-ring flex items-center gap-3 rounded-[var(--radius-lg)] p-3 transition-colors",
-              isActive ? "bg-sage-100" : "hover:bg-sage-100/60",
+              isActive ? "bg-surface-muted" : "hover:bg-surface-muted/60",
             )}
           >
             <Avatar name={name} />
@@ -83,7 +83,7 @@ export function ConversationList({
               <p className="truncate text-xs text-charcoal-400">{c.properties?.title}</p>
             </div>
             {cover && (
-              <div className="relative hidden h-10 w-12 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-sage-200 sm:block">
+              <div className="relative hidden h-10 w-12 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-surface-muted sm:block">
                 <Image src={propertyImageUrl(cover.storage_path)} alt="" fill sizes="48px" className="object-cover" />
               </div>
             )}

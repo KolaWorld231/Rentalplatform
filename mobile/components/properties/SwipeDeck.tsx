@@ -83,8 +83,8 @@ export function SwipeDeck({ params }: SwipeDeckProps) {
   if (visible.length === 0) {
     return (
       <View className="flex-1 items-center justify-center gap-2 px-6">
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">You&apos;ve gone through everything.</Text>
-        <Text className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
+        <Text className="text-center text-base text-content-strong">You&apos;ve gone through everything.</Text>
+        <Text className="text-center text-sm text-content-muted">
           No more properties match these filters. Try widening your search or switch to Grid.
         </Text>
       </View>
@@ -121,7 +121,7 @@ export function SwipeDeck({ params }: SwipeDeckProps) {
           onPress={() => topCardRef.current?.flingOff("left")}
           accessibilityRole="button"
           accessibilityLabel="Skip this property"
-          className="h-14 w-14 items-center justify-center rounded-full border border-error-500 bg-surface shadow-raised active:shadow-subtle dark:bg-charcoal-700"
+          className="h-14 w-14 items-center justify-center rounded-full border border-error-500 bg-surface-raised shadow-raised active:shadow-subtle"
         >
           <X color="#c23f3f" size={26} />
         </Pressable>
@@ -129,7 +129,7 @@ export function SwipeDeck({ params }: SwipeDeckProps) {
           onPress={() => topCardRef.current?.flingOff("right")}
           accessibilityRole="button"
           accessibilityLabel="Add to picks"
-          className="h-14 w-14 items-center justify-center rounded-full border border-success-500 bg-surface shadow-raised active:shadow-subtle dark:bg-charcoal-700"
+          className="h-14 w-14 items-center justify-center rounded-full border border-success-500 bg-surface-raised shadow-raised active:shadow-subtle"
         >
           <Heart color="#2f8f5b" size={26} />
         </Pressable>

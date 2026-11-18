@@ -82,7 +82,7 @@ export function DocumentUploader({
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="focus-ring flex items-center justify-center gap-2 rounded-[var(--radius-md)] border-2 border-dashed border-border px-4 py-3 text-sm text-charcoal-500 hover:border-brand-500 hover:text-brand-600 disabled:opacity-60"
+        className="focus-ring flex items-center justify-center gap-2 rounded-[var(--radius-md)] border-2 border-dashed border-border px-4 py-3 text-sm text-charcoal-500 hover:border-brand-500 hover:text-accent-text disabled:opacity-60"
       >
         <Upload className="h-4 w-4" />
         {uploading ? "Uploading…" : "Upload document"}
@@ -95,7 +95,7 @@ export function DocumentUploader({
         className="sr-only"
         onChange={(e) => e.target.files && handleFiles(e.target.files)}
       />
-      {error && <p className="text-xs font-medium text-error-500">{error}</p>}
+      {error && <p className="text-xs font-medium text-error">{error}</p>}
       <p className="flex items-center gap-1 text-xs text-charcoal-400">
         <FileText className="h-3 w-3" />
         {documentCount} document{documentCount === 1 ? "" : "s"} uploaded · JPEG, PNG, or PDF, up to 10MB

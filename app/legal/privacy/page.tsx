@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           Identity and property verification documents are stored in a private file store, never
           publicly accessible, and are only viewable by you and authorized reviewers via a
           short-lived access link. See our{" "}
-          <a href="/legal/terms" className="text-brand-700">
+          <a href="/legal/terms" className="text-accent-text">
             Terms of Service
           </a>{" "}
           and the technical security documentation for details.

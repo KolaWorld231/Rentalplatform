@@ -37,9 +37,9 @@ export function ContactOwnerForm({
   if (isOwnListing) return null;
 
   return (
-    <div className="rounded-[var(--radius-lg)] bg-sage-100 p-4">
+    <div className="rounded-[var(--radius-lg)] bg-surface-muted p-4">
       <p className="flex items-center gap-2 text-sm font-medium text-charcoal-700">
-        <MessageCircle className="h-4 w-4 text-brand-600" aria-hidden="true" />
+        <MessageCircle className="h-4 w-4 text-accent-text" aria-hidden="true" />
         Contact the owner
       </p>
 
@@ -54,7 +54,7 @@ export function ContactOwnerForm({
           placeholder="Hi, I'm interested in this property. Is it still available?"
           className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface p-3 text-sm shadow-[var(--shadow-clay-inset)]"
         />
-        {state.error && <p className="text-sm font-medium text-error-500">{state.error}</p>}
+        {state.error && <p className="text-sm font-medium text-error">{state.error}</p>}
         <Button
           type="submit"
           variant="clay"
@@ -80,9 +80,9 @@ export function ContactOwnerForm({
 
 export function ContactOwnerGuestPrompt() {
   return (
-    <div className="rounded-[var(--radius-lg)] bg-sage-100 p-4">
+    <div className="rounded-[var(--radius-lg)] bg-surface-muted p-4">
       <p className="flex items-center gap-2 text-sm font-medium text-charcoal-700">
-        <MessageCircle className="h-4 w-4 text-brand-600" aria-hidden="true" />
+        <MessageCircle className="h-4 w-4 text-accent-text" aria-hidden="true" />
         Contact the owner
       </p>
       <p className="mt-1 text-sm text-charcoal-500">Log in to message this property&apos;s owner directly.</p>

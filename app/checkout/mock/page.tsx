@@ -24,7 +24,7 @@ export default async function MockCheckoutPage({
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <Card className="p-6">
-        <div className="mb-4 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-100 p-3 text-xs text-warning-500">
+        <div className="mb-4 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-soft p-3 text-xs text-warning">
           <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
           Development-only simulator. No real money moves. This exercises the exact same
           webhook-verification and activation code a real payment provider would trigger.

@@ -40,7 +40,7 @@ export function FavouriteButton({
       <Heart
         className={cn(
           "h-5 w-5 transition-all duration-300 motion-reduce:transition-none",
-          favourited ? "scale-110 fill-clay-500 text-clay-500" : "scale-100 text-charcoal-500",
+          favourited ? "scale-110 fill-clay-500 text-accent-text" : "scale-100 text-charcoal-500",
         )}
         aria-hidden="true"
       />

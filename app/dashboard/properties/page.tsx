@@ -58,7 +58,7 @@ export default async function OwnerPropertiesPage() {
                   stale && "ring-1 ring-warning-500/40",
                 )}
               >
-                <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-sage-200">
+                <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-surface-muted">
                   {cover && (
                     <Image src={propertyImageUrl(cover.storage_path)} alt="" fill sizes="80px" className="object-cover" />
                   )}
@@ -75,7 +75,7 @@ export default async function OwnerPropertiesPage() {
                   <p className="text-xs text-charcoal-400">{p.city}, {p.county}</p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <p className="text-sm font-semibold text-brand-800">{formatUsd(p.rent_amount)}</p>
+                  <p className="text-sm font-semibold text-accent-text">{formatUsd(p.rent_amount)}</p>
                   <Badge variant={p.listing_status === "published" ? "success" : "neutral"}>
                     {p.listing_status.replace("_", " ")}
                   </Badge>

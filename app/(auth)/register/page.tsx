@@ -91,12 +91,12 @@ function RegisterForm() {
             className={cn(
               "focus-ring flex flex-col items-start gap-1.5 rounded-[var(--radius-lg)] border-2 p-4 text-left transition-all",
               intent === "renter"
-                ? "border-brand-600 bg-brand-100 shadow-[var(--shadow-clay-raised)]"
+                ? "border-brand-600 bg-accent-soft shadow-[var(--shadow-clay-raised)]"
                 : "border-border bg-surface hover:border-brand-600/40",
             )}
           >
-            <Search className={cn("h-5 w-5", intent === "renter" ? "text-brand-700" : "text-charcoal-400")} aria-hidden="true" />
-            <span className={cn("text-sm font-semibold", intent === "renter" ? "text-brand-800" : "text-charcoal-700")}>
+            <Search className={cn("h-5 w-5", intent === "renter" ? "text-accent-on-soft" : "text-charcoal-400")} aria-hidden="true" />
+            <span className={cn("text-sm font-semibold", intent === "renter" ? "text-accent-on-soft" : "text-charcoal-700")}>
               Find a property
             </span>
             <span className="text-xs text-charcoal-500">Browse and message owners</span>
@@ -108,12 +108,12 @@ function RegisterForm() {
             className={cn(
               "focus-ring flex flex-col items-start gap-1.5 rounded-[var(--radius-lg)] border-2 p-4 text-left transition-all",
               intent === "owner"
-                ? "border-clay-500 bg-clay-400/10 shadow-[var(--shadow-clay-raised)]"
+                ? "border-clay-500 bg-accent-soft shadow-[var(--shadow-clay-raised)]"
                 : "border-border bg-surface hover:border-clay-500/40",
             )}
           >
-            <Home className={cn("h-5 w-5", intent === "owner" ? "text-clay-600" : "text-charcoal-400")} aria-hidden="true" />
-            <span className={cn("text-sm font-semibold", intent === "owner" ? "text-clay-600" : "text-charcoal-700")}>
+            <Home className={cn("h-5 w-5", intent === "owner" ? "text-accent-on-soft" : "text-charcoal-400")} aria-hidden="true" />
+            <span className={cn("text-sm font-semibold", intent === "owner" ? "text-accent-on-soft" : "text-charcoal-700")}>
               List a property
             </span>
             <span className="text-xs text-charcoal-500">Free, always</span>
@@ -154,7 +154,7 @@ function RegisterForm() {
               aria-pressed={method === "passkey"}
               className={cn(
                 "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-                method === "passkey" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+                method === "passkey" ? "border-brand-600 bg-accent-soft text-accent-on-soft" : "border-border text-charcoal-500",
               )}
             >
               <Fingerprint className="h-4 w-4" aria-hidden="true" />
@@ -167,7 +167,7 @@ function RegisterForm() {
             aria-pressed={method === "password"}
             className={cn(
               "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-              method === "password" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+              method === "password" ? "border-brand-600 bg-accent-soft text-accent-on-soft" : "border-border text-charcoal-500",
             )}
           >
             <KeyRound className="h-4 w-4" aria-hidden="true" />
@@ -179,7 +179,7 @@ function RegisterForm() {
             aria-pressed={method === "phone"}
             className={cn(
               "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-              method === "phone" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+              method === "phone" ? "border-brand-600 bg-accent-soft text-accent-on-soft" : "border-border text-charcoal-500",
             )}
           >
             <Phone className="h-4 w-4" aria-hidden="true" />
@@ -191,7 +191,7 @@ function RegisterForm() {
             aria-pressed={method === "whatsapp"}
             className={cn(
               "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-              method === "whatsapp" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+              method === "whatsapp" ? "border-brand-600 bg-accent-soft text-accent-on-soft" : "border-border text-charcoal-500",
             )}
           >
             <MessageCircle className="h-4 w-4" aria-hidden="true" />
@@ -205,7 +205,7 @@ function RegisterForm() {
               Use your device&apos;s fingerprint, face, or screen lock instead of a password.
             </p>
             {passkeyError && (
-              <p role="alert" className="text-sm font-medium text-error-500">
+              <p role="alert" className="text-sm font-medium text-error">
                 {passkeyError}
               </p>
             )}
@@ -251,7 +251,7 @@ function RegisterForm() {
             />
 
             {state.error && (
-              <p role="alert" className="text-sm font-medium text-error-500">
+              <p role="alert" className="text-sm font-medium text-error">
                 {state.error}
               </p>
             )}
@@ -265,7 +265,7 @@ function RegisterForm() {
 
       <p className="text-center text-sm text-charcoal-500">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-brand-700">
+        <Link href="/login" className="font-medium text-accent-text">
           Log in
         </Link>
       </p>

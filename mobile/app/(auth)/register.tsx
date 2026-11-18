@@ -46,10 +46,10 @@ export default function RegisterScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="px-4 pt-20 pb-8 gap-6">
+    <ScrollView className="flex-1 bg-surface-base" contentContainerClassName="px-4 pt-20 pb-8 gap-6">
       <View>
-        <Text className="font-display-bold text-2xl text-charcoal-700 dark:text-ivory-100">Create your account</Text>
-        <Text className="mt-1 text-base text-charcoal-500 dark:text-charcoal-400">
+        <Text className="font-display-bold text-2xl text-content-strong">Create your account</Text>
+        <Text className="mt-1 text-base text-content-muted">
           Browsing is always free. Tell us what you&apos;re here for.
         </Text>
       </View>
@@ -62,15 +62,15 @@ export default function RegisterScreen() {
             accessibilityState={{ selected: intent === "renter" }}
             onPress={() => setValue("intent", "renter")}
             className={cn(
-              "flex-1 gap-1.5 rounded-lg border-2 p-4",
-              intent === "renter" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+ "flex-1 gap-1.5 rounded-lg border-2 p-4",
+              intent === "renter" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed",
             )}
           >
             <Search size={20} color={intent === "renter" ? "#b8122f" : "#737373"} />
-            <Text className={cn("font-sans-semibold text-sm", intent === "renter" ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+            <Text className={cn("font-sans-semibold text-sm", intent === "renter" ? "text-accent-text" : "text-content-strong")}>
               Find a property
             </Text>
-            <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">Browse and message owners</Text>
+            <Text className="text-xs text-content-muted">Browse and message owners</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -78,15 +78,15 @@ export default function RegisterScreen() {
             accessibilityState={{ selected: intent === "owner" }}
             onPress={() => setValue("intent", "owner")}
             className={cn(
-              "flex-1 gap-1.5 rounded-lg border-2 p-4",
-              intent === "owner" ? "border-clay-500 bg-clay-400/10" : "border-border dark:border-charcoal-500",
+ "flex-1 gap-1.5 rounded-lg border-2 p-4",
+              intent === "owner" ? "border-clay-500 bg-clay-400/10" : "border-border-themed",
             )}
           >
             <Home size={20} color={intent === "owner" ? "#a00c30" : "#737373"} />
-            <Text className={cn("font-sans-semibold text-sm", intent === "owner" ? "text-clay-600" : "text-charcoal-700 dark:text-ivory-100")}>
+            <Text className={cn("font-sans-semibold text-sm", intent === "owner" ? "text-accent-text" : "text-content-strong")}>
               List a property
             </Text>
-            <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">Free, always</Text>
+            <Text className="text-xs text-content-muted">Free, always</Text>
           </Pressable>
         </View>
 
@@ -105,11 +105,11 @@ export default function RegisterScreen() {
             accessibilityState={{ selected: method === "password" }}
             onPress={() => setMethod("password")}
             className={cn(
-              "flex-1 items-center rounded-md border py-2",
-              method === "password" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+ "flex-1 items-center rounded-md border py-2",
+              method === "password" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed",
             )}
           >
-            <Text className={cn("text-sm font-sans-semibold", method === "password" ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+            <Text className={cn("text-sm font-sans-semibold", method === "password" ? "text-accent-text" : "text-content-strong")}>
               Password
             </Text>
           </Pressable>
@@ -119,11 +119,11 @@ export default function RegisterScreen() {
             accessibilityState={{ selected: method === "whatsapp" }}
             onPress={() => setMethod("whatsapp")}
             className={cn(
-              "flex-1 items-center rounded-md border py-2",
-              method === "whatsapp" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+ "flex-1 items-center rounded-md border py-2",
+              method === "whatsapp" ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed",
             )}
           >
-            <Text className={cn("text-sm font-sans-semibold", method === "whatsapp" ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+            <Text className={cn("text-sm font-sans-semibold", method === "whatsapp" ? "text-accent-text" : "text-content-strong")}>
               WhatsApp
             </Text>
           </Pressable>
@@ -170,8 +170,8 @@ export default function RegisterScreen() {
       </Card>
 
       <View className="flex-row justify-center gap-1">
-        <Text className="text-charcoal-500 dark:text-charcoal-400">Already have an account?</Text>
-        <Link href="/(auth)/login" className="font-medium text-forest-700 dark:text-forest-500">
+        <Text className="text-content-muted">Already have an account?</Text>
+        <Link href="/(auth)/login" className="font-medium text-accent-text">
           Log in
         </Link>
       </View>

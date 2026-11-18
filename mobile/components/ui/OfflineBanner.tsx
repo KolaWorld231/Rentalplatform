@@ -21,7 +21,7 @@ export function OfflineBanner() {
   if (!offline) return null;
 
   return (
-    <View className="bg-warning-100 px-4 py-2 dark:bg-charcoal-700">
+    <View className="bg-warning-100 px-4 py-2">
       <Text className="text-center text-xs font-sans-semibold text-warning-500">
         You&apos;re offline — some content may be out of date.
       </Text>

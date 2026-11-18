@@ -144,6 +144,35 @@ export async function recordPropertyView(
   });
 }
 
+/**
+ * Resolves the verified badge for a whole listing grid in two requests,
+ * rather than two per property. A property shows the badge when either
+ * its owner's identity or the property itself has been verified.
+ *
+ * The underlying tables are RLS-restricted, so this goes through the
+ * security-definer batch functions added in
+ * 20261117000100_batch_verification_lookups.sql.
+ */
+export async function verifiedFlagsFor(
+  supabase: SupabaseClient<Database>,
+  properties: Pick<Property, "id" | "owner_id">[],
+): Promise<boolean[]> {
+  if (properties.length === 0) return [];
+
+  const ownerIds = [...new Set(properties.map((p) => p.owner_id))];
+  const propertyIds = properties.map((p) => p.id);
+
+  const [{ data: verifiedOwners }, { data: verifiedProperties }] = await Promise.all([
+    supabase.rpc("verified_owner_ids", { target_owners: ownerIds }),
+    supabase.rpc("verified_property_ids", { target_properties: propertyIds }),
+  ]);
+
+  const owners = new Set<string>(verifiedOwners ?? []);
+  const props = new Set<string>(verifiedProperties ?? []);
+
+  return properties.map((p) => owners.has(p.owner_id) || props.has(p.id));
+}
+
 export function listingCompleteness(property: Partial<Property>): {
   percent: number;
   missing: string[];

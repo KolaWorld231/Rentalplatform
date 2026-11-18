@@ -43,7 +43,7 @@ export default function TermsPage() {
           owner requires an active {subscriptionPlan.name} (${subscriptionPlan.priceUsd} for{" "}
           {subscriptionPlan.durationDays} days). The pass does not limit the number of owners you
           may contact during its validity and does not renew automatically. See our{" "}
-          <a href="/legal/subscription-terms" className="text-brand-700">
+          <a href="/legal/subscription-terms" className="text-accent-text">
             Subscription Terms
           </a>{" "}
           for details.
@@ -55,7 +55,7 @@ export default function TermsPage() {
         <p>
           We do not guarantee that you will find or rent a suitable property, that a listing is
           accurate, or that a counterparty will act in good faith. See our{" "}
-          <a href="/safety" className="text-brand-700">
+          <a href="/safety" className="text-accent-text">
             Safety guidance
           </a>
           .
@@ -76,7 +76,7 @@ export default function TermsPage() {
         <p>
           We may suspend or terminate an account that violates these terms. You may request
           deletion of your account at any time via{" "}
-          <a href="/help" className="text-brand-700">
+          <a href="/help" className="text-accent-text">
             Help &amp; Support
           </a>
           .

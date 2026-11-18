@@ -11,7 +11,7 @@ export default function SuspendedPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center sm:px-6">
       <Card className="flex w-full flex-col items-center gap-3 p-10">
-        <ShieldAlert className="h-10 w-10 text-error-500" aria-hidden="true" />
+        <ShieldAlert className="h-10 w-10 text-error" aria-hidden="true" />
         <h1 className="font-display text-xl font-semibold text-charcoal-700">Account suspended</h1>
         <p className="text-sm text-charcoal-500">
           Your {brand.name} account has been suspended by our moderation team. You&apos;ve been

@@ -26,7 +26,7 @@ export default function AboutPage() {
           <p>
             We don&apos;t claim to verify every listing or guarantee every advertiser is a legitimate
             property owner — see our{" "}
-            <a href="/safety" className="text-brand-700">
+            <a href="/safety" className="text-accent-text">
               safety guidance
             </a>{" "}
             for what to check before you commit to anything. What we do is remove the agent fee from

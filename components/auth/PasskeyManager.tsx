@@ -85,7 +85,7 @@ export function PasskeyManager({ initialPasskeys }: { initialPasskeys: Passkey[]
                 type="button"
                 onClick={() => handleDelete(p.id)}
                 aria-label={`Remove ${p.label}`}
-                className="focus-ring rounded-[var(--radius-sm)] p-1.5 text-charcoal-400 hover:text-error-500"
+                className="focus-ring rounded-[var(--radius-sm)] p-1.5 text-charcoal-400 hover:text-error"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -95,7 +95,7 @@ export function PasskeyManager({ initialPasskeys }: { initialPasskeys: Passkey[]
       )}
 
       {error && (
-        <p role="alert" className="text-sm font-medium text-error-500">
+        <p role="alert" className="text-sm font-medium text-error">
           {error}
         </p>
       )}

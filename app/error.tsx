@@ -16,11 +16,11 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center sm:px-6">
       <Card className="flex w-full flex-col items-center gap-3 p-10">
-        <AlertTriangle className="h-10 w-10 text-error-500" aria-hidden="true" />
+        <AlertTriangle className="h-10 w-10 text-error" aria-hidden="true" />
         <h1 className="font-display text-xl font-semibold text-charcoal-700">Something went wrong</h1>
         <p className="text-sm text-charcoal-500">
           We hit an unexpected error. Please try again — if it keeps happening, contact{" "}
-          <a href="/help" className="font-medium text-brand-700">
+          <a href="/help" className="font-medium text-accent-text">
             support
           </a>
           .

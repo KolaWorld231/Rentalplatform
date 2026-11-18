@@ -4,6 +4,8 @@ import { Link } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Avatar } from "../../components/ui/Avatar";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { Screen } from "../../components/ui/Screen";
 import { useSession } from "../../lib/auth/session";
 import { formatRelativeDate } from "../../lib/format";
 import { getConversationsForUser, type ConversationRow } from "../../lib/messaging/service";
@@ -19,7 +21,7 @@ export default function MessagesScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -27,8 +29,8 @@ export default function MessagesScreen() {
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">Log in to message property owners.</Text>
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
+        <Text className="text-center text-base text-content-strong">Log in to message property owners.</Text>
         <Link href="/(auth)/login" asChild>
           <Button>Log in</Button>
         </Link>
@@ -37,12 +39,16 @@ export default function MessagesScreen() {
   }
 
   return (
-    <View className="flex-1 bg-canvas pt-16 dark:bg-charcoal-900">
-      <Text className="px-4 pb-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Messages</Text>
+    <Screen>
+      <Text className="px-4 pb-3 pt-3 font-display-bold text-xl text-content-strong">Messages</Text>
       {conversations.isLoading ? (
         <ActivityIndicator />
       ) : conversations.isError ? (
-        <Text className="px-4 text-sm text-error-500">Couldn&apos;t load your conversations. Pull to refresh.</Text>
+        <ErrorState
+          message="Couldn't load your conversations."
+          onRetry={() => conversations.refetch()}
+          retrying={conversations.isRefetching}
+        />
       ) : (
         <FlatList
           data={conversations.data ?? []}
@@ -50,10 +56,10 @@ export default function MessagesScreen() {
           renderItem={({ item }) => <ConversationRowItem conversation={item} currentUserId={user.id} />}
           ListEmptyComponent={
             <View className="items-center gap-3 p-10">
-              <Text className="text-center font-sans-semibold text-charcoal-700 dark:text-ivory-100">
+              <Text className="text-center font-sans-semibold text-content-strong">
                 Your property conversations will appear here.
               </Text>
-              <Text className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
+              <Text className="text-center text-sm text-content-muted">
                 Browse properties and message an owner directly to get started.
               </Text>
               <Link href="/(tabs)/search" asChild>
@@ -63,7 +69,7 @@ export default function MessagesScreen() {
           }
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
@@ -79,17 +85,17 @@ function ConversationRowItem({ conversation: c, currentUserId }: { conversation:
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Conversation with ${name ?? "Unknown user"}${unread ? ", unread" : ""}`}
-        className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-sage-100 dark:border-charcoal-500 dark:active:bg-charcoal-700"
+        className="flex-row items-center gap-3 border-b border-border-themed px-4 py-3 active:bg-surface-muted active:bg-surface-muted"
       >
         <Avatar name={name} />
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
-            <Text className={unread ? "font-sans-semibold text-charcoal-700 dark:text-ivory-100" : "font-sans text-charcoal-700 dark:text-ivory-100"} numberOfLines={1}>
+            <Text className={unread ? "font-sans-semibold text-content-strong" : "font-sans text-content-strong"} numberOfLines={1}>
               {name ?? "Unknown user"}
             </Text>
-            <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">{formatRelativeDate(c.updated_at)}</Text>
+            <Text className="text-xs text-content-muted">{formatRelativeDate(c.updated_at)}</Text>
           </View>
-          <Text className="text-xs text-charcoal-500 dark:text-charcoal-400" numberOfLines={1}>
+          <Text className="text-xs text-content-muted" numberOfLines={1}>
             {c.properties?.title ?? "Property"}
           </Text>
         </View>

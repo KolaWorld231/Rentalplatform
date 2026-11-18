@@ -745,6 +745,8 @@ export type Database = {
       };
       is_identity_verified: { Args: { target_user: string }; Returns: boolean };
       is_property_verified: { Args: { target_property: string }; Returns: boolean };
+      verified_owner_ids: { Args: { target_owners: string[] }; Returns: string[] };
+      verified_property_ids: { Args: { target_properties: string[] }; Returns: string[] };
       submit_scout_application: {
         Args: {
           p_full_name: string;

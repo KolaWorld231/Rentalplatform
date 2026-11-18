@@ -44,7 +44,7 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
           <Send className="h-4 w-4" />
         </Button>
       </div>
-      {state.error && <p className="text-sm font-medium text-error-500">{state.error}</p>}
+      {state.error && <p className="text-sm font-medium text-error">{state.error}</p>}
     </form>
   );
 }

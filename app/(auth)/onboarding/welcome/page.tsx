@@ -26,7 +26,7 @@ export default async function OnboardingWelcomePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6 text-center">
-      <CheckCircle2 className="h-12 w-12 text-success-500" aria-hidden="true" />
+      <CheckCircle2 className="h-12 w-12 text-success" aria-hidden="true" />
       <div>
         <h1 className="font-display text-2xl font-semibold text-charcoal-700">
           You&apos;re all set

@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
       </Card>
 
       <p className="text-center text-sm text-charcoal-500">
-        <Link href="/login" className="font-medium text-brand-700">
+        <Link href="/login" className="font-medium text-accent-text">
           Back to log in
         </Link>
       </p>

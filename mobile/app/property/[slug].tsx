@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Link, Stack, router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { PropertyCard } from "../../components/properties/PropertyCard";
@@ -16,6 +16,7 @@ import { isIdentityVerified, isPropertyVerified } from "../../lib/verification/s
 import { VerificationBadge } from "../../components/verification/VerificationBadge";
 import { ReportForm } from "../../components/reports/ReportForm";
 import type { ReportReason } from "../../lib/database.types";
+import { usePlaceholderColor } from "../../lib/theme";
 
 const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning" | "has_parking" | "has_security"; label: string }[] = [
   { key: "has_electricity", label: "Electricity" },
@@ -26,7 +27,11 @@ const AMENITIES: { key: "has_electricity" | "has_water" | "has_air_conditioning"
 ];
 
 export default function PropertyDetailScreen() {
+  const placeholderColor = usePlaceholderColor();
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  // pagingEnabled snaps to the viewport, so a gallery item must be exactly
+  // as wide as the screen or every page after the first sits off-centre.
+  const { width: screenWidth } = useWindowDimensions();
   const { user, session } = useSession();
   const queryClient = useQueryClient();
 
@@ -59,7 +64,7 @@ export default function PropertyDetailScreen() {
 
   if (property.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -67,8 +72,8 @@ export default function PropertyDetailScreen() {
 
   if (property.isError || !property.data) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas p-6 dark:bg-charcoal-900">
-        <Text className="text-base text-charcoal-700 dark:text-ivory-100">This listing isn&apos;t available anymore.</Text>
+      <View className="flex-1 items-center justify-center bg-surface-base p-6">
+        <Text className="text-base text-content-strong">This listing isn&apos;t available anymore.</Text>
       </View>
     );
   }
@@ -122,7 +127,7 @@ export default function PropertyDetailScreen() {
   const isOwnListing = user?.id === p.owner_id;
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900">
+    <ScrollView className="flex-1 bg-surface-base">
       <Stack.Screen options={{ headerShown: true, title: p.title }} />
 
       {images.length > 0 ? (
@@ -133,13 +138,13 @@ export default function PropertyDetailScreen() {
           keyExtractor={(img) => img.id}
           renderItem={({ item }) =>
             brokenImageIds.has(item.id) ? (
-              <View className="h-[260px] w-[390px] items-center justify-center bg-sage-100 dark:bg-charcoal-500">
-                <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">Photo couldn&apos;t load</Text>
+              <View style={{ width: screenWidth, height: 260 }} className="items-center justify-center bg-surface-muted">
+                <Text className="text-sm text-content-muted">Photo couldn&apos;t load</Text>
               </View>
             ) : (
               <Image
                 source={{ uri: propertyImageUrl(item.storage_path) }}
-                style={{ width: 390, height: 260 }}
+                style={{ width: screenWidth, height: 260 }}
                 contentFit="cover"
                 alt={`Photo of ${p.title}`}
                 onError={() => setBrokenImageIds((prev) => new Set(prev).add(item.id))}
@@ -148,16 +153,20 @@ export default function PropertyDetailScreen() {
           }
         />
       ) : (
-        <View className="h-64 items-center justify-center bg-sage-100 dark:bg-charcoal-500">
-          <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">No photos yet</Text>
+        /* Reserving a full frame only makes sense when something will
+           fill it; an empty 256px block just pushed the title down. */
+        <View className="items-center justify-center bg-surface-muted px-5 py-5">
+          <Text className="text-sm text-content-muted">
+            The owner hasn&apos;t added photos to this listing yet.
+          </Text>
         </View>
       )}
 
       <View className="gap-5 p-4">
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">
-            <Text className="font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">{p.title}</Text>
-            <Text className="mt-1 text-sm text-charcoal-500 dark:text-charcoal-400">
+            <Text className="font-display-bold text-xl text-content-strong">{p.title}</Text>
+            <Text className="mt-1 text-sm text-content-muted">
               {[p.community, p.city, p.county].filter(Boolean).join(", ")}
             </Text>
           </View>
@@ -169,34 +178,28 @@ export default function PropertyDetailScreen() {
               accessibilityLabel={isFavourited ? "Remove from saved" : "Save this property"}
               accessibilityState={{ selected: isFavourited }}
               hitSlop={8}
-              className="h-11 w-11 items-center justify-center rounded-full border border-border dark:border-charcoal-500"
+              className="h-11 w-11 items-center justify-center rounded-full border border-border-themed"
             >
-              <Text className={isFavourited ? "text-clay-500" : "text-charcoal-500 dark:text-charcoal-400"}>{isFavourited ? "♥" : "♡"}</Text>
+              <Text className={isFavourited ? "text-accent-text" : "text-content-muted"}>{isFavourited ? "♥" : "♡"}</Text>
             </Pressable>
           )}
         </View>
 
         <Card className="gap-1 p-4">
-          {(identityVerified.data || propertyVerified.data) && (
-            <View className="mb-2 flex-row flex-wrap gap-2">
-              {identityVerified.data && <VerificationBadge kind="identity" />}
-              {propertyVerified.data && <VerificationBadge kind="property" />}
-            </View>
-          )}
-          <Text className="font-display-bold text-2xl text-forest-700 dark:text-forest-500">
+          <Text className="font-display-bold text-2xl text-accent-text">
             {formatUsd(p.rent_amount)}
-            <Text className="font-sans text-base text-charcoal-400"> {formatRentalFrequency(p.rental_frequency)}</Text>
+            <Text className="font-sans text-base text-content-subtle"> {formatRentalFrequency(p.rental_frequency)}</Text>
           </Text>
           {upfrontItems.length > 0 && (
-            <View className="mt-3 gap-1 border-t border-border pt-3 dark:border-charcoal-500">
-              <Text className="font-sans-semibold text-sm text-charcoal-700 dark:text-ivory-100">Disclosed move-in costs</Text>
+            <View className="mt-3 gap-1 border-t border-border-themed pt-3">
+              <Text className="font-sans-semibold text-sm text-content-strong">Disclosed move-in costs</Text>
               <CostRow label={`First ${formatRentalFrequency(p.rental_frequency).replace("/ ", "")} rent`} value={p.rent_amount} />
               {upfrontItems.map((i) => (
                 <CostRow key={i.label} label={i.label} value={i.value} />
               ))}
-              <View className="mt-1 flex-row justify-between border-t border-border pt-1 dark:border-charcoal-500">
-                <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Total upfront</Text>
-                <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">{formatUsd(totalUpfront)}</Text>
+              <View className="mt-2 flex-row items-baseline justify-between border-t border-border-themed pt-2">
+                <Text className="font-sans-semibold text-content-strong">Total upfront</Text>
+                <Text className="font-display-bold text-base text-content-strong">{formatUsd(totalUpfront)}</Text>
               </View>
             </View>
           )}
@@ -204,24 +207,30 @@ export default function PropertyDetailScreen() {
 
         {!isOwnListing && (
           <Card className="gap-2 p-4">
-            <Text className="font-sans-semibold text-sm text-charcoal-700 dark:text-ivory-100">Contact the owner</Text>
+            <Text className="font-sans-semibold text-sm text-content-strong">Contact the owner</Text>
+            {(identityVerified.data || propertyVerified.data) && (
+              <View className="flex-row flex-wrap gap-2">
+                {identityVerified.data && <VerificationBadge kind="identity" />}
+                {propertyVerified.data && <VerificationBadge kind="property" />}
+              </View>
+            )}
             {user ? (
               <>
                 <TextInput
                   value={messageDraft}
                   onChangeText={setMessageDraft}
                   placeholder="Hi, I'm interested in this property. Is it still available?"
-                  placeholderTextColor="#737373"
+                  placeholderTextColor={placeholderColor}
                   multiline
                   numberOfLines={3}
                   accessibilityLabel="Message to the owner"
-                  className="rounded-md border border-border bg-surface p-3 text-sm text-charcoal-700 dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100"
+                  className="rounded-md border border-border-themed bg-surface-raised p-3 text-sm text-content-strong"
                 />
                 {contactError && <Text className="text-sm text-error-500">{contactError}</Text>}
                 <Button variant="clay" loading={sendingMessage} onPress={onSendMessage} disabled={!messageDraft.trim()}>
                   Send message
                 </Button>
-                <Text className="text-xs text-charcoal-400">Subscribe once, message unlimited owners. No per-property fee.</Text>
+                <Text className="text-xs text-content-subtle">Subscribe once, message unlimited owners. No per-property fee.</Text>
               </>
             ) : (
               <Link href="/(auth)/login" asChild>
@@ -232,14 +241,14 @@ export default function PropertyDetailScreen() {
         )}
 
         <View className="gap-2">
-          <Text className="font-display-bold text-lg text-charcoal-700 dark:text-ivory-100">About this property</Text>
-          <Text className="text-sm leading-relaxed text-charcoal-600 dark:text-charcoal-400">
+          <Text className="font-display-bold text-lg text-content-strong">About this property</Text>
+          <Text className="text-sm leading-relaxed text-content-muted">
             {p.description || "No description provided yet."}
           </Text>
         </View>
 
         <View className="gap-2">
-          <Text className="font-display-bold text-lg text-charcoal-700 dark:text-ivory-100">Details & amenities</Text>
+          <Text className="font-display-bold text-lg text-content-strong">Details & amenities</Text>
           <View className="flex-row flex-wrap gap-2">
             <Chip label={formatCategory(p.category)} />
             {p.bedrooms !== null && <Chip label={`${p.bedrooms} bed`} />}
@@ -261,7 +270,7 @@ export default function PropertyDetailScreen() {
 
         {similar.data && similar.data.length > 0 && (
           <View className="gap-3">
-            <Text className="font-display-bold text-lg text-charcoal-700 dark:text-ivory-100">Similar properties</Text>
+            <Text className="font-display-bold text-lg text-content-strong">Similar properties</Text>
             <FlatList
               horizontal
               data={similar.data}
@@ -284,16 +293,16 @@ export default function PropertyDetailScreen() {
 function CostRow({ label, value }: { label: string; value: number }) {
   return (
     <View className="flex-row justify-between">
-      <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">{label}</Text>
-      <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">{formatUsd(value)}</Text>
+      <Text className="text-sm text-content-muted">{label}</Text>
+      <Text className="text-sm text-content-muted">{formatUsd(value)}</Text>
     </View>
   );
 }
 
 function Chip({ label }: { label: string }) {
   return (
-    <View className="rounded-full border border-border px-3 py-1 dark:border-charcoal-500">
-      <Text className="text-xs text-charcoal-700 dark:text-ivory-100">{label}</Text>
+    <View className="rounded-full border border-border-themed px-3 py-1">
+      <Text className="text-xs text-content-strong">{label}</Text>
     </View>
   );
 }

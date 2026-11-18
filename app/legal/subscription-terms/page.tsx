@@ -55,7 +55,7 @@ export default function SubscriptionTermsPage() {
         <h2 className="font-semibold text-charcoal-700">Refunds</h2>
         <p>
           Refund requests are reviewed case by case through{" "}
-          <a href="/help" className="text-brand-700">
+          <a href="/help" className="text-accent-text">
             Help &amp; Support
           </a>
           . Activated access that has already been used to message owners is not automatically

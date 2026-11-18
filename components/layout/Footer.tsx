@@ -37,10 +37,10 @@ const columns = [
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-border bg-sage-100">
+    <footer className="mt-auto border-t border-border bg-surface-muted">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-5 lg:px-8">
         <div className="lg:col-span-1">
-          <p className="font-display text-lg font-semibold text-brand-800">{brand.name}</p>
+          <p className="font-display text-lg font-semibold text-accent-text">{brand.name}</p>
           <p className="mt-2 text-sm text-charcoal-500">{brand.tagline}</p>
         </div>
         {columns.map((col) => (
@@ -49,7 +49,7 @@ export function Footer() {
             <ul className="mt-3 flex flex-col gap-2">
               {col.links.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="text-sm text-charcoal-500 hover:text-brand-700">
+                  <Link href={link.href} className="text-sm text-charcoal-500 hover:text-accent-text">
                     {link.label}
                   </Link>
                 </li>

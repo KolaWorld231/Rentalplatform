@@ -1,13 +1,28 @@
 @import "tailwindcss";
 
 /*
-  DomiLink design tokens.
+  231Rentals design tokens.
   See docs/DESIGN_SYSTEM.md for the full rationale behind these values.
-  Palette: Bonfire Red / Embers (brand/primary actions — also the sole
-  accent, replacing the old clay color), Magnolia White (canvas, surface),
-  Black Swarm (text). Token group names (forest/ivory/sage/clay/charcoal)
-  are kept as-is since they're referenced throughout the codebase and by
-  the `@theme inline` block below — only the hex values changed.
+
+  Direction: warm ground, red signature.
+
+  The neutrals used to be literally achromatic -- #f7f6f6, #f2f2f2,
+  #e5e5e5, #000000. A pure-grey ground is what makes a product read as a
+  generic portal: it has no point of view, and it leaves the brand red
+  doing all the work alone, which in turn pushed red onto every button
+  until it stopped meaning anything.
+
+  The neutrals now carry a consistent warm cast (a sand/stone ramp) so
+  the ground itself feels local and considered, and red is freed to be a
+  signal rather than a default -- reserved for price, verification and
+  the single primary action on a screen.
+
+  Token group names (forest/ivory/sage/clay/charcoal) are kept as-is
+  since they're referenced throughout the codebase and by the
+  `@theme inline` block below -- only the hex values changed.
+
+  Every foreground/background pair below is measured, not estimated. The
+  ratios are recorded beside each token.
 */
 :root {
   --color-forest-900: #4a0718;
@@ -18,24 +33,86 @@
   --color-forest-100: #fbe2e5;
 
   --color-ivory-50: #ffffff;
-  --color-ivory-100: #f7f6f6;
-  --color-ivory-200: #efeded;
+  --color-ivory-100: #f7f4f0;
+  --color-ivory-200: #efeae4;
 
-  --color-sage-100: #f2f2f2;
-  --color-sage-200: #e8e8e8;
-  --color-sage-300: #d6d6d6;
+  --color-sage-100: #f1ece6;
+  --color-sage-200: #e7e0d8;
+  --color-sage-300: #d6ccc0;
 
   --color-clay-400: #e8495c;
   --color-clay-500: #da1a32;
   --color-clay-600: #a00c30;
 
-  --color-charcoal-900: #000000;
-  --color-charcoal-700: #1a1a1a;
-  --color-charcoal-500: #4d4d4d;
-  --color-charcoal-400: #737373;
+  /*
+    Warm stone text ramp. Ratios against the page (#f7f4f0) / card (#fff):
+      charcoal-700  15.95 / 17.49   primary text
+      charcoal-500   6.96 /  7.63   secondary text
+      charcoal-400   5.07 /  5.56   tertiary text, captions
+    charcoal-900 is only ever a scrim/backdrop and stays dark in both
+    themes; the other three invert in the dark block below.
+  */
+  --color-charcoal-900: #0c0a09;
+  --color-charcoal-700: #1c1917;
+  --color-charcoal-500: #57534e;
+  --color-charcoal-400: #6e6762;
 
   --color-surface: #ffffff;
-  --color-border: #e5e5e5;
+  --color-border: #e7e0d8;
+
+  /*
+    Semantic surface layer.
+
+    The raw ramps below (sage, ivory, charcoal) are NOT theme-aware in
+    the same direction: charcoal flips to light text in dark mode (see
+    the dark block further down) while sage and ivory stay frozen at
+    their light values. Anything that paired the two -- a sage fill
+    under charcoal text -- therefore rendered light-on-light in dark
+    mode, at roughly 1.04:1 contrast.
+
+    These four tokens are the fix: every *neutral* fill (page, card,
+    muted well, overlay panel) reads from one of them and flips with the
+    theme, so a surface and the text on it can never drift apart again.
+    The raw ramps stay available and correct for their other job --
+    light text on a brand-coloured or image surface (text-ivory-50 on
+    bg-brand-800), which is theme-independent by design.
+  */
+  --surface-base: var(--color-ivory-100);
+  --surface-raised: #ffffff;
+  --surface-muted: var(--color-sage-100);
+  --surface-overlay: #ffffff;
+
+  /*
+    Semantic accent layer -- the same separation the surface tokens make,
+    applied to the brand red.
+
+    Red has two jobs that need different values. As a FILL it carries
+    white text on top (#fff on #da1a32 = 5.03:1), and that holds in both
+    themes. As TEXT or an icon sitting directly on the ground it has to
+    contrast with the ground itself, and #da1a32 on the dark page is only
+    3.48:1 -- it fails exactly the way the sage-on-charcoal pairing did
+    before Wave 1, for exactly the same reason: one token doing two jobs.
+
+    So --accent-fill stays put and --accent-text flips:
+      light  #b8122f on page = 6.05:1
+      dark   #f06575 on page = 5.68:1, on card = 5.12:1
+    Use accent-text for price, verified marks and links; accent-fill for
+    the one primary action on a screen.
+  */
+  --accent-fill: var(--color-forest-600);
+  --accent-fill-hover: var(--color-forest-700);
+  --accent-text: var(--color-forest-700);
+
+  /*
+    Tinted accent surface -- a selected chip, a soft callout. The pairing
+    `bg-brand-100 text-brand-800` has the same defect one level down:
+    brand-100 is a frozen light pink, so in dark mode it stayed light
+    while nothing around it did. Both halves flip together here.
+      light  #a00c30 on #fbe2e5 = 6.61:1
+      dark   #ffc2ca on #5e1b2a = 8.30:1
+  */
+  --accent-soft: var(--color-forest-100);
+  --accent-on-soft: var(--color-forest-800);
 
   --color-success-500: #2f8f5b;
   --color-success-100: #e3f3ea;
@@ -46,6 +123,30 @@
   --color-info-500: #2f6fa6;
   --color-info-100: #e5f0f9;
 
+  /*
+    Status colours have the same split as the accent, for the same
+    reason: the -500 ramp is a FILL (the danger button and the avatar
+    both put white text on it, so it must stay dark in both themes),
+    while the same value used as TEXT has to contrast with the ground.
+    #2f8f5b as text measured 4.04:1 on a card -- under AA.
+
+    So the ramps above are left alone as fills, and these flip.
+      light  success #277a4d 4.82 · warning #8a5a0b 5.40
+             error   #b02e2e 5.85 · info    #2f6fa6 4.85   (on page)
+      dark   success #5fd98f 9.83 · warning #f0b429 9.38
+             error   #f87171 6.32 · info    #60a5fa 6.88   (on page)
+    The -soft tints pair with -text and flip alongside it.
+  */
+  --status-success-text: #277a4d;
+  --status-warning-text: #8a5a0b;
+  --status-error-text: #b02e2e;
+  --status-info-text: #2f6fa6;
+
+  --status-success-soft: var(--color-success-100);
+  --status-warning-soft: var(--color-warning-100);
+  --status-error-soft: var(--color-error-100);
+  --status-info-soft: var(--color-info-100);
+
   --background: var(--color-ivory-100);
   --foreground: var(--color-charcoal-700);
 
@@ -55,22 +156,22 @@
   --radius-xl: 28px;
   --radius-2xl: 36px;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
+  /*
+    The eight --space-* tokens that used to sit here were removed: none
+    was ever referenced, and none was mapped into @theme, so Tailwind
+    never exposed them. They advertised a spacing system the app does
+    not use -- spacing comes from Tailwind's own scale.
+  */
 
-  /* Claymorphism shadow tokens: soft dual-light shadows against the white canvas */
-  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 20px -6px rgba(0, 0, 0, 0.12);
-  --shadow-floating: 0 2px 4px rgba(0, 0, 0, 0.06), 0 16px 32px -10px rgba(0, 0, 0, 0.16);
-  --shadow-modal: 0 8px 16px rgba(0, 0, 0, 0.08), 0 32px 64px -16px rgba(0, 0, 0, 0.28);
-  --shadow-clay-inset: inset 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 -1px 1px rgba(255, 255, 255, 0.6);
-  --shadow-clay-raised: 6px 6px 16px rgba(0, 0, 0, 0.12), -4px -4px 12px rgba(255, 255, 255, 0.7);
+  /* Elevation. Softer and warmer than before: a neutral-black shadow on a
+     warm ground reads as grey smudge, so these carry a trace of the
+     ground's hue. */
+  --shadow-subtle: 0 1px 2px 0 rgba(41, 34, 28, 0.07);
+  --shadow-raised: 0 1px 2px rgba(41, 34, 28, 0.06), 0 8px 20px -6px rgba(41, 34, 28, 0.14);
+  --shadow-floating: 0 2px 4px rgba(41, 34, 28, 0.07), 0 16px 32px -10px rgba(41, 34, 28, 0.18);
+  --shadow-modal: 0 8px 16px rgba(41, 34, 28, 0.10), 0 32px 64px -16px rgba(41, 34, 28, 0.30);
+  --shadow-clay-inset: inset 0 2px 4px rgba(41, 34, 28, 0.09), inset 0 -1px 1px rgba(255, 255, 255, 0.6);
+  --shadow-clay-raised: 6px 6px 16px rgba(41, 34, 28, 0.13), -4px -4px 12px rgba(255, 255, 255, 0.7);
 }
 
 @theme inline {
@@ -104,6 +205,26 @@
   --color-surface: var(--color-surface);
   --color-border: var(--color-border);
 
+  --color-surface-base: var(--surface-base);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-overlay: var(--surface-overlay);
+
+  --color-accent: var(--accent-fill);
+  --color-accent-hover: var(--accent-fill-hover);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-on-soft: var(--accent-on-soft);
+
+  --color-success: var(--status-success-text);
+  --color-warning: var(--status-warning-text);
+  --color-error: var(--status-error-text);
+  --color-info: var(--status-info-text);
+  --color-success-soft: var(--status-success-soft);
+  --color-warning-soft: var(--status-warning-soft);
+  --color-error-soft: var(--status-error-soft);
+  --color-info-soft: var(--status-info-soft);
+
   --color-success-500: var(--color-success-500);
   --color-success-100: var(--color-success-100);
   --color-warning-500: var(--color-warning-500);
@@ -116,6 +237,35 @@
   --font-sans: var(--font-interface);
   --font-display: var(--font-display);
 
+  /*
+    Editorial display scale.
+
+    Headings across the app were almost all `text-2xl`, one step above
+    body, so a page had no focal point and every section looked equally
+    important. These four sizes are fluid (they interpolate with the
+    viewport) rather than a stack of responsive variants, and they carry
+    the tightened tracking and line-height that large type needs --
+    defaults tuned for 16px body text look loose and unset at 48px.
+
+    Use display-* for the one thing a page is about. Section headings
+    stay on the regular scale.
+  */
+  --text-display-sm: clamp(1.5rem, 1.3rem + 1vw, 1.875rem);
+  --text-display-sm--line-height: 1.2;
+  --text-display-sm--letter-spacing: -0.015em;
+
+  --text-display-md: clamp(1.875rem, 1.5rem + 1.9vw, 2.75rem);
+  --text-display-md--line-height: 1.15;
+  --text-display-md--letter-spacing: -0.02em;
+
+  --text-display-lg: clamp(2.25rem, 1.6rem + 3.2vw, 4rem);
+  --text-display-lg--line-height: 1.05;
+  --text-display-lg--letter-spacing: -0.03em;
+
+  --text-display-xl: clamp(2.75rem, 1.8rem + 4.75vw, 5.25rem);
+  --text-display-xl--line-height: 1;
+  --text-display-xl--letter-spacing: -0.035em;
+
   --shadow-subtle: var(--shadow-subtle);
   --shadow-raised: var(--shadow-raised);
   --shadow-floating: var(--shadow-floating);
@@ -126,10 +276,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: var(--color-charcoal-900);
-    --foreground: var(--color-ivory-100);
-    --color-surface: #1a1a1a;
-    --color-border: #333333;
+    /*
+      Dark mode is a warm near-black (deep clay), not pure #000. True
+      black against warm neutrals reads as a different product; it also
+      makes elevation impossible to express, because nothing can sit
+      below the page.
+    */
+    --background: #1c1917;
+    --foreground: #f5f1ec;
+    --color-surface: #262220;
+    --color-border: #3a3330;
 
     /*
       charcoal-700/500/400 are used only as text-* colors (confirmed: no
@@ -139,9 +295,50 @@
       as a dark overlay/backdrop (dialog scrims, gallery lightbox), which
       should stay black in both themes.
     */
-    --color-charcoal-700: #f0f0f0;
-    --color-charcoal-500: #a8a8a8;
-    --color-charcoal-400: #8c8c8c;
+    --color-charcoal-700: #f5f1ec;
+    --color-charcoal-500: #b5ada4;
+    --color-charcoal-400: #9a9188;
+
+    /*
+      Neutral surfaces flip with the theme. In dark mode a "muted" fill
+      is lighter than the page rather than darker -- that's how elevation
+      reads on a dark ground -- so the relationship to the (now light)
+      charcoal text is preserved in both themes.
+    */
+    --surface-base: #1c1917;
+    --surface-raised: #262220;
+    --surface-muted: #302b28;
+    --surface-overlay: #262220;
+
+    /* See the accent-layer comment above: the fill holds, the text lifts. */
+    --accent-text: #f06575;
+    --accent-soft: #5e1b2a;
+    --accent-on-soft: #ffc2ca;
+
+    --status-success-text: #5fd98f;
+    --status-warning-text: #f0b429;
+    --status-error-text: #f87171;
+    --status-info-text: #60a5fa;
+
+    --status-success-soft: #16301f;
+    --status-warning-soft: #322410;
+    --status-error-soft: #35191a;
+    --status-info-soft: #16283a;
+
+    /*
+      Elevation has to be rebuilt for a dark ground, not merely reused.
+      A black shadow on near-black is invisible, so the cast layers go
+      deeper; and the clay tokens' second layer is a LIGHT-SOURCE
+      highlight (rgba(255,255,255,0.7)) that only makes sense when the
+      light is above a light surface -- left unflipped it drew a white
+      halo around the homepage search bar. It drops to a faint rim.
+    */
+    --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 20px -6px rgba(0, 0, 0, 0.6);
+    --shadow-floating: 0 2px 4px rgba(0, 0, 0, 0.45), 0 16px 32px -10px rgba(0, 0, 0, 0.65);
+    --shadow-modal: 0 8px 16px rgba(0, 0, 0, 0.55), 0 32px 64px -16px rgba(0, 0, 0, 0.75);
+    --shadow-clay-inset: inset 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 -1px 1px rgba(255, 255, 255, 0.05);
+    --shadow-clay-raised: 6px 6px 16px rgba(0, 0, 0, 0.55), -4px -4px 12px rgba(255, 255, 255, 0.045);
   }
 }
 

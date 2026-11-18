@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 export function LegalPageShell({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <div className="mb-6 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-100 p-3 text-xs text-warning-500">
+      <div className="mb-6 flex items-start gap-2 rounded-[var(--radius-md)] bg-warning-soft p-3 text-xs text-warning">
         <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
           Draft — this document has not been reviewed by a lawyer and must not be treated as final

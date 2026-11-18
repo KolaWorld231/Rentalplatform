@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Stack } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
+import { Screen } from "../../components/ui/Screen";
 import { Card } from "../../components/ui/Card";
 import { useSession } from "../../lib/auth/session";
 import { useUserRoles } from "../../lib/auth/use-user-roles";
@@ -23,14 +24,14 @@ export default function OwnerDashboardScreen() {
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
         <Stack.Screen options={{ headerShown: true, title: "Owner mode" }} />
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">Log in to list a property.</Text>
+        <Text className="text-center text-base text-content-strong">Log in to list a property.</Text>
         <Link href="/(auth)/login" asChild>
           <Button>Log in</Button>
         </Link>
         <Link href="/(auth)/register?intent=owner" asChild>
-          <Button variant="clay">Create an account</Button>
+          <Button variant="secondary">Create an account</Button>
         </Link>
       </View>
     );
@@ -38,7 +39,7 @@ export default function OwnerDashboardScreen() {
 
   if (roles.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -46,9 +47,9 @@ export default function OwnerDashboardScreen() {
 
   if (!isOwner) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
         <Stack.Screen options={{ headerShown: true, title: "Owner mode" }} />
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">
+        <Text className="text-center text-base text-content-strong">
           Property owners list for free -- always.
         </Text>
         <Button
@@ -70,7 +71,7 @@ export default function OwnerDashboardScreen() {
   const staleCount = list.filter((p) => p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at)).length;
 
   return (
-    <View className="flex-1 bg-canvas pt-16 dark:bg-charcoal-900">
+    <Screen>
       <Stack.Screen options={{ headerShown: true, title: "Owner mode" }} />
       <ScrollView contentContainerClassName="gap-4 px-4 pb-4">
         <Card className="flex-row divide-x divide-border p-0 dark:divide-charcoal-500">
@@ -80,8 +81,8 @@ export default function OwnerDashboardScreen() {
         </Card>
 
         {staleCount > 0 && (
-          <Card className="gap-1 border-l-4 border-warning-500 bg-warning-100 p-3 dark:bg-charcoal-700">
-            <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">
+          <Card className="gap-1 border-l-4 border-warning-500 bg-warning-soft p-3">
+            <Text className="text-sm font-sans-semibold text-content-strong">
               {staleCount} {staleCount === 1 ? "listing needs" : "listings need"} availability reconfirmed
             </Text>
           </Card>
@@ -100,20 +101,20 @@ export default function OwnerDashboardScreen() {
           keyExtractor={(p) => p.id}
           contentContainerClassName="gap-2 px-4 pb-8"
           renderItem={({ item }) => <OwnerPropertyRow property={item} />}
-          ListEmptyComponent={<Text className="px-4 text-sm text-charcoal-500 dark:text-charcoal-400">No listings yet.</Text>}
+          ListEmptyComponent={<Text className="px-4 text-sm text-content-muted">No listings yet.</Text>}
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
 function Stat({ label, value, lead }: { label: string; value: number; lead?: boolean }) {
   return (
     <View className="flex-1 items-center gap-0.5 p-3">
-      <Text className={lead ? "font-display-bold text-xl text-forest-700 dark:text-forest-500" : "font-display-bold text-xl text-charcoal-700 dark:text-ivory-100"}>
+      <Text className={lead ? "font-display-bold text-xl text-accent-text" : "font-display-bold text-xl text-content-strong"}>
         {value}
       </Text>
-      <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">{label}</Text>
+      <Text className="text-xs text-content-muted">{label}</Text>
     </View>
   );
 }
@@ -125,12 +126,12 @@ function OwnerPropertyRow({ property: p }: { property: Property }) {
       <Pressable accessibilityRole="button" accessibilityLabel={`Manage listing: ${p.title}`}>
         <Card className="gap-1 p-3">
           <View className="flex-row items-center justify-between">
-            <Text className="flex-1 font-sans-semibold text-charcoal-700 dark:text-ivory-100" numberOfLines={1}>
+            <Text className="flex-1 font-sans-semibold text-content-strong" numberOfLines={1}>
               {p.title}
             </Text>
             {stale && <Text className="text-xs font-sans-semibold text-warning-500">Reconfirm</Text>}
           </View>
-          <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-xs text-content-muted">
             {formatUsd(p.rent_amount)} · {formatCategory(p.category)} · {p.listing_status}
           </Text>
         </Card>

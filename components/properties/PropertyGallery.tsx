@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand, ImageOff, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { propertyImageUrl } from "@/lib/supabase/storage";
@@ -31,10 +31,18 @@ export function PropertyGallery({
     setActive((i) => (i - 1 + images.length) % images.length);
   }
 
+  /*
+    A listing with no photos used to reserve the full 4:3 frame anyway --
+    roughly 670px of empty grey at the top of the page, pushing the title
+    and the facts below it. Reserving that much space only makes sense
+    when something is going to fill it. The placeholder now states the
+    situation and gets out of the way.
+  */
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[4/3] items-center justify-center rounded-[var(--radius-xl)] bg-sage-200 text-sm text-charcoal-400">
-        No photos yet
+      <div className="flex items-center gap-3 rounded-[var(--radius-xl)] bg-surface-muted px-5 py-6 text-sm text-charcoal-500">
+        <ImageOff className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <span>The owner hasn&apos;t added photos to this listing yet.</span>
       </div>
     );
   }
@@ -45,7 +53,7 @@ export function PropertyGallery({
         type="button"
         onClick={() => setLightboxOpen(true)}
         aria-label={`Open full-screen photo ${active + 1} of ${images.length}`}
-        className="focus-ring group relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-xl)] bg-sage-200"
+        className="focus-ring group relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-xl)] bg-surface-muted"
       >
         <Image
           src={propertyImageUrl(images[active].storage_path)}

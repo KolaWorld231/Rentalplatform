@@ -16,7 +16,7 @@ export function SupportForm() {
   if (submitted) {
     return (
       <div className="flex flex-col items-center gap-2 py-6 text-center">
-        <CheckCircle2 className="h-8 w-8 text-success-500" aria-hidden="true" />
+        <CheckCircle2 className="h-8 w-8 text-success" aria-hidden="true" />
         <p className="font-medium text-charcoal-700">Request received</p>
         <p className="text-sm text-charcoal-500">Our team will follow up by email.</p>
       </div>
@@ -35,10 +35,10 @@ export function SupportForm() {
           className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface p-3 text-sm shadow-[var(--shadow-clay-inset)]"
         />
         {state.fieldErrors?.message && (
-          <span className="text-xs font-medium text-error-500">{state.fieldErrors.message}</span>
+          <span className="text-xs font-medium text-error">{state.fieldErrors.message}</span>
         )}
       </label>
-      {state.error && <p className="text-sm font-medium text-error-500">{state.error}</p>}
+      {state.error && <p className="text-sm font-medium text-error">{state.error}</p>}
       <Button type="submit" loading={pending} className="self-start">
         Submit request
       </Button>

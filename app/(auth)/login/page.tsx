@@ -43,7 +43,7 @@ function LoginForm() {
 
       <Card className="p-6">
         {resetSuccess && (
-          <p className="mb-4 rounded-[var(--radius-md)] bg-success-100 px-3 py-2 text-sm text-success-500">
+          <p className="mb-4 rounded-[var(--radius-md)] bg-success-soft px-3 py-2 text-sm text-success">
             Password updated. Log in with your new password.
           </p>
         )}
@@ -66,7 +66,7 @@ function LoginForm() {
             aria-pressed={method === "password"}
             className={cn(
               "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-              method === "password" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+              method === "password" ? "border-brand-600 bg-accent-soft text-accent-on-soft" : "border-border text-charcoal-500",
             )}
           >
             <KeyRound className="h-4 w-4" aria-hidden="true" />
@@ -78,7 +78,7 @@ function LoginForm() {
             aria-pressed={method === "phone"}
             className={cn(
               "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-              method === "phone" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+              method === "phone" ? "border-brand-600 bg-accent-soft text-accent-on-soft" : "border-border text-charcoal-500",
             )}
           >
             <Phone className="h-4 w-4" aria-hidden="true" />
@@ -90,7 +90,7 @@ function LoginForm() {
             aria-pressed={method === "whatsapp"}
             className={cn(
               "focus-ring flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border py-2 text-sm font-medium transition-colors",
-              method === "whatsapp" ? "border-brand-600 bg-brand-100 text-brand-800" : "border-border text-charcoal-500",
+              method === "whatsapp" ? "border-brand-600 bg-accent-soft text-accent-on-soft" : "border-border text-charcoal-500",
             )}
           >
             <MessageCircle className="h-4 w-4" aria-hidden="true" />
@@ -118,13 +118,13 @@ function LoginForm() {
               required
             />
             <div className="text-right text-sm">
-              <Link href="/forgot-password" className="font-medium text-brand-700">
+              <Link href="/forgot-password" className="font-medium text-accent-text">
                 Forgot password?
               </Link>
             </div>
 
             {state.error && (
-              <p role="alert" className="text-sm font-medium text-error-500">
+              <p role="alert" className="text-sm font-medium text-error">
                 {state.error}
               </p>
             )}
@@ -138,7 +138,7 @@ function LoginForm() {
 
       <div className="text-center text-sm text-charcoal-500">
         New to {brand.name}?{" "}
-        <IntentChoiceDialog className="font-medium text-brand-700">Create an account</IntentChoiceDialog>
+        <IntentChoiceDialog className="font-medium text-accent-text">Create an account</IntentChoiceDialog>
       </div>
     </div>
   );

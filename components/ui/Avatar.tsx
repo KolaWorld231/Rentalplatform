@@ -4,7 +4,7 @@ const PALETTE = [
   "bg-brand-600 text-ivory-50",
   "bg-clay-500 text-ivory-50",
   "bg-info-500 text-ivory-50",
-  "bg-sage-300 text-charcoal-700",
+  "bg-surface-muted text-charcoal-700",
 ];
 
 function colorFor(name: string): string {

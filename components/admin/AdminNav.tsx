@@ -30,7 +30,7 @@ export function AdminNav({ links }: { links: AdminNavLink[] }) {
               "focus-ring flex items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] px-4 py-2 text-sm font-medium transition-colors",
               active
                 ? "bg-brand-600 text-ivory-50 shadow-[var(--shadow-raised)]"
-                : "bg-surface text-charcoal-700 shadow-[var(--shadow-subtle)] hover:bg-sage-100",
+                : "bg-surface text-charcoal-700 shadow-[var(--shadow-subtle)] hover:bg-surface-muted",
             )}
           >
             {link.label}

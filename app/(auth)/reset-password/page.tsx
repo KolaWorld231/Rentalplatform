@@ -29,7 +29,7 @@ export default function ResetPasswordPage() {
             error={state.fieldErrors?.password}
           />
           {state.error && (
-            <p role="alert" className="text-sm font-medium text-error-500">
+            <p role="alert" className="text-sm font-medium text-error">
               {state.error}
             </p>
           )}

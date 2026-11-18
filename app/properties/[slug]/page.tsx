@@ -8,8 +8,10 @@ import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyGallery } from "@/components/properties/PropertyGallery";
 import { ReportListingButton } from "@/components/properties/ReportListingButton";
 import { VerificationBadge } from "@/components/verification/VerificationBadge";
+import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { after } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -68,7 +70,12 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
   const supabase = await createClient();
 
   if (property.listing_status === "published") {
-    await recordPropertyView(supabase, property.id, { userId: user?.id, fingerprint: user ? undefined : "anon" });
+    // Analytics must not sit in front of the page. This was awaited inline,
+    // so every visitor paid a write round-trip before any HTML was sent.
+    // `after` runs it once the response is done.
+    after(() =>
+      recordPropertyView(supabase, property.id, { userId: user?.id, fingerprint: user ? undefined : "anon" }),
+    );
   }
 
   let isFavourited = false;
@@ -118,21 +125,39 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
           <PropertyGallery images={images} title={property.title} />
 
           <div className="mt-6 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="font-display text-2xl font-semibold text-charcoal-700">{property.title}</h1>
-              <p className="mt-1 flex items-center gap-1 text-sm text-charcoal-500">
-                <MapPin className="h-4 w-4" aria-hidden="true" />
+            <div className="min-w-0">
+              {/*
+                The title was text-2xl -- smaller than the price beside it,
+                and barely above the section headings below. It is what the
+                page is about, so it takes the display scale.
+              */}
+              <h1 className="text-balance font-display text-display-sm font-semibold text-charcoal-700">
+                {property.title}
+              </h1>
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-charcoal-500">
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {[property.community, property.city, property.county].filter(Boolean).join(", ")}
               </p>
             </div>
             <FavouriteButton propertyId={property.id} initialFavourited={isFavourited} />
           </div>
 
+          {/*
+            Bedrooms and bathrooms used to appear here as badges AND again
+            under "Details & amenities" a few lines down -- the same two
+            facts stated twice on one screen. They now live only in the
+            details list, which has the icons and the full labels, leaving
+            this row for the attributes that appear nowhere else.
+          */}
           <div className="mt-4 flex flex-wrap gap-2">
             <Badge variant="brand">{formatCategory(property.category)}</Badge>
-            {property.bedrooms !== null && <Badge>{property.bedrooms} bed</Badge>}
-            {property.bathrooms !== null && <Badge>{property.bathrooms} bath</Badge>}
             {property.furnished !== null && <Badge>{property.furnished ? "Furnished" : "Unfurnished"}</Badge>}
+            {isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS) && (
+              <Badge variant="clay" className="gap-1">
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+                New
+              </Badge>
+            )}
           </div>
 
           <section className="mt-8">
@@ -147,22 +172,22 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
             <dl className="mt-3 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
               {property.floor_area_sqm !== null && (
                 <div className="flex items-center gap-2 text-charcoal-600">
-                  <Ruler className="h-4 w-4 text-brand-600" aria-hidden="true" /> {property.floor_area_sqm} m²
+                  <Ruler className="h-4 w-4 text-accent-text" aria-hidden="true" /> {property.floor_area_sqm} m²
                 </div>
               )}
               {property.bedrooms !== null && (
                 <div className="flex items-center gap-2 text-charcoal-600">
-                  <BedDouble className="h-4 w-4 text-brand-600" aria-hidden="true" /> {property.bedrooms} bedrooms
+                  <BedDouble className="h-4 w-4 text-accent-text" aria-hidden="true" /> {property.bedrooms} bedrooms
                 </div>
               )}
               {property.bathrooms !== null && (
                 <div className="flex items-center gap-2 text-charcoal-600">
-                  <Bath className="h-4 w-4 text-brand-600" aria-hidden="true" /> {property.bathrooms} bathrooms
+                  <Bath className="h-4 w-4 text-accent-text" aria-hidden="true" /> {property.bathrooms} bathrooms
                 </div>
               )}
               {AMENITIES.filter((a) => property[a.key] === true).map((a) => (
                 <div key={String(a.key)} className="flex items-center gap-2 text-charcoal-600">
-                  <a.icon className="h-4 w-4 text-brand-600" aria-hidden="true" /> {a.label}
+                  <a.icon className="h-4 w-4 text-accent-text" aria-hidden="true" /> {a.label}
                 </div>
               ))}
             </dl>
@@ -173,29 +198,16 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
           </div>
         </div>
 
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 lg:sticky lg:top-24 lg:self-start">
           <Card className="p-5 shadow-[var(--shadow-clay-raised)]">
-            {(identityVerified || propertyVerified || isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS)) && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                {identityVerified && <VerificationBadge kind="identity" />}
-                {propertyVerified && <VerificationBadge kind="property" />}
-                {isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS) && (
-                  <Badge variant="clay" className="gap-1">
-                    <Sparkles className="h-3 w-3" aria-hidden="true" />
-                    New
-                  </Badge>
-                )}
-              </div>
-            )}
-
-            <p className="font-display text-3xl font-semibold text-brand-800">
+            <p className="font-display text-display-sm font-semibold text-accent-text">
               {formatUsd(property.rent_amount)}{" "}
               <span className="text-base font-normal text-charcoal-400">
                 {formatRentalFrequency(property.rental_frequency)}
               </span>
             </p>
             {property.last_availability_confirmed_at && (
-              <p className="mt-1 text-xs font-medium text-success-500">
+              <p className="mt-1 text-xs font-medium text-success">
                 Availability reconfirmed {formatRelativeDate(property.last_availability_confirmed_at)}
               </p>
             )}
@@ -214,9 +226,14 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
                       <dd>{formatUsd(i.value ?? 0)}</dd>
                     </div>
                   ))}
-                  <div className="mt-1 flex justify-between border-t border-border pt-1 font-medium text-charcoal-700">
+                  {/*
+                    The total is the number that decides whether someone
+                    can afford this at all, and it read at the same weight
+                    as the line items that make it up.
+                  */}
+                  <div className="mt-2 flex items-baseline justify-between border-t border-border pt-2 font-semibold text-charcoal-700">
                     <dt>Total upfront</dt>
-                    <dd>{formatUsd(totalUpfront)}</dd>
+                    <dd className="text-base">{formatUsd(totalUpfront)}</dd>
                   </div>
                 </dl>
                 {property.other_fees_description && (
@@ -230,8 +247,26 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
               </p>
             )}
 
-            <div className="mt-4 border-t border-border pt-4 text-sm text-charcoal-500">
-              <p>Listed by {ownerName}</p>
+            {/*
+              The owner was a grey line of 14px text at the foot of the
+              card. They are the person the renter is about to message,
+              and verification is a claim about THEM -- it was floating
+              above the price, competing with it, where it read as
+              decoration rather than as something attached to a party.
+              Both now sit together, directly above the contact form.
+            */}
+            <div className="mt-4 flex items-start gap-3 border-t border-border pt-4">
+              <Avatar name={ownerName} />
+              <div className="min-w-0">
+                <p className="text-xs text-charcoal-400">Listed by</p>
+                <p className="truncate text-sm font-medium text-charcoal-700">{ownerName}</p>
+                {(identityVerified || propertyVerified) && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {identityVerified && <VerificationBadge kind="identity" />}
+                    {propertyVerified && <VerificationBadge kind="property" />}
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
 
@@ -259,14 +294,26 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
         </section>
       )}
 
-      <p className="mt-10 text-xs text-charcoal-400">
-        A listing does not by itself prove ownership. Verify the property and the person offering
-        it, inspect before committing, and get written terms. Read our{" "}
-        <Link href="/safety" className="font-medium text-brand-700">
-          safety guidance
-        </Link>
-        .
-      </p>
+      {/*
+        This was 12px of the lowest-contrast grey on the page -- the
+        smallest text on a screen whose entire subject is avoiding being
+        defrauded over a rental. In a market where the product exists
+        because renters get exploited, it is not a footnote.
+      */}
+      <Card className="mt-12 flex items-start gap-3 p-5">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent-text" aria-hidden="true" />
+        <div>
+          <p className="text-sm font-medium text-charcoal-700">Before you commit</p>
+          <p className="mt-1 text-sm text-charcoal-500">
+            A listing does not by itself prove ownership. Verify the property and the person
+            offering it, inspect before committing, and get written terms. Read our{" "}
+            <Link href="/safety" className="font-medium text-accent-text underline underline-offset-2">
+              safety guidance
+            </Link>
+            .
+          </p>
+        </div>
+      </Card>
     </div>
   );
 }
