@@ -1,7 +1,7 @@
 import { CloudOff, Home as HomeIcon, MessageCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { ProcessSteps } from "@/components/marketing/ProcessSteps";
-import { HeroSearch } from "@/components/properties/HeroSearch";
+import { SegmentedSearch } from "@/components/properties/SegmentedSearch";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -40,7 +40,7 @@ export default async function HomePage() {
       .eq("listing_status", "published")
       .order("published_at", { ascending: false })
       .limit(8),
-    supabase.from("properties").select("county, owner_id").eq("listing_status", "published"),
+    supabase.from("properties").select("county, city, community, owner_id").eq("listing_status", "published"),
     supabase.from("properties").select("id", { count: "exact", head: true }).eq("listing_status", "published"),
   ]);
   const recentProperties = (data ?? []) as unknown as PropertyWithCover[];
@@ -52,6 +52,15 @@ export default async function HomePage() {
   const countiesCovered = new Set((coverageRows ?? []).map((r) => r.county)).size;
   const ownersListing = new Set((coverageRows ?? []).map((r) => r.owner_id)).size;
   const counties = [...new Set((coverageRows ?? []).map((r) => r.county))].sort();
+  // Suggestions come from where listings actually are, so the panel never
+  // offers a place with nothing in it.
+  const communities = [
+    ...new Set(
+      (coverageRows ?? [])
+        .flatMap((r) => [r.community, r.city])
+        .filter((v): v is string => typeof v === "string" && v.trim().length > 0),
+    ),
+  ].sort();
   const stats = [
     { value: publishedCount ?? 0, label: "Active listings" },
     { value: ownersListing, label: "Property owners" },
@@ -77,8 +86,13 @@ export default async function HomePage() {
         spends red only where red means something: the search action and
         the live stat figures.
       */}
-      <section className="relative overflow-hidden border-b border-border bg-surface-base px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+      {/*
+        overflow-hidden belongs to the decorative tile layer, not the
+        section: on the section it also clipped the search popovers,
+        which open downward past the hero's bottom edge.
+      */}
+      <section className="relative border-b border-border bg-surface-base px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           {heroPhotos.map((img, i) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -103,7 +117,7 @@ export default async function HomePage() {
             <p className="mt-5 max-w-xl text-lg text-charcoal-500">{brand.heroSupportingCopy}</p>
 
             <div className="mt-8 max-w-3xl">
-              <HeroSearch counties={counties} />
+              <SegmentedSearch counties={counties} communities={communities} />
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">

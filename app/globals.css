@@ -460,6 +460,27 @@ dialog[open][data-drawer-side="right"] {
 }
 
 /*
+  Shared popover entrance (search segments, account menu). Deliberately
+  short and small in travel: these open directly under the control that
+  was just clicked, so anything longer reads as lag rather than polish.
+  The reduced-motion block above already zeroes the duration.
+*/
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-popover-in {
+  animation: popover-in 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top;
+}
+
+/*
   Idle drift for the homepage hero's blurred background photo tiles —
   keeps them from reading as a frozen screenshot. Animates only the
   native `translate` property, which Tailwind v4's `rotate-*` utilities
