@@ -173,11 +173,24 @@ export async function verifiedFlagsFor(
   return properties.map((p) => owners.has(p.owner_id) || props.has(p.id));
 }
 
-export function listingCompleteness(property: Partial<Property>): {
+/**
+ * Photos were not among the checks, so a listing with no images at all
+ * reported 100% complete -- the product told owners they were finished
+ * while their listing showed "No photo yet" to every renter. Every
+ * listing currently on the site is in exactly that state.
+ *
+ * It is counted like any other signal rather than being weighted
+ * specially; what matters is that a photo-less listing can no longer
+ * claim to be done.
+ */
+export function listingCompleteness(
+  property: Partial<Property> & { property_images?: unknown[] },
+): {
   percent: number;
   missing: string[];
 } {
   const checks: { label: string; done: boolean }[] = [
+    { label: "Photos", done: (property.property_images?.length ?? 0) > 0 },
     { label: "Description", done: !!property.description && property.description.length > 20 },
     { label: "Price", done: !!property.rent_amount && property.rent_amount > 0 },
     { label: "Location", done: !!property.county && !!property.city },

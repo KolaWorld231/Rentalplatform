@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { deletePropertyImageAction, setCoverImageAction } from "@/app/dashboard/properties/actions";
 import { createClient } from "@/lib/supabase/client";
+import { downscaleImage } from "@/lib/utils/downscale-image";
 import { propertyImageUrl } from "@/lib/supabase/storage";
 import { cn } from "@/lib/utils/cn";
 
@@ -22,25 +23,43 @@ export function PropertyImageManager({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   async function handleFiles(files: FileList) {
     setError(null);
     const supabase = createClient();
+    const selected = Array.from(files);
 
-    for (const file of Array.from(files)) {
-      if (!ACCEPTED_TYPES.includes(file.type)) {
-        setError("Only JPEG, PNG, or WebP images are allowed.");
+    /*
+      position and is_cover were read from the `images` prop inside this
+      loop. A prop does not change while the loop runs, so selecting five
+      photos for an empty listing wrote position 0 five times and marked
+      every one of them is_cover -- the cover then being whichever row
+      came back first. These counters advance per file instead.
+    */
+    let nextPosition = images.length;
+    let needsCover = images.length === 0;
+    const failed: string[] = [];
+
+    setUploading(true);
+    setProgress({ done: 0, total: selected.length });
+
+    for (const original of selected) {
+      if (!ACCEPTED_TYPES.includes(original.type)) {
+        failed.push(`${original.name} (not a JPEG, PNG or WebP)`);
+        setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
         continue;
       }
-      if (file.size > MAX_FILE_BYTES) {
-        setError("Each image must be 8MB or smaller.");
+      if (original.size > MAX_FILE_BYTES) {
+        failed.push(`${original.name} (over 8MB)`);
+        setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
         continue;
       }
 
-      setUploading(true);
-      const ext = file.name.split(".").pop() ?? "jpg";
+      const file = await downscaleImage(original);
+      const ext = file.type === "image/jpeg" ? "jpg" : (file.name.split(".").pop() ?? "jpg");
       const path = `${propertyId}/${crypto.randomUUID()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage.from("property-images").upload(path, file, {
@@ -49,18 +68,37 @@ export function PropertyImageManager({
       });
 
       if (uploadError) {
-        setError(`Couldn't upload ${file.name}. Please try again.`);
-        setUploading(false);
+        failed.push(original.name);
+        setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
         continue;
       }
 
-      await supabase.from("property_images").insert({
+      const { error: insertError } = await supabase.from("property_images").insert({
         property_id: propertyId,
         storage_path: path,
-        position: images.length,
-        is_cover: images.length === 0,
+        position: nextPosition,
+        is_cover: needsCover,
       });
-      setUploading(false);
+
+      if (insertError) {
+        // Do not leave the uploaded object orphaned in the bucket.
+        await supabase.storage.from("property-images").remove([path]);
+        failed.push(original.name);
+      } else {
+        nextPosition += 1;
+        needsCover = false;
+      }
+      setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
+    }
+
+    setUploading(false);
+    setProgress(null);
+    if (failed.length > 0) {
+      setError(
+        failed.length === selected.length
+          ? `Couldn't upload: ${failed.join(", ")}. Please try again.`
+          : `Uploaded ${selected.length - failed.length} of ${selected.length}. Couldn't upload: ${failed.join(", ")}.`,
+      );
     }
 
     router.refresh();
@@ -77,7 +115,12 @@ export function PropertyImageManager({
                 Cover
               </span>
             )}
-            <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-charcoal-900/40 p-1 opacity-0 transition-opacity group-hover:opacity-100">
+            {/*
+              These were revealed on hover only, which puts set-cover and
+              delete out of reach on any touch device -- including the
+              phones most owners list from.
+            */}
+            <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-charcoal-900/40 p-1">
               {!img.is_cover && (
                 <button
                   type="button"
@@ -93,7 +136,10 @@ export function PropertyImageManager({
                 type="button"
                 aria-label="Delete photo"
                 disabled={pending}
-                onClick={() => startTransition(() => deletePropertyImageAction(propertyId, img.id, img.storage_path))}
+                onClick={() => {
+                  if (!window.confirm("Delete this photo? This can't be undone.")) return;
+                  startTransition(() => deletePropertyImageAction(propertyId, img.id, img.storage_path));
+                }}
                 className="focus-ring rounded-full bg-surface p-1.5"
               >
                 <Trash2 className="h-3.5 w-3.5 text-error" />
@@ -112,7 +158,7 @@ export function PropertyImageManager({
           )}
         >
           <Upload className="h-5 w-5" />
-          {uploading ? "Uploading…" : "Add photo"}
+          {progress ? `Uploading ${progress.done + 1} of ${progress.total}…` : uploading ? "Uploading…" : "Add photo"}
         </button>
       </div>
 
@@ -126,7 +172,10 @@ export function PropertyImageManager({
       />
 
       {error && <p className="text-sm font-medium text-error">{error}</p>}
-      <p className="text-xs text-charcoal-400">JPEG, PNG, or WebP. Up to 8MB each.</p>
+      <p className="text-xs text-charcoal-400">
+        JPEG, PNG, or WebP. Up to 8MB each &mdash; large photos are shrunk on this device before
+        upload, so they cost less data to send.
+      </p>
     </div>
   );
 }

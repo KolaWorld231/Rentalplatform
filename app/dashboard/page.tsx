@@ -1,4 +1,4 @@
-import { AlertTriangle, Eye, Heart, Home, MessageCircle } from "lucide-react";
+import { AlertTriangle, Eye, Heart, Home, MessageCircle, ImagePlus } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
@@ -21,7 +21,7 @@ export default async function DashboardOverviewPage() {
 
   const { data: properties } = await supabase
     .from("properties")
-    .select("listing_status, view_count, favourite_count, last_availability_confirmed_at")
+    .select("listing_status, view_count, favourite_count, last_availability_confirmed_at, property_images(id)")
     .eq("owner_id", user.id);
 
   const { data: inquiries } = (await supabase
@@ -36,6 +36,12 @@ export default async function DashboardOverviewPage() {
   const drafts = properties?.filter((p) => p.listing_status === "draft").length ?? 0;
   const totalViews = properties?.reduce((sum, p) => sum + p.view_count, 0) ?? 0;
   const totalFavourites = properties?.reduce((sum, p) => sum + p.favourite_count, 0) ?? 0;
+  // Published but photo-less is the most consequential state an owner can
+  // be in and the easiest to miss: the listing looks finished everywhere
+  // except to the renters deciding whether to open it.
+  const noPhotoCount =
+    properties?.filter((p) => p.listing_status === "published" && (p.property_images?.length ?? 0) === 0).length ?? 0;
+
   const staleCount =
     properties?.filter((p) => p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at))
       .length ?? 0;
@@ -51,6 +57,23 @@ export default async function DashboardOverviewPage() {
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-charcoal-700">Dashboard</h1>
+
+      {noPhotoCount > 0 && (
+        <Card className="mt-6 flex items-center gap-3 border-l-4 border-brand-600 bg-accent-soft p-4">
+          <ImagePlus className="h-5 w-5 shrink-0 text-accent-on-soft" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-charcoal-700">
+              {noPhotoCount} published {noPhotoCount === 1 ? "listing has" : "listings have"} no photos
+            </p>
+            <p className="text-xs text-charcoal-500">
+              Renters scan photos first. A listing without any is far less likely to be opened at all.
+            </p>
+          </div>
+          <Link href="/dashboard/properties" className="shrink-0 text-sm font-medium text-accent-text">
+            Add photos →
+          </Link>
+        </Card>
+      )}
 
       {staleCount > 0 && (
         <Card className="mt-6 flex items-center gap-3 border-l-4 border-warning-500 bg-warning-soft p-4">

@@ -1,4 +1,4 @@
-import { Home, Plus } from "lucide-react";
+import { Home, ImagePlus, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
@@ -49,6 +49,10 @@ export default async function OwnerPropertiesPage() {
           {properties.map((p) => {
             const cover = p.property_images.find((i) => i.is_cover) ?? p.property_images[0];
             const stale = p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at);
+            // A published listing with no photos is the single biggest
+            // thing suppressing its own enquiries, and the owner had no
+            // signal at all: the thumbnail was simply an empty grey box.
+            const noPhotos = p.property_images.length === 0;
             return (
               <Link
                 key={p.id}
@@ -56,11 +60,16 @@ export default async function OwnerPropertiesPage() {
                 className={cn(
                   "focus-ring flex items-center gap-4 rounded-[var(--radius-lg)] bg-surface p-3 shadow-[var(--shadow-raised)] hover:shadow-[var(--shadow-floating)]",
                   stale && "ring-1 ring-warning-500/40",
+                  noPhotos && p.listing_status === "published" && "ring-1 ring-accent/40",
                 )}
               >
                 <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-surface-muted">
-                  {cover && (
+                  {cover ? (
                     <Image src={propertyImageUrl(cover.storage_path)} alt="" fill sizes="80px" className="object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center">
+                      <ImagePlus className="h-5 w-5 text-charcoal-400" aria-hidden="true" />
+                    </span>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -69,6 +78,12 @@ export default async function OwnerPropertiesPage() {
                     {stale && (
                       <Badge variant="warning" className="shrink-0">
                         needs reconfirmation
+                      </Badge>
+                    )}
+                    {noPhotos && (
+                      <Badge variant="brand" className="shrink-0 gap-1">
+                        <ImagePlus className="h-3 w-3" aria-hidden="true" />
+                        Add photos
                       </Badge>
                     )}
                   </div>
