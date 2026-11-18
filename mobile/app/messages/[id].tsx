@@ -63,7 +63,7 @@ export default function ConversationScreen() {
 
   if (conversation.isLoading || messages.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -71,7 +71,7 @@ export default function ConversationScreen() {
 
   if (conversation.isError || messages.isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base p-6">
         <ErrorState
           message="Couldn't load this conversation."
           onRetry={() => {
@@ -111,8 +111,8 @@ export default function ConversationScreen() {
             <View className={mine ? "flex-row justify-end" : "flex-row items-end gap-2"}>
               {!mine && <Avatar name={counterpartName} size="sm" />}
               <View className={mine ? "max-w-[75%] rounded-lg bg-forest-600 px-3 py-2" : "max-w-[75%] rounded-lg bg-surface px-3 py-2 dark:bg-charcoal-700"}>
-                <Text className={mine ? "text-ivory-50" : "text-charcoal-700 dark:text-ivory-100"}>{item.body}</Text>
-                <Text className={mine ? "mt-1 text-xs text-ivory-50/70" : "mt-1 text-xs text-charcoal-500 dark:text-charcoal-400"}>
+                <Text className={mine ? "text-ivory-50" : "text-content-strong"}>{item.body}</Text>
+                <Text className={mine ? "mt-1 text-xs text-ivory-50/70" : "mt-1 text-xs text-content-muted"}>
                   {formatRelativeDate(item.sent_at)}
                 </Text>
               </View>
@@ -121,7 +121,7 @@ export default function ConversationScreen() {
         }}
         ListEmptyComponent={
           <View className="items-center p-10">
-            <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">No messages yet. Say hello.</Text>
+            <Text className="text-sm text-content-muted">No messages yet. Say hello.</Text>
           </View>
         }
       />
@@ -134,7 +134,7 @@ export default function ConversationScreen() {
           placeholderTextColor="#737373"
           accessibilityLabel="Write a message"
           multiline
-          className="flex-1 max-h-28 rounded-md border border-border bg-surface px-3 py-2 text-base text-charcoal-700 dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100"
+          className="flex-1 max-h-28 rounded-md border border-border bg-surface px-3 py-2 text-base text-content-strong dark:border-charcoal-500 dark:bg-charcoal-700 "
         />
         <Pressable
           accessibilityRole="button"

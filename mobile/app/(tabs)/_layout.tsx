@@ -10,11 +10,21 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#da1a32",
-        tabBarInactiveTintColor: "#737373",
+        /*
+          React Navigation takes a plain style object, so neither the
+          NativeWind classes nor the CSS variables in global.css reach
+          here -- these are the same token values, resolved by hand.
+
+          The active tint is the accent's TEXT value, not its fill: the
+          fill (#da1a32) sits at 3.46:1 against the dark bar, and the
+          labels are 10px, so it was the least legible text in the app
+          on the one control that is always on screen.
+        */
+        tabBarActiveTintColor: isDark ? "#f06575" : "#b8122f",
+        tabBarInactiveTintColor: isDark ? "#9a9188" : "#6e6762",
         tabBarStyle: {
-          backgroundColor: isDark ? "#1a1a1a" : "#ffffff",
-          borderTopColor: isDark ? "#4d4d4d" : "#e5e5e5",
+          backgroundColor: isDark ? "#262220" : "#ffffff",
+          borderTopColor: isDark ? "#3a3330" : "#e7e0d8",
           // tabBarStyle is a plain RN style object (React Navigation), not
           // a NativeWind className -- the tailwind.config.js boxShadow
           // tokens don't reach here, so the "floating" tier's resolved

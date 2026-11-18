@@ -36,7 +36,7 @@ function Checkbox({ checked, onPress, children }: { checked: boolean; onPress: (
       <Button variant={checked ? "primary" : "secondary"} size="sm" onPress={onPress} className="h-6 w-6 rounded px-0">
         <Text className="text-xs text-ivory-50">{checked ? "✓" : ""}</Text>
       </Button>
-      <Text className="flex-1 text-sm text-charcoal-700 dark:text-ivory-100">{children}</Text>
+      <Text className="flex-1 text-sm text-content-strong">{children}</Text>
     </View>
   );
 }
@@ -140,17 +140,17 @@ export default function ScoutApplyScreen() {
 
   if (result) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
         <Stack.Screen options={{ headerShown: true, title: "Application received" }} />
         <Card className="w-full gap-2 p-5">
-          <Text className="font-display-bold text-lg text-charcoal-700 dark:text-ivory-100">Application received</Text>
-          <Text className="text-sm text-charcoal-600 dark:text-charcoal-400">
-            Your reference number is <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">{result.referenceCode}</Text>.{" "}
+          <Text className="font-display-bold text-lg text-content-strong">Application received</Text>
+          <Text className="text-sm text-content-muted">
+            Your reference number is <Text className="font-sans-semibold text-content-strong">{result.referenceCode}</Text>.{" "}
             {result.status === "waitlisted"
               ? "Your area is currently full -- you've been added to the waitlist for it."
               : "Your area currently has open seats."}
           </Text>
-          <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-sm text-content-muted">
             Applications are reviewed in the order received. Seats are limited by area.
           </Text>
         </Card>
@@ -160,7 +160,7 @@ export default function ScoutApplyScreen() {
 
   if (areas.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -168,9 +168,9 @@ export default function ScoutApplyScreen() {
 
   if (!areas.data || areas.data.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
         <Stack.Screen options={{ headerShown: true, title: "Apply" }} />
-        <Text className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
+        <Text className="text-center text-sm text-content-muted">
           Applications aren&apos;t open for any area right now. Please check back soon.
         </Text>
       </View>
@@ -183,7 +183,7 @@ export default function ScoutApplyScreen() {
     <Screen avoidKeyboard>
       <ScrollView contentContainerClassName="gap-4 px-4 pt-3 pb-8" keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ headerShown: true, title: `Apply -- ${scoutProgram.name}` }} />
-      <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+      <Text className="text-sm text-content-muted">
         Applications are reviewed in the order received. Seats are limited by area.
       </Text>
 
@@ -227,7 +227,7 @@ export default function ScoutApplyScreen() {
       </Card>
 
       <Card className="gap-4 p-5">
-        <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">County / neighbourhood you know</Text>
+        <Text className="text-sm font-sans-semibold text-content-strong">County / neighbourhood you know</Text>
         <View className="gap-2">
           {areas.data.map((a) => (
             <Button
@@ -253,11 +253,11 @@ export default function ScoutApplyScreen() {
       </Card>
 
       <Card className="gap-4 p-5">
-        <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">Two references</Text>
+        <Text className="text-sm font-sans-semibold text-content-strong">Two references</Text>
         {references.map((ref, i) => (
           <View key={i} className="gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0 dark:border-charcoal-500">
             <Input label={`Reference ${i + 1} name`} value={ref.fullName} onChangeText={(v) => updateReference(i, { fullName: v })} />
-            <Text className="text-sm font-medium text-charcoal-700 dark:text-ivory-100">Relationship</Text>
+            <Text className="text-sm font-medium text-content-strong">Relationship</Text>
             <View className="flex-row flex-wrap gap-2">
               {RELATIONSHIPS.map((r) => (
                 <Button
@@ -292,7 +292,7 @@ export default function ScoutApplyScreen() {
       <Button loading={submitPending} disabled={!phoneVerified} onPress={onSubmit}>
         Submit application
       </Button>
-      {!phoneVerified && <Text className="text-center text-xs text-charcoal-400">Verify your phone number above before submitting.</Text>}
+      {!phoneVerified && <Text className="text-center text-xs text-content-subtle">Verify your phone number above before submitting.</Text>}
       </ScrollView>
     </Screen>
   );

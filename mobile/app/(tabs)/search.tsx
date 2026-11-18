@@ -52,7 +52,7 @@ export default function SearchScreen() {
             setQ(v);
             resetToFirstPage();
           }}
-          className="h-12 rounded-md border border-border bg-surface px-4 text-base text-charcoal-700 dark:border-charcoal-500 dark:bg-charcoal-700 dark:text-ivory-100"
+          className="h-12 rounded-md border border-border bg-surface px-4 text-base text-content-strong dark:border-charcoal-500 dark:bg-charcoal-700 "
         />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
@@ -100,7 +100,7 @@ export default function SearchScreen() {
         </ScrollView>
 
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-sm text-content-muted">
             {mode === "list" && result.data ? `${result.data.total} result${result.data.total === 1 ? "" : "s"}` : " "}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
@@ -123,12 +123,12 @@ export default function SearchScreen() {
         {user && (
           <View className="flex-row self-start rounded-full border border-border p-0.5 dark:border-charcoal-500">
             <Pressable onPress={() => setMode("list")} className={cn("rounded-full px-3 py-1", mode === "list" && "bg-forest-600")}>
-              <Text className={cn("text-xs font-sans-semibold", mode === "list" ? "text-ivory-50" : "text-charcoal-700 dark:text-ivory-100")}>
+              <Text className={cn("text-xs font-sans-semibold", mode === "list" ? "text-ivory-50" : "text-content-strong")}>
                 Grid
               </Text>
             </Pressable>
             <Pressable onPress={() => setMode("swipe")} className={cn("rounded-full px-3 py-1", mode === "swipe" && "bg-forest-600")}>
-              <Text className={cn("text-xs font-sans-semibold", mode === "swipe" ? "text-ivory-50" : "text-charcoal-700 dark:text-ivory-100")}>
+              <Text className={cn("text-xs font-sans-semibold", mode === "swipe" ? "text-ivory-50" : "text-content-strong")}>
                 Swipe
               </Text>
             </Pressable>
@@ -162,7 +162,7 @@ export default function SearchScreen() {
             </View>
           )}
           ListEmptyComponent={
-            <Text className="px-4 text-sm text-charcoal-500 dark:text-charcoal-400">
+            <Text className="px-4 text-sm text-content-muted">
               No properties match these filters yet. Try widening your search.
             </Text>
           }
@@ -177,9 +177,9 @@ export default function SearchScreen() {
                   onPress={() => setPage((p) => p - 1)}
                   className={cn(page <= 1 && "opacity-40")}
                 >
-                  <Text className="font-sans-semibold text-forest-700 dark:text-forest-500">Previous</Text>
+                  <Text className="font-sans-semibold text-accent-text">Previous</Text>
                 </Pressable>
-                <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+                <Text className="text-sm text-content-muted">
                   Page {page} of {totalPages}
                 </Text>
                 <Pressable
@@ -190,7 +190,7 @@ export default function SearchScreen() {
                   onPress={() => setPage((p) => p + 1)}
                   className={cn(page >= totalPages && "opacity-40")}
                 >
-                  <Text className="font-sans-semibold text-forest-700 dark:text-forest-500">Next</Text>
+                  <Text className="font-sans-semibold text-accent-text">Next</Text>
                 </Pressable>
               </View>
             ) : undefined
@@ -209,11 +209,11 @@ function FilterChip({ label, active, onPress }: { label: string; active: boolean
       accessibilityState={{ selected: active }}
       onPress={onPress}
       className={cn(
-        "rounded-full border px-3 py-1.5",
-        active ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500",
+ "rounded-full border px-3 py-1.5",
+        active ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed",
       )}
     >
-      <Text className={cn("text-xs font-sans-semibold", active ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+      <Text className={cn("text-xs font-sans-semibold", active ? "text-accent-text" : "text-content-strong")}>
         {label}
       </Text>
     </Pressable>

@@ -3,6 +3,11 @@
 // rule: one cohesive visual language, reused here for mobile too). Keep
 // these two files in sync by hand when the web tokens change -- there is
 // no shared package between web and mobile (see mobile/README.md).
+// Theme tokens live in global.css as space-separated RGB channels so
+// Tailwind's alpha modifiers still work; see that file for why mobile
+// now has runtime theming at all.
+const withOpacity = (v) => `rgb(var(${v}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
@@ -21,13 +26,13 @@ module.exports = {
         },
         ivory: {
           50: "#ffffff",
-          100: "#f7f6f6",
-          200: "#efeded",
+          100: "#f7f4f0",
+          200: "#efeae4",
         },
         sage: {
-          100: "#f2f2f2",
-          200: "#e8e8e8",
-          300: "#d6d6d6",
+          100: "#f1ece6",
+          200: "#e7e0d8",
+          300: "#d6ccc0",
         },
         clay: {
           400: "#e8495c",
@@ -37,10 +42,10 @@ module.exports = {
         // charcoal-700/500/400 flip for dark mode (see DarkModeColors);
         // kept here only for callers that want the fixed light value.
         charcoal: {
-          900: "#000000",
-          700: "#1a1a1a",
-          500: "#4d4d4d",
-          400: "#737373",
+          900: "#0c0a09",
+          700: "#1c1917",
+          500: "#57534e",
+          400: "#6e6762",
         },
         // Light-mode defaults for the web's --color-surface/--background/
         // --border vars. No CSS custom properties on mobile, so every
@@ -49,16 +54,31 @@ module.exports = {
         // pattern used to fix the web app's own hardcoded-light-panel
         // dark-mode bugs this session.
         surface: "#ffffff",
-        canvas: "#f7f6f6",
-        border: "#e5e5e5",
+        canvas: "#f7f4f0",
+        border: "#e7e0d8",
+
+        // Theme-aware tokens, defined in global.css and flipped there by
+        // prefers-color-scheme. Unlike every colour above, these need no
+        // `dark:` counterpart at the call site.
+        "surface-base": withOpacity("--surface-base"),
+        "surface-raised": withOpacity("--surface-raised"),
+        "surface-muted": withOpacity("--surface-muted"),
+        "border-themed": withOpacity("--border-token"),
+        "content-strong": withOpacity("--content-strong"),
+        "content-muted": withOpacity("--content-muted"),
+        "content-subtle": withOpacity("--content-subtle"),
+        accent: withOpacity("--accent-fill"),
+        "accent-text": withOpacity("--accent-text"),
+        "accent-soft": withOpacity("--accent-soft"),
+        "accent-on-soft": withOpacity("--accent-on-soft"),
         // One step darker than surface/charcoal-700 -- used to fake an
         // inset/recessed look on Input, since RN has no inset-shadow
         // support (see mobile Input.tsx).
-        well: { light: "#f1f0f0", dark: "#141414" },
-        success: { 500: "#2f8f5b", 100: "#e3f3ea" },
-        warning: { 500: "#b9790f", 100: "#fbf0dc" },
-        error: { 500: "#c23f3f", 100: "#fae7e7" },
-        info: { 500: "#2f6fa6", 100: "#e5f0f9" },
+        well: { light: "#f1ece6", dark: "#171310" },
+        success: { 500: "#2f8f5b", 100: "#e3f3ea", DEFAULT: withOpacity("--success-text"), soft: withOpacity("--success-soft") },
+        warning: { 500: "#b9790f", 100: "#fbf0dc", DEFAULT: withOpacity("--warning-text"), soft: withOpacity("--warning-soft") },
+        error: { 500: "#c23f3f", 100: "#fae7e7", DEFAULT: withOpacity("--error-text"), soft: withOpacity("--error-soft") },
+        info: { 500: "#2f6fa6", 100: "#e5f0f9", DEFAULT: withOpacity("--info-text"), soft: withOpacity("--info-soft") },
       },
       borderRadius: {
         sm: "10px",

@@ -40,9 +40,9 @@ export default function ScoutDashboardScreen() {
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
         <Stack.Screen options={{ headerShown: true, title: `My ${scoutProgram.name} dashboard` }} />
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">Log in to see your scout dashboard.</Text>
+        <Text className="text-center text-base text-content-strong">Log in to see your scout dashboard.</Text>
         <Link href="/(auth)/login" asChild>
           <Button>Log in</Button>
         </Link>
@@ -52,7 +52,7 @@ export default function ScoutDashboardScreen() {
 
   if (myScout.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -60,11 +60,11 @@ export default function ScoutDashboardScreen() {
 
   if (!myScout.data) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
         <Stack.Screen options={{ headerShown: true, title: `My ${scoutProgram.name} dashboard` }} />
         {claimable.data ? (
           <Card className="w-full gap-3 p-5">
-            <Text className="text-sm text-charcoal-700 dark:text-ivory-100">
+            <Text className="text-sm text-content-strong">
               We found a promoted {scoutProgram.name} application matching your account&apos;s phone number.
             </Text>
             <Button
@@ -77,7 +77,7 @@ export default function ScoutDashboardScreen() {
             </Button>
           </Card>
         ) : (
-          <Text className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-center text-sm text-content-muted">
             No scout account is linked here yet. If you&apos;ve been approved, make sure the phone number on your account
             matches the one on your application.
           </Text>
@@ -95,28 +95,28 @@ export default function ScoutDashboardScreen() {
 
       <Card className="gap-2 p-5">
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">Status</Text>
-          <Text className="text-sm text-charcoal-600 dark:text-charcoal-400">{STATUS_LABEL[scout.status] ?? scout.status}</Text>
+          <Text className="text-sm font-sans-semibold text-content-strong">Status</Text>
+          <Text className="text-sm text-content-muted">{STATUS_LABEL[scout.status] ?? scout.status}</Text>
         </View>
         {scout.status === "probation" && (
-          <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-xs text-content-muted">
             Probation ends {new Date(scout.probation_ends_at).toLocaleDateString()}. Every listing you bring in is reviewed before it&apos;s credited.
           </Text>
         )}
       </Card>
 
       <Card className="gap-2 p-5">
-        <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">Your referral link</Text>
-        <Text className="rounded-md bg-canvas px-3 py-2 text-xs text-charcoal-600 dark:bg-charcoal-900 dark:text-charcoal-400">{referralLink}</Text>
-        <Text className="text-xs text-charcoal-400">Code: {scout.referral_code}</Text>
+        <Text className="text-sm font-sans-semibold text-content-strong">Your referral link</Text>
+        <Text className="rounded-md bg-surface-muted px-3 py-2 text-xs text-content-muted">{referralLink}</Text>
+        <Text className="text-xs text-content-subtle">Code: {scout.referral_code}</Text>
       </Card>
 
       <Card className="gap-2 p-5">
-        <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">Owners referred (confirmed)</Text>
-        <Text className="font-display-bold text-2xl text-forest-700 dark:text-forest-500">{referredCount.data ?? 0}</Text>
+        <Text className="text-sm font-sans-semibold text-content-strong">Owners referred (confirmed)</Text>
+        <Text className="font-display-bold text-2xl text-accent-text">{referredCount.data ?? 0}</Text>
       </Card>
 
-      <Text className="text-xs text-charcoal-400">Earnings aren&apos;t tracked on mobile yet -- see the web dashboard for payout status.</Text>
+      <Text className="text-xs text-content-subtle">Earnings aren&apos;t tracked on mobile yet -- see the web dashboard for payout status.</Text>
     </Screen>
   );
 }

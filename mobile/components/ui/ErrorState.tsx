@@ -25,7 +25,7 @@ export function ErrorState({
   return (
     <View className={cn("items-center gap-3 px-4 py-10", className)}>
       <CloudOff size={32} color="#8a8a8a" />
-      <Text className="text-center text-sm text-charcoal-700 dark:text-ivory-100">{message}</Text>
+      <Text className="text-center text-sm text-content-strong">{message}</Text>
       <Button variant="secondary" size="sm" loading={retrying} onPress={onRetry}>
         Try again
       </Button>

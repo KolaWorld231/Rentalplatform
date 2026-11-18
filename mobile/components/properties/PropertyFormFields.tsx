@@ -108,7 +108,7 @@ export function PropertyFormFields({
       </View>
 
       <View className="gap-2">
-        <Text className="text-sm font-medium text-charcoal-700 dark:text-ivory-100">Amenities</Text>
+        <Text className="text-sm font-medium text-content-strong">Amenities</Text>
         <View className="flex-row flex-wrap gap-2">
           {AMENITIES.map((a) => (
             <Controller
@@ -118,9 +118,9 @@ export function PropertyFormFields({
               render={({ field }) => (
                 <Pressable
                   onPress={() => field.onChange(!field.value)}
-                  className={cn("rounded-full border px-3 py-1.5", field.value ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500")}
+                  className={cn("rounded-full border px-3 py-1.5", field.value ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed")}
                 >
-                  <Text className={cn("text-xs font-sans-semibold", field.value ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>{a.label}</Text>
+                  <Text className={cn("text-xs font-sans-semibold", field.value ? "text-accent-text" : "text-content-strong")}>{a.label}</Text>
                 </Pressable>
               )}
             />
@@ -167,15 +167,15 @@ function ChipPicker<T extends string>({
 }) {
   return (
     <View className="gap-1.5">
-      <Text className="text-sm font-medium text-charcoal-700 dark:text-ivory-100">{label}</Text>
+      <Text className="text-sm font-medium text-content-strong">{label}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
         {options.map((opt) => (
           <Pressable
             key={opt}
             onPress={() => onChange(opt)}
-            className={cn("rounded-full border px-3 py-1.5", value === opt ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border dark:border-charcoal-500")}
+            className={cn("rounded-full border px-3 py-1.5", value === opt ? "border-forest-600 bg-forest-100 dark:bg-forest-900/40" : "border-border-themed")}
           >
-            <Text className={cn("text-xs font-sans-semibold", value === opt ? "text-forest-700 dark:text-forest-500" : "text-charcoal-700 dark:text-ivory-100")}>
+            <Text className={cn("text-xs font-sans-semibold", value === opt ? "text-accent-text" : "text-content-strong")}>
               {formatOption(opt)}
             </Text>
           </Pressable>

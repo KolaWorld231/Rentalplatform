@@ -6,7 +6,7 @@ type Size = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary: "bg-forest-600 active:bg-forest-700 shadow-raised active:shadow-subtle",
-  secondary: "bg-surface dark:bg-charcoal-700 border border-border dark:border-charcoal-500 shadow-subtle",
+  secondary: "bg-surface-raised border border-border-themed shadow-subtle",
   clay: "bg-clay-500 active:bg-clay-600 shadow-raised active:shadow-subtle",
   ghost: "bg-transparent",
   danger: "bg-error-500 shadow-raised active:shadow-subtle",
@@ -14,9 +14,9 @@ const VARIANT_CLASSES: Record<Variant, string> = {
 
 const VARIANT_TEXT_CLASSES: Record<Variant, string> = {
   primary: "text-ivory-50",
-  secondary: "text-charcoal-700 dark:text-ivory-100",
+  secondary: "text-content-strong",
   clay: "text-ivory-50",
-  ghost: "text-charcoal-700 dark:text-ivory-100",
+  ghost: "text-content-strong",
   danger: "text-ivory-50",
 };
 
@@ -43,7 +43,7 @@ export function Button({ variant = "primary", size = "md", loading, disabled, ch
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       className={cn(
-        "flex-row items-center justify-center gap-2 rounded-full",
+ "flex-row items-center justify-center gap-2 rounded-full",
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         (disabled || loading) && "opacity-50",

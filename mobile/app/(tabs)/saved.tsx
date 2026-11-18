@@ -18,7 +18,7 @@ export default function SavedScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -26,8 +26,8 @@ export default function SavedScreen() {
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">Log in to save properties you like.</Text>
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
+        <Text className="text-center text-base text-content-strong">Log in to save properties you like.</Text>
         <Link href="/(auth)/login" asChild>
           <Button>Log in</Button>
         </Link>
@@ -37,7 +37,7 @@ export default function SavedScreen() {
 
   return (
     <Screen>
-      <Text className="px-4 pb-3 pt-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Saved</Text>
+      <Text className="px-4 pb-3 pt-3 font-display-bold text-xl text-content-strong">Saved</Text>
       {favourites.isLoading ? (
         <ActivityIndicator />
       ) : favourites.isError ? (
@@ -59,7 +59,7 @@ export default function SavedScreen() {
             </View>
           )}
           ListEmptyComponent={
-            <Text className="px-4 text-sm text-charcoal-500 dark:text-charcoal-400">
+            <Text className="px-4 text-sm text-content-muted">
               Nothing saved yet. Tap the heart on a listing to save it here.
             </Text>
           }

@@ -21,7 +21,7 @@ export default function MessagesScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas dark:bg-charcoal-900">
+      <View className="flex-1 items-center justify-center bg-surface-base">
         <ActivityIndicator />
       </View>
     );
@@ -29,8 +29,8 @@ export default function MessagesScreen() {
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-canvas p-6 dark:bg-charcoal-900">
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">Log in to message property owners.</Text>
+      <View className="flex-1 items-center justify-center gap-3 bg-surface-base p-6">
+        <Text className="text-center text-base text-content-strong">Log in to message property owners.</Text>
         <Link href="/(auth)/login" asChild>
           <Button>Log in</Button>
         </Link>
@@ -40,7 +40,7 @@ export default function MessagesScreen() {
 
   return (
     <Screen>
-      <Text className="px-4 pb-3 pt-3 font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Messages</Text>
+      <Text className="px-4 pb-3 pt-3 font-display-bold text-xl text-content-strong">Messages</Text>
       {conversations.isLoading ? (
         <ActivityIndicator />
       ) : conversations.isError ? (
@@ -56,10 +56,10 @@ export default function MessagesScreen() {
           renderItem={({ item }) => <ConversationRowItem conversation={item} currentUserId={user.id} />}
           ListEmptyComponent={
             <View className="items-center gap-3 p-10">
-              <Text className="text-center font-sans-semibold text-charcoal-700 dark:text-ivory-100">
+              <Text className="text-center font-sans-semibold text-content-strong">
                 Your property conversations will appear here.
               </Text>
-              <Text className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
+              <Text className="text-center text-sm text-content-muted">
                 Browse properties and message an owner directly to get started.
               </Text>
               <Link href="/(tabs)/search" asChild>
@@ -90,12 +90,12 @@ function ConversationRowItem({ conversation: c, currentUserId }: { conversation:
         <Avatar name={name} />
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
-            <Text className={unread ? "font-sans-semibold text-charcoal-700 dark:text-ivory-100" : "font-sans text-charcoal-700 dark:text-ivory-100"} numberOfLines={1}>
+            <Text className={unread ? "font-sans-semibold text-content-strong" : "font-sans text-content-strong"} numberOfLines={1}>
               {name ?? "Unknown user"}
             </Text>
-            <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">{formatRelativeDate(c.updated_at)}</Text>
+            <Text className="text-xs text-content-muted">{formatRelativeDate(c.updated_at)}</Text>
           </View>
-          <Text className="text-xs text-charcoal-500 dark:text-charcoal-400" numberOfLines={1}>
+          <Text className="text-xs text-content-muted" numberOfLines={1}>
             {c.properties?.title ?? "Property"}
           </Text>
         </View>

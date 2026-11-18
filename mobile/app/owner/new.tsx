@@ -58,7 +58,7 @@ export default function NewPropertyScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-canvas dark:bg-charcoal-900" contentContainerClassName="gap-4 p-4 pb-10">
+    <ScrollView className="flex-1 bg-surface-base" contentContainerClassName="gap-4 p-4 pb-10">
       <Stack.Screen options={{ headerShown: true, title: "List a property" }} />
 
       <Card className="gap-4 p-4">

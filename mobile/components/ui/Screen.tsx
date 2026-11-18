@@ -36,7 +36,7 @@ export function Screen({
         paddingTop: edges.includes("top") ? insets.top : 0,
         paddingBottom: edges.includes("bottom") ? insets.bottom : 0,
       }}
-      className={cn("flex-1 bg-canvas dark:bg-charcoal-900", className)}
+      className={cn("flex-1 bg-surface-base", className)}
     >
       {children}
     </View>

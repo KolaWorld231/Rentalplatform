@@ -9,10 +9,10 @@ import { formatExpiryDate, formatUsd } from "../lib/format";
 import { getActiveSubscription } from "../lib/subscriptions/service";
 
 const BENEFITS = [
-  "Message as many property owners as you like for 30 days",
-  "No per-property fee -- one pass, unlimited new conversations",
-  "Keep read access to your existing conversations after it expires",
-  "Manual renewal only -- never an automatic charge",
+ "Message as many property owners as you like for 30 days",
+ "No per-property fee -- one pass, unlimited new conversations",
+ "Keep read access to your existing conversations after it expires",
+ "Manual renewal only -- never an automatic charge",
 ];
 
 /**
@@ -41,12 +41,12 @@ export default function PricingScreen() {
   });
 
   return (
-    <View className="flex-1 bg-canvas dark:bg-charcoal-900">
+    <View className="flex-1 bg-surface-base">
       <Stack.Screen options={{ headerShown: true, title: subscriptionPlan.name }} />
       <View className="gap-5 p-4">
         {reason === "message_gate" && (
           <Card className="gap-1 p-4">
-            <Text className="text-sm text-charcoal-700 dark:text-ivory-100">
+            <Text className="text-sm text-content-strong">
               You&apos;ll need an active Direct Access Pass to message owners.
             </Text>
           </Card>
@@ -54,7 +54,7 @@ export default function PricingScreen() {
 
         {!user ? (
           <Card className="gap-3 p-5">
-            <Text className="text-base text-charcoal-700 dark:text-ivory-100">Log in to see your Direct Access Pass.</Text>
+            <Text className="text-base text-content-strong">Log in to see your Direct Access Pass.</Text>
             <Link href="/(auth)/login" asChild>
               <Button>Log in</Button>
             </Link>
@@ -67,7 +67,7 @@ export default function PricingScreen() {
           <Card className="gap-1 p-5">
             <Text className="font-sans-semibold text-success-500">Your pass is active</Text>
             {subscription.data.expires_at && (
-              <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+              <Text className="text-sm text-content-muted">
                 Expires {formatExpiryDate(subscription.data.expires_at)}
               </Text>
             )}
@@ -75,26 +75,26 @@ export default function PricingScreen() {
         ) : null}
 
         <Card className="gap-3 p-5 shadow-floating">
-          <Text className="font-sans-semibold text-sm text-forest-700 dark:text-forest-500">{subscriptionPlan.name}</Text>
-          <Text className="font-display-bold text-4xl text-charcoal-700 dark:text-ivory-100">
+          <Text className="font-sans-semibold text-sm text-accent-text">{subscriptionPlan.name}</Text>
+          <Text className="font-display-bold text-4xl text-content-strong">
             {formatUsd(subscriptionPlan.priceUsd)}
-            <Text className="font-sans text-base text-charcoal-400"> for {subscriptionPlan.durationDays} days</Text>
+            <Text className="font-sans text-base text-content-subtle"> for {subscriptionPlan.durationDays} days</Text>
           </Text>
 
           <View className="gap-2 border-t border-border pt-3 dark:border-charcoal-500">
             {BENEFITS.map((b) => (
-              <Text key={b} className="text-sm text-charcoal-600 dark:text-charcoal-400">
+              <Text key={b} className="text-sm text-content-muted">
                 • {b}
               </Text>
             ))}
           </View>
 
-          <Text className="text-xs text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-xs text-content-muted">
             Compare: paying an agent per viewing typically costs $30–40 and only covers one property.
           </Text>
 
           {user && !subscription.isLoading && !subscription.data && (
-            <Text className="text-sm text-charcoal-600 dark:text-charcoal-400">
+            <Text className="text-sm text-content-muted">
               Get a Direct Access Pass from the {brand.name} website, on any browser. Once it&apos;s active, it shows up
               here automatically.
             </Text>

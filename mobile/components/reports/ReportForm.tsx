@@ -28,13 +28,13 @@ export function ReportForm({
   const [submitted, setSubmitted] = useState(false);
 
   if (submitted) {
-    return <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">Thanks — we&apos;ll review this.</Text>;
+    return <Text className="text-sm text-content-muted">Thanks — we&apos;ll review this.</Text>;
   }
 
   if (!open) {
     return (
       <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => setOpen(true)}>
-        <Text className="text-xs font-sans-semibold text-charcoal-500 underline dark:text-charcoal-400">{label}</Text>
+        <Text className="text-xs font-sans-semibold text-content-muted underline dark:text-content-subtle">{label}</Text>
       </Pressable>
     );
   }
@@ -53,7 +53,7 @@ export function ReportForm({
 
   return (
     <View className="gap-2 rounded-md border border-border p-3 dark:border-charcoal-500">
-      <Text className="text-sm font-sans-semibold text-charcoal-700 dark:text-ivory-100">{label}</Text>
+      <Text className="text-sm font-sans-semibold text-content-strong">{label}</Text>
       <View className="flex-row flex-wrap gap-1.5">
         {REASONS.map(([value, reasonLabel]) => (
           <Pressable
@@ -71,8 +71,8 @@ export function ReportForm({
             <Text
               className={
                 reason === value
-                  ? "text-xs font-sans-semibold text-forest-700 dark:text-forest-500"
-                  : "text-xs text-charcoal-700 dark:text-ivory-100"
+                  ? "text-xs font-sans-semibold text-accent-text"
+                  : "text-xs text-content-strong"
               }
             >
               {reasonLabel}

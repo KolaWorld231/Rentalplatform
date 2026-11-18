@@ -26,16 +26,16 @@ export default function HomeScreen() {
     <Screen>
       <ScrollView contentContainerClassName="px-4 pt-3 pb-8 gap-5">
       <View>
-        <Text className="font-display-bold text-3xl text-forest-700 dark:text-forest-500">{brand.name}</Text>
-        <Text className="mt-1 text-base text-charcoal-500 dark:text-charcoal-400">Your Next Place. Direct From the Owner.</Text>
+        <Text className="font-display-bold text-3xl text-accent-text">{brand.name}</Text>
+        <Text className="mt-1 text-base text-content-muted">Your Next Place. Direct From the Owner.</Text>
       </View>
 
       <Card className="gap-3 p-4">
         {loading ? (
-          <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Checking your session…</Text>
+          <Text className="font-sans-semibold text-content-strong">Checking your session…</Text>
         ) : user ? (
           <>
-            <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">
+            <Text className="font-sans-semibold text-content-strong">
               Signed in as {user.email ?? user.phone}
             </Text>
             <Link href="/owner" asChild>
@@ -61,15 +61,15 @@ export default function HomeScreen() {
           </>
         ) : (
           <>
-            <Text className="font-sans-semibold text-charcoal-700 dark:text-ivory-100">Not signed in</Text>
-            <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+            <Text className="font-sans-semibold text-content-strong">Not signed in</Text>
+            <Text className="text-sm text-content-muted">
               Browsing is always free. Sign in to save favourites, message owners, or list a property.
             </Text>
             <Link href="/(auth)/login" asChild>
               <Button>Log in</Button>
             </Link>
             <Link href="/(auth)/register" asChild>
-              <Button variant="clay">Create an account</Button>
+              <Button variant="secondary">Create an account</Button>
             </Link>
           </>
         )}
@@ -77,7 +77,7 @@ export default function HomeScreen() {
 
       {pendingReferral.data && (
         <Card className="gap-3 p-4">
-          <Text className="text-sm text-charcoal-700 dark:text-ivory-100">
+          <Text className="text-sm text-content-strong">
             A {scoutProgram.name} scout says they introduced you to {brand.name}. Confirm this?
           </Text>
           <View className="flex-row gap-2">
@@ -105,7 +105,7 @@ export default function HomeScreen() {
       )}
 
       <View className="gap-3">
-        <Text className="font-display-bold text-xl text-charcoal-700 dark:text-ivory-100">Recently listed</Text>
+        <Text className="font-display-bold text-xl text-content-strong">Recently listed</Text>
         {recentlyListed.isLoading ? (
           <ActivityIndicator />
         ) : recentlyListed.isError ? (
@@ -128,7 +128,7 @@ export default function HomeScreen() {
             )}
           />
         ) : (
-          <Text className="text-sm text-charcoal-500 dark:text-charcoal-400">
+          <Text className="text-sm text-content-muted">
             Your next place hasn&apos;t appeared yet. Check back soon.
           </Text>
         )}

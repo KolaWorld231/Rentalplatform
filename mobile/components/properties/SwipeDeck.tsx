@@ -83,8 +83,8 @@ export function SwipeDeck({ params }: SwipeDeckProps) {
   if (visible.length === 0) {
     return (
       <View className="flex-1 items-center justify-center gap-2 px-6">
-        <Text className="text-center text-base text-charcoal-700 dark:text-ivory-100">You&apos;ve gone through everything.</Text>
-        <Text className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
+        <Text className="text-center text-base text-content-strong">You&apos;ve gone through everything.</Text>
+        <Text className="text-center text-sm text-content-muted">
           No more properties match these filters. Try widening your search or switch to Grid.
         </Text>
       </View>

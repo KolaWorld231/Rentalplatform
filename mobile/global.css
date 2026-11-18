@@ -1,3 +1,85 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+  Theme tokens, hand-mirrored from ../app/globals.css.
+
+  Until now mobile had no runtime theming at all: every colour was a
+  fixed hex in tailwind.config.js, so each call site had to carry its own
+  `dark:` counterpart ("bg-canvas dark:bg-charcoal-900"). That works when
+  every pair is remembered and silently breaks when one is not -- which
+  is exactly how the owner dashboard's warning callout ended up light-on-
+  light in dark mode.
+
+  NativeWind v4 resolves CSS variables, including this media query, so
+  the semantic tokens below flip on their own the way the web ones do.
+  Existing `dark:` pairs keep working unchanged (an explicit utility
+  still wins); they simply stop being the only thing standing between
+  this app and an unreadable screen.
+
+  Channels are space-separated RGB so Tailwind's alpha modifiers
+  (bg-surface-raised/40) keep working through rgb(... / <alpha-value>).
+*/
+@layer base {
+  :root {
+    /* warm sand ground */
+    --surface-base: 247 244 240; /* #f7f4f0 */
+    --surface-raised: 255 255 255; /* #ffffff */
+    --surface-muted: 241 236 230; /* #f1ece6 */
+    --border-token: 231 224 216; /* #e7e0d8 */
+
+    /* warm stone text ramp */
+    --content-strong: 28 25 23; /* #1c1917  15.95:1 on base */
+    --content-muted: 87 83 78; /* #57534e   6.96:1 on base */
+    --content-subtle: 110 103 98; /* #6e6762   5.07:1 on base */
+
+    /*
+      Accent split, same reason as web: as a FILL red carries white text
+      and must stay dark in both themes; as TEXT it must contrast with
+      the ground, and #da1a32 on the dark page is only 3.48:1.
+    */
+    --accent-fill: 218 26 50; /* #da1a32 */
+    --accent-text: 184 18 47; /* #b8122f  6.05:1 on base */
+    --accent-soft: 251 226 229; /* #fbe2e5 */
+    --accent-on-soft: 160 12 48; /* #a00c30  6.61:1 on soft */
+
+    /* status: -text contrasts with the ground, -soft is its tint */
+    --success-text: 39 122 77; /* #277a4d */
+    --success-soft: 227 243 234; /* #e3f3ea */
+    --warning-text: 138 90 11; /* #8a5a0b */
+    --warning-soft: 251 240 220; /* #fbf0dc */
+    --error-text: 176 46 46; /* #b02e2e */
+    --error-soft: 250 231 231; /* #fae7e7 */
+    --info-text: 47 111 166; /* #2f6fa6 */
+    --info-soft: 229 240 249; /* #e5f0f9 */
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* warm near-black, not #000: nothing can sit below pure black, so
+         elevation becomes inexpressible */
+      --surface-base: 28 25 23; /* #1c1917 */
+      --surface-raised: 38 34 32; /* #262220 */
+      --surface-muted: 48 43 40; /* #302b28 */
+      --border-token: 58 51 48; /* #3a3330 */
+
+      --content-strong: 245 241 236; /* #f5f1ec  15.55:1 on base */
+      --content-muted: 181 173 164; /* #b5ada4   7.89:1 */
+      --content-subtle: 154 145 136; /* #9a9188   5.09:1 on raised */
+
+      --accent-text: 240 101 117; /* #f06575  5.68:1 on base */
+      --accent-soft: 94 27 42; /* #5e1b2a */
+      --accent-on-soft: 255 194 202; /* #ffc2ca  8.30:1 on soft */
+
+      --success-text: 95 217 143; /* #5fd98f */
+      --success-soft: 22 48 31; /* #16301f */
+      --warning-text: 240 180 41; /* #f0b429 */
+      --warning-soft: 50 36 16; /* #322410 */
+      --error-text: 248 113 113; /* #f87171 */
+      --error-soft: 53 25 26; /* #35191a */
+      --info-text: 96 165 250; /* #60a5fa */
+      --info-soft: 22 40 58; /* #16283a */
+    }
+  }
+}
