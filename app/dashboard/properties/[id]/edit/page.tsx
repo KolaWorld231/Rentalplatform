@@ -1,9 +1,11 @@
+import { CheckCircle2, EyeOff, ImagePlus, Send } from "lucide-react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PropertyForm } from "@/components/forms/PropertyForm";
 import { PropertyImageManager } from "@/components/forms/PropertyImageManager";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { listingCompleteness, type PropertyWithImages } from "@/services/properties";
@@ -15,10 +17,12 @@ const STALE_AFTER_DAYS = 14;
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function EditPropertyPage({ params }: PageProps) {
+export default async function EditPropertyPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const justCreated = (await searchParams).created === "1";
   const user = await requireUser();
   const supabase = await createClient();
 
@@ -53,6 +57,52 @@ export default async function EditPropertyPage({ params }: PageProps) {
           View public listing
         </Link>
       </div>
+
+      {/*
+        createPropertyAction already redirected here with ?created=1, but
+        nothing read it, so an owner who had just filled in a 2228px form
+        got no confirmation that it worked.
+
+        The more serious half is the state itself: a new listing is a
+        draft, which means no renter can see it. That was conveyed only
+        by a small grey "draft" badge -- the consequence was never
+        stated. An owner could finish the form and reasonably believe
+        they had listed their property when nothing was live.
+      */}
+      {property.listing_status === "draft" && (
+        <Card className="mt-6 border-l-4 border-brand-600 bg-accent-soft p-4">
+          <div className="flex items-start gap-3">
+            {justCreated ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent-on-soft" aria-hidden="true" />
+            ) : (
+              <EyeOff className="mt-0.5 h-5 w-5 shrink-0 text-accent-on-soft" aria-hidden="true" />
+            )}
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-charcoal-700">
+                {justCreated
+                  ? "Listing created — but renters can't see it yet"
+                  : "This listing is a draft, so renters can't see it"}
+              </p>
+              <p className="mt-1 text-sm text-charcoal-500">
+                It stays private until you publish it. Two things make a listing worth
+                opening:
+              </p>
+              <ul className="mt-3 flex flex-col gap-2 text-sm text-charcoal-700">
+                <li className="flex items-center gap-2">
+                  <ImagePlus className="h-4 w-4 shrink-0 text-charcoal-500" aria-hidden="true" />
+                  {images.length > 0
+                    ? `${images.length} photo${images.length > 1 ? "s" : ""} added`
+                    : "Add photos — renters scan pictures first"}
+                </li>
+                <li className="flex items-center gap-2">
+                  <Send className="h-4 w-4 shrink-0 text-charcoal-500" aria-hidden="true" />
+                  Publish it, using the button below
+                </li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {completeness.missing.length > 0 && (
         <p className="mt-2 text-xs text-charcoal-400">Missing: {completeness.missing.join(", ")}</p>
