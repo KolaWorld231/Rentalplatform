@@ -3,10 +3,19 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
+import { isPaymentProviderConfigured } from "@/lib/payments";
 import { startCheckout } from "@/lib/subscriptions/service";
 
 export async function startCheckoutAction(formData: FormData) {
   const user = await requireUser("/pricing");
+
+  // The page hides the form in this case, so reaching here means a stale
+  // page or a direct post. Distinguish it from a genuine failure so the
+  // renter is told payments are not live rather than "try again", which
+  // would invite them to retry something that cannot succeed.
+  if (!isPaymentProviderConfigured()) {
+    redirect("/pricing?error=payments_unavailable");
+  }
 
   const headerList = await headers();
   const host = headerList.get("host");

@@ -3,6 +3,28 @@ import type { PaymentProvider } from "./types";
 import { MockPaymentProvider } from "./providers/mock";
 import { MtnMomoProvider } from "./providers/mtn-momo";
 
+/**
+ * Whether a provider that can actually take money is configured for this
+ * environment. False means no payment is possible here -- either nothing
+ * real is configured, or the mock is configured somewhere it is refused.
+ *
+ * This exists because `getPaymentProvider()` throws by design, which is
+ * right for a write path (never guess about money) but wrong for a page
+ * that merely renders the price. /pricing called it during render and
+ * returned a 500 for every visitor the moment the deployment became a
+ * real production one -- a top-level nav link, down, telling nobody why.
+ * Read paths ask this first and render an honest "not available yet"
+ * state instead.
+ */
+export function isPaymentProviderConfigured(): boolean {
+  try {
+    getPaymentProvider();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function getPaymentProvider(): PaymentProvider {
   const providerName = process.env.PAYMENTS_PROVIDER ?? "mock";
 

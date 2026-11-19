@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveSubscription } from "@/lib/subscriptions/service";
 import { formatExpiryDate } from "@/lib/utils/format";
-import { getPaymentProvider } from "@/lib/payments";
+import { getPaymentProvider, isPaymentProviderConfigured } from "@/lib/payments";
 import { startCheckoutAction } from "../checkout/actions";
 
 export const metadata = { title: "Pricing" };
@@ -40,7 +40,8 @@ export default async function PricingPage({
     const supabase = await createClient();
     active = await getActiveSubscription(supabase, user.id);
   }
-  const requiresPayerPhone = getPaymentProvider().requiresPayerPhone;
+  const paymentsAvailable = isPaymentProviderConfigured();
+  const requiresPayerPhone = paymentsAvailable && getPaymentProvider().requiresPayerPhone;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
@@ -64,6 +65,12 @@ export default async function PricingPage({
       {error === "checkout_failed" && (
         <p className="mt-6 rounded-[var(--radius-md)] bg-error-soft px-4 py-3 text-sm text-error">
           Couldn&apos;t start checkout. Please try again.
+        </p>
+      )}
+      {error === "payments_unavailable" && (
+        <p className="mt-6 rounded-[var(--radius-md)] bg-warning-soft px-4 py-3 text-sm text-warning">
+          Payments aren&apos;t live yet, so the pass can&apos;t be bought at the moment. Nothing was
+          charged.
         </p>
       )}
       {error === "phone_required" && (
@@ -125,6 +132,19 @@ export default async function PricingPage({
               Your pass is active until {active.expires_at && formatExpiryDate(active.expires_at)}.
             </p>
           </div>
+        ) : !paymentsAvailable ? (
+          /* No provider can take money in this environment. Say so plainly
+             rather than rendering a button that fails -- and do not claim
+             messaging is open in the meantime, because it is not: the
+             subscription gate is an RLS policy and stays shut. */
+          <div>
+            <Badge variant="warning">Not available yet</Badge>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-charcoal-500">
+              The {subscriptionPlan.name} can&apos;t be bought yet — we&apos;re still setting up
+              mobile money payments for Liberia. Browsing and saving listings stay free, and
+              you&apos;ll be able to message owners as soon as this opens.
+            </p>
+          </div>
         ) : (
           <form action={startCheckoutAction} className="flex flex-col items-center gap-3">
             {requiresPayerPhone && (
@@ -152,9 +172,11 @@ export default async function PricingPage({
             </Button>
           </form>
         )}
-        <p className="mt-3 text-xs text-charcoal-400">
-          One-time charge, not a recurring subscription. Renew manually anytime.
-        </p>
+        {paymentsAvailable && (
+          <p className="mt-3 text-xs text-charcoal-400">
+            One-time charge, not a recurring subscription. Renew manually anytime.
+          </p>
+        )}
       </Card>
 
       <p className="mt-10 text-center text-xs text-charcoal-400">
