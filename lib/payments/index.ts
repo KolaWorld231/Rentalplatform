@@ -29,17 +29,24 @@ export function getPaymentProvider(): PaymentProvider {
   const providerName = process.env.PAYMENTS_PROVIDER ?? "mock";
 
   if (providerName === "mock") {
-    // NODE_ENV is "production" for every `next build`, including a Vercel
-    // *preview* deployment -- it says nothing about whether this is the
-    // real, live production environment. VERCEL_ENV does distinguish that
-    // ("production" vs. "preview"/"development"); fall back to NODE_ENV
-    // only when VERCEL_ENV is unset (e.g. a non-Vercel production host).
-    const isRealProduction = process.env.VERCEL_ENV
-      ? process.env.VERCEL_ENV === "production"
+    // This used to allow the mock on a Vercel *preview* build, on the
+    // reasoning that a preview is not production. A preview deployment is
+    // still a public URL served from the production database, and the
+    // mock's checkout page offered a button that posted a "confirmed"
+    // event to the real webhook with the real secret -- so any signed-in
+    // renter could mint themselves a 30-day pass. That page is gone, and
+    // the mock is now refused in every deployed environment, not just the
+    // one labelled production.
+    //
+    // VERCEL_ENV is set on every Vercel deployment and unset locally, so
+    // its mere presence means "deployed". NODE_ENV is the fallback for a
+    // non-Vercel host, where it is "production" for any real build.
+    const isDeployed = process.env.VERCEL_ENV
+      ? true
       : process.env.NODE_ENV === "production";
-    if (isRealProduction) {
+    if (isDeployed) {
       throw new Error(
-        "PAYMENTS_PROVIDER=mock is not allowed in production — it can never activate a real subscription. Configure a real provider (see docs/PAYMENTS.md).",
+        "PAYMENTS_PROVIDER=mock is not allowed in a deployed environment — it can never activate a real subscription. Configure a real provider (see docs/PAYMENTS.md).",
       );
     }
     return new MockPaymentProvider();

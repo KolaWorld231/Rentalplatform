@@ -85,14 +85,24 @@ export async function startCheckout(userId: string, returnUrl: string, payerPhon
     .single();
   if (txnError || !transaction) throw new Error("Couldn't start checkout.");
 
-  const checkout = await provider.createCheckout({
-    transactionId: transaction.id,
-    internalReference: transaction.internal_reference,
-    amountUsd: Number(plan.price_usd),
-    userId,
-    returnUrl,
-    payerPhone,
-  });
-
-  return checkout;
+  // The two rows above exist before the provider is asked for anything,
+  // because the provider needs their ids. If it then fails -- its API is
+  // down, its credentials are wrong, or it has no checkout to offer --
+  // they would be left behind as a `pending_payment` subscription the
+  // renter never started and can never complete. Remove them, in
+  // dependency order, before surfacing the failure.
+  try {
+    return await provider.createCheckout({
+      transactionId: transaction.id,
+      internalReference: transaction.internal_reference,
+      amountUsd: Number(plan.price_usd),
+      userId,
+      returnUrl,
+      payerPhone,
+    });
+  } catch (e) {
+    await admin.from("payment_transactions").delete().eq("id", transaction.id);
+    await admin.from("subscriptions").delete().eq("id", subscription.id);
+    throw e;
+  }
 }

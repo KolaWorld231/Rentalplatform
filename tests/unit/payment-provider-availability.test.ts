@@ -24,9 +24,19 @@ describe("isPaymentProviderConfigured", () => {
     expect(isPaymentProviderConfigured()).toBe(false);
   });
 
-  it("is true for the mock provider in a preview deployment", () => {
+  it("is false for the mock provider in a preview deployment", () => {
+    // A preview is a public URL on the production database, so the mock
+    // is refused there too -- /pricing shows the unavailable state rather
+    // than a checkout that could mint a free pass.
     process.env.PAYMENTS_PROVIDER = "mock";
     process.env.VERCEL_ENV = "preview";
+    expect(isPaymentProviderConfigured()).toBe(false);
+  });
+
+  it("is true for the mock provider running locally", () => {
+    process.env.PAYMENTS_PROVIDER = "mock";
+    delete process.env.VERCEL_ENV;
+    (process.env as Record<string, string>).NODE_ENV = "development";
     expect(isPaymentProviderConfigured()).toBe(true);
   });
 
