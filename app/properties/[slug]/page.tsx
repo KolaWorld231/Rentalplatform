@@ -11,6 +11,7 @@ import { VerificationBadge } from "@/components/verification/VerificationBadge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { brand } from "@/lib/config/brand";
 import { after } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -126,6 +127,21 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
 
           <div className="mt-6 flex items-start justify-between gap-4">
             <div className="min-w-0">
+              {/*
+                Above the title, not tucked beside a chip further down:
+                someone who has clicked through is about to judge the
+                photographs and the price, and needs to know first that
+                this is a placeholder rather than a property they can
+                actually go and see. Stated in full here because, unlike
+                the card badge, there is room to say what it means.
+              */}
+              {property.is_showcase && (
+                <p className="mb-3 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] bg-surface-muted px-3 py-2 text-xs text-charcoal-600">
+                  <Badge variant="neutral">Showcase listing</Badge>
+                  An example listing maintained by {brand.name} while real owners come on board. The
+                  property and photographs are not real and it is not available to rent.
+                </p>
+              )}
               {/*
                 The title was text-2xl -- smaller than the price beside it,
                 and barely above the section headings below. It is what the

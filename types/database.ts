@@ -132,6 +132,9 @@ export type Property = {
   favourite_count: number;
   published_at: string | null;
   last_availability_confirmed_at: string | null;
+  /** Team-maintained placeholder listing, not a real property. Rendered
+   *  as a visible badge; never true for an owner-created listing. */
+  is_showcase: boolean;
   created_at: string;
   updated_at: string;
 };

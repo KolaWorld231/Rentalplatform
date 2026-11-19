@@ -55,8 +55,22 @@ export function PropertyCard({
           not an alert, and on the image it competed with the two things
           a renter actually scans for.
         */}
-        {(isNew || availability) && (
+        {(isNew || availability || property.is_showcase) && (
           <div className="absolute left-3 top-3 flex flex-wrap gap-2 pr-14">
+            {/*
+              Sits on the photo, first, and is the one badge that
+              overrides the "exception states only" rule for this
+              corner. A placeholder listing carries a stock photograph,
+              and a stock photograph of a building reads as a photograph
+              of *this* building unless something on the image says
+              otherwise. Disclosure on the owner's profile does not
+              reach someone scanning a grid.
+            */}
+            {property.is_showcase && (
+              <Badge variant="neutral" className="bg-surface-overlay/90">
+                Showcase listing
+              </Badge>
+            )}
             {isNew && (
               <Badge variant="clay" className="gap-1">
                 <Sparkles className="h-3 w-3" aria-hidden="true" />
