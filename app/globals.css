@@ -54,6 +54,15 @@
   */
   --color-charcoal-900: #0c0a09;
   --color-charcoal-700: #1c1917;
+  /*
+    charcoal-600 was missing from the ramp while 25 call sites used it.
+    Tailwind emits no rule for an undefined key, so every one of those
+    elements had no colour applied at all and silently inherited from
+    its parent -- their colour was accidental rather than designed, and
+    nothing failed loudly enough to notice. Ratios against the page:
+    10.12 light, 11.11 dark.
+  */
+  --color-charcoal-600: #3f3b37;
   --color-charcoal-500: #57534e;
   --color-charcoal-400: #6e6762;
 
@@ -227,6 +236,7 @@
 
   --color-charcoal-900: var(--color-charcoal-900);
   --color-charcoal-700: var(--color-charcoal-700);
+  --color-charcoal-600: var(--color-charcoal-600);
   --color-charcoal-500: var(--color-charcoal-500);
   --color-charcoal-400: var(--color-charcoal-400);
 
@@ -328,6 +338,7 @@
       should stay black in both themes.
     */
     --color-charcoal-700: #f5f1ec;
+    --color-charcoal-600: #d4cdc5;
     --color-charcoal-500: #b5ada4;
     --color-charcoal-400: #9a9188;
 

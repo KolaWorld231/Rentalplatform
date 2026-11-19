@@ -1,7 +1,8 @@
-import { AlertTriangle, Eye, Heart, Home, MessageCircle, ImagePlus } from "lucide-react";
+import { AlertTriangle, Eye, Heart, Home, MessageCircle, ImagePlus, Plus } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
+import { buttonVariants } from "@/components/ui/Button";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { formatRelativeDate, isAvailabilityStale } from "@/lib/utils/format";
@@ -46,18 +47,61 @@ export default async function DashboardOverviewPage() {
     properties?.filter((p) => p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at))
       .length ?? 0;
 
+  /*
+    Was five tiles: Published, Total properties, Draft, Views,
+    Favourites. The first three are the same small number said three
+    ways -- an owner with one listing read "1 / 1 / 0" across a third of
+    the page. Total is dropped, and Draft appears only when there is
+    one, which is also when it is worth acting on.
+  */
   const stats = [
     { label: "Published", value: published, icon: Home, lead: true },
-    { label: "Total properties", value: total, icon: Home },
-    { label: "Draft", value: drafts, icon: Home },
-    { label: "Total views", value: totalViews, icon: Eye },
-    { label: "Total favourites", value: totalFavourites, icon: Heart },
+    ...(drafts > 0 ? [{ label: "Draft", value: drafts, icon: Home, lead: false }] : []),
+    { label: "Views", value: totalViews, icon: Eye, lead: false },
+    { label: "Saves", value: totalFavourites, icon: Heart, lead: false },
   ];
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-charcoal-700">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-2xl font-semibold text-charcoal-700">Dashboard</h1>
+        {total > 0 && (
+          <Link
+            href="/dashboard/properties/new"
+            className={cn(buttonVariants({ variant: "primary", size: "sm" }))}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            List a property
+          </Link>
+        )}
+      </div>
 
+      {/*
+        An owner with no properties previously saw five zeroes and a line
+        about inquiries that cannot exist yet -- and no way to list
+        anything, since the only route to the create page was a quiet
+        "Manage your properties" link at the foot of the page. For a
+        platform whose constraint is inventory, that was the single most
+        important action missing from its own dashboard.
+      */}
+      {total === 0 ? (
+        <Card className="mt-6 flex flex-col items-center gap-3 p-12 text-center">
+          <Home className="h-10 w-10 text-charcoal-400" aria-hidden="true" />
+          <p className="font-medium text-charcoal-700">You haven&apos;t listed a property yet.</p>
+          <p className="max-w-md text-sm text-charcoal-500">
+            Listing is free and always will be. Start with the essentials — you can add photos and
+            rental terms before publishing.
+          </p>
+          <Link
+            href="/dashboard/properties/new"
+            className={cn(buttonVariants({ variant: "primary" }), "mt-1")}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            List your first property
+          </Link>
+        </Card>
+      ) : (
+      <>
       {noPhotoCount > 0 && (
         <Card className="mt-6 flex items-center gap-3 border-l-4 border-brand-600 bg-accent-soft p-4">
           <ImagePlus className="h-5 w-5 shrink-0 text-accent-on-soft" aria-hidden="true" />
@@ -95,7 +139,13 @@ export default async function DashboardOverviewPage() {
       <Card className="mt-6 grid grid-cols-1 divide-y divide-border sm:grid-cols-5 sm:divide-x sm:divide-y-0">
         {stats.map((s) => (
           <div key={s.label} className="flex items-center gap-3 p-4">
-            <s.icon className={s.lead ? "h-5 w-5 shrink-0 text-accent-text" : "h-5 w-5 shrink-0 text-accent-text"} aria-hidden="true" />
+            {/* Both branches of this were the same string, so "lead" did
+                nothing to the icon. Only the lead stat carries the accent
+                now; the rest are supporting figures. */}
+            <s.icon
+              className={cn("h-5 w-5 shrink-0", s.lead ? "text-accent-text" : "text-charcoal-400")}
+              aria-hidden="true"
+            />
             <div>
               <p
                 className={cn(
@@ -146,7 +196,7 @@ export default async function DashboardOverviewPage() {
                       <p className="truncate text-xs text-charcoal-400">{c.properties?.title}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      {unread && <span className="h-2 w-2 rounded-full bg-clay-500" aria-label="Unread" />}
+                      {unread && <span className="h-2 w-2 rounded-full bg-accent" aria-label="Unread" />}
                       <span className="text-xs text-charcoal-400">{formatRelativeDate(c.updated_at)}</span>
                     </div>
                   </Link>
@@ -162,6 +212,8 @@ export default async function DashboardOverviewPage() {
           Manage your properties →
         </Link>
       </div>
+      </>
+      )}
     </div>
   );
 }
