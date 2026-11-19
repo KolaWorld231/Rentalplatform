@@ -24,18 +24,10 @@ revoke all on function public.confirm_payment_and_activate_subscription(uuid, te
 revoke all on function public.confirm_payment_and_activate_subscription(uuid, text) from authenticated;
 grant execute on function public.confirm_payment_and_activate_subscription(uuid, text) to service_role;
 
--- The same reasoning applies to anything else that writes money or roles
--- and is only ever called from trusted server code. Listed explicitly
--- rather than looped, so adding a privileged function is a deliberate
--- decision about who may call it.
-do $$
-begin
-  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-             where n.nspname = 'public' and p.proname = 'start_mobile_checkout') then
-    -- Deliberately callable by a signed-in user: it starts a checkout for
-    -- the caller only, reading auth.uid() from the JWT rather than an
-    -- argument. Named here so the grant is explicit rather than inherited.
-    execute 'revoke all on function public.start_mobile_checkout() from public, anon';
-    execute 'grant execute on function public.start_mobile_checkout() to authenticated';
-  end if;
-end $$;
+-- No other privileged function needs the same treatment today. The
+-- remaining security-definer functions were each probed against the
+-- hosted project and are either already service-role-only or are
+-- deliberately callable by a signed-in user because they read
+-- auth.uid() from the JWT rather than taking a target as an argument
+-- (grant_owner_role_to_self, register_push_token, the has_*/is_*
+-- predicates, the verified_* batch lookups).
