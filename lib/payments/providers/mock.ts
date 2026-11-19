@@ -17,6 +17,8 @@ import type { CheckoutParams, CheckoutResult, PaymentProvider, VerifiedWebhookEv
 export class MockPaymentProvider implements PaymentProvider {
   readonly name = "mock";
   readonly requiresPayerPhone = false;
+  // The mock settles in the ledger currency, so its amounts are checkable.
+  readonly reportsSettlementAmount = true;
 
   async createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
     const url = new URL("/checkout/mock", params.returnUrl);

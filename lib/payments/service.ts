@@ -15,7 +15,37 @@ export type ProcessEventResult =
  * as a real webhook delivery — not a second, drifting copy of it. See
  * docs/PAYMENTS.md.
  */
-export async function processVerifiedPaymentEvent(event: VerifiedWebhookEvent, providerName: string): Promise<ProcessEventResult> {
+/**
+ * Decides whether a verified event's money matches the ledger.
+ *
+ * The previous expression was
+ * `amount !== event.amount && transaction.currency === event.currency`,
+ * which reads as "flag a mismatch" but behaves as "skip the check
+ * entirely whenever the currencies differ". A 1 EUR event against a
+ * $5 USD transaction produced `true && false` -- no mismatch -- and
+ * went on to activate the pass. The bypass existed for MTN, which
+ * settles in another currency, but nothing confined it to MTN.
+ *
+ * Providers now declare whether their amount is comparable, so the
+ * exemption is explicit and per-provider instead of implied by a
+ * currency difference.
+ */
+export function checkEventAmount(
+  ledger: { amount: number; currency: string },
+  event: Pick<VerifiedWebhookEvent, "amountUsd" | "currency">,
+  reportsSettlementAmount: boolean,
+): "ok" | "mismatch" | "not-comparable" {
+  if (!reportsSettlementAmount) return "not-comparable";
+  if (ledger.currency !== event.currency) return "mismatch";
+  if (ledger.amount !== event.amountUsd) return "mismatch";
+  return "ok";
+}
+
+export async function processVerifiedPaymentEvent(
+  event: VerifiedWebhookEvent,
+  providerName: string,
+  reportsSettlementAmount: boolean,
+): Promise<ProcessEventResult> {
   const supabase = createServiceRoleClient();
 
   const { data: transaction } = await supabase
@@ -34,12 +64,13 @@ export async function processVerifiedPaymentEvent(event: VerifiedWebhookEvent, p
     return { status: transaction.status };
   }
 
-  // Never trust the event's amount blindly -- compare against our own
-  // ledger. (MTN's status response echoes the sandbox EUR amount, which
-  // the MtnMomoProvider already notes is informational-only for this
-  // reason; this check still runs for providers whose amount IS the
-  // business currency, e.g. a real card processor.)
-  if (Number(transaction.amount) !== event.amountUsd && transaction.currency === event.currency) {
+  const amountCheck = checkEventAmount(
+    { amount: Number(transaction.amount), currency: transaction.currency },
+    event,
+    reportsSettlementAmount,
+  );
+
+  if (amountCheck === "mismatch") {
     await supabase.from("payment_webhook_events").insert({
       provider: providerName,
       event_id: event.eventId,
@@ -55,10 +86,18 @@ export async function processVerifiedPaymentEvent(event: VerifiedWebhookEvent, p
   // Idempotency: this insert is the only gate. A unique(provider, event_id)
   // violation means this event was already processed -- acknowledge and
   // stop, without touching subscription state again.
+  //
+  // When the provider settles in another currency the amount could not be
+  // checked, so the stored payload says so: an activation that rested
+  // only on the provider's own verification should be visible in the
+  // audit trail rather than indistinguishable from a fully checked one.
   const { error: insertError } = await supabase.from("payment_webhook_events").insert({
     provider: providerName,
     event_id: event.eventId,
-    payload: event as unknown as Record<string, unknown>,
+    payload:
+      amountCheck === "not-comparable"
+        ? ({ note: "amount not comparable to ledger currency", event } as unknown as Record<string, unknown>)
+        : (event as unknown as Record<string, unknown>),
     processing_status: "received",
     related_transaction_id: transaction.id,
   });

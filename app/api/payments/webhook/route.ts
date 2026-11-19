@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid or unverifiable webhook" }, { status: 401 });
   }
 
-  const result = await processVerifiedPaymentEvent(event, provider.name);
+  const result = await processVerifiedPaymentEvent(event, provider.name, provider.reportsSettlementAmount);
   if (result.status === "error") {
     return NextResponse.json({ error: result.error }, { status: result.error === "unknown transaction reference" ? 404 : 500 });
   }

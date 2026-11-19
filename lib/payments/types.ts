@@ -45,6 +45,17 @@ export interface PaymentProvider {
   readonly name: string;
   /** True for providers whose createCheckout requires CheckoutParams.payerPhone. */
   readonly requiresPayerPhone: boolean;
+  /**
+   * True when the amount and currency on a verified event describe the
+   * same money as `payment_transactions.amount`, and can therefore be
+   * checked against the ledger before activating.
+   *
+   * False for providers that settle in another currency and echo that
+   * back (MTN MoMo's sandbox reports EUR against a USD ledger). For
+   * those the comparison is meaningless, and the service records that
+   * it was skipped rather than quietly passing.
+   */
+  readonly reportsSettlementAmount: boolean;
   createCheckout(params: CheckoutParams): Promise<CheckoutResult>;
   verifyWebhook(input: WebhookVerificationInput): Promise<VerifiedWebhookEvent | null>;
   /**

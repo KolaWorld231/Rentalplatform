@@ -45,6 +45,13 @@ export function normalizeLiberianMsisdn(phone: string): string {
 export class MtnMomoProvider implements PaymentProvider {
   readonly name = "mtn_momo";
   readonly requiresPayerPhone = true;
+  /**
+   * MTN echoes the amount in its own settlement currency (EUR in the
+   * sandbox, LRD in production) while the ledger is USD, so comparing
+   * the two would reject every real payment. Verification rests on the
+   * authenticated status call for this provider, not on the amount.
+   */
+  readonly reportsSettlementAmount = false;
 
   private get baseUrl() {
     return process.env.MTN_MOMO_BASE_URL ?? "https://sandbox.momodeveloper.mtn.com";

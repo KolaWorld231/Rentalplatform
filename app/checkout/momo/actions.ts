@@ -33,7 +33,7 @@ export async function checkMomoPaymentStatusAction(reference: string): Promise<M
   const event = await provider.checkStatus(reference);
   if (!event) return { status: "pending" };
 
-  const result = await processVerifiedPaymentEvent(event, provider.name);
+  const result = await processVerifiedPaymentEvent(event, provider.name, provider.reportsSettlementAmount);
   if (result.status === "error") return { status: "error", error: result.error };
   if (result.status === "confirmed") return { status: "confirmed" };
   return { status: "failed" };
