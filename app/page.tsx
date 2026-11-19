@@ -58,9 +58,16 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-[1600px] px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
-        <SegmentedSearch counties={counties} communities={communities} />
-      </div>
+      {/* The width cap moves onto the bar itself rather than a wrapper:
+          the sticky band needs to span the page so its blurred backing
+          covers the listings scrolling under it, instead of leaving them
+          visible in a strip either side. */}
+      <SegmentedSearch
+        counties={counties}
+        communities={communities}
+        sticky
+        className="mx-auto max-w-4xl"
+      />
 
       <div className="mt-6">
         <CategoryNav categories={categoryCounts} />
