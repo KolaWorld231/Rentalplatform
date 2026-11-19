@@ -34,9 +34,13 @@ function parseForm(formData: FormData) {
     advanceRentAmount: formData.get("advanceRentAmount"),
     securityDepositAmount: formData.get("securityDepositAmount"),
     otherFeesAmount: formData.get("otherFeesAmount"),
-    otherFeesDescription: formData.get("otherFeesDescription"),
+    // These two are optional *strings*, so an absent field arrives as
+    // null and is rejected, where an absent number is preprocessed away.
+    // The checkbox keys above already guard this; these did not, which
+    // only showed up once a form stopped rendering every field.
+    otherFeesDescription: formData.get("otherFeesDescription") ?? undefined,
     leaseDurationMonths: formData.get("leaseDurationMonths"),
-    moveInDate: formData.get("moveInDate"),
+    moveInDate: formData.get("moveInDate") ?? undefined,
   });
 }
 
