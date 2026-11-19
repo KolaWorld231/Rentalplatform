@@ -1,5 +1,5 @@
 // Idempotent: seeds a fixed set of published placeholder listings owned by
-// a clearly-labeled "DomiLink Listings Team" account, so the marketplace
+// a clearly-labeled "231Rentals Listings Team" account, so the marketplace
 // isn't empty while real owners are still onboarding. Safe to re-run —
 // matches on slug/email and skips what already exists. Per CLAUDE.md rule
 // #9, this is the one sanctioned exception to "never fabricate demo data
@@ -22,7 +22,12 @@ const env = Object.fromEntries(
 
 const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-const DEMO_OWNER_EMAIL = "demo-listings@domilink.app";
+// The project was renamed DomiLink -> 231Rentals and this constant was
+// not. The lookup below matches on email, so the stale value missed the
+// real demo owner and the script went on to create a *second* one --
+// which would have split the showcase listings across two accounts,
+// only one of them carrying the disclosure profile.
+const DEMO_OWNER_EMAIL = "demo-listings@231rentals.app";
 
 async function getOrCreateDemoOwner() {
   const { data: existing } = await supabase.auth.admin.listUsers({ perPage: 1000 });
@@ -33,7 +38,7 @@ async function getOrCreateDemoOwner() {
     email: DEMO_OWNER_EMAIL,
     password: `DemoOwner-${Math.random().toString(36).slice(2)}-${Date.now()}`,
     email_confirm: true,
-    user_metadata: { display_name: "DomiLink Listings Team" },
+    user_metadata: { display_name: "231Rentals Listings Team" },
   });
   if (error) throw error;
   return data.user.id;
@@ -45,8 +50,8 @@ await supabase.from("user_roles").upsert({ user_id: ownerId, role: "owner" }, { 
 
 await supabase.from("owner_profiles").upsert({
   user_id: ownerId,
-  business_name: "DomiLink Listings Team",
-  bio: "Placeholder listings maintained by the DomiLink team to showcase the marketplace while real property owners come on board. Not available for rent — contact Help & Support with questions.",
+  business_name: "231Rentals Listings Team",
+  bio: "Example listings maintained by the 231Rentals team while real property owners come on board. These properties and their images are not real and are not available to rent — contact Help & Support with any questions.",
   public_contact_opt_in: false,
 });
 
