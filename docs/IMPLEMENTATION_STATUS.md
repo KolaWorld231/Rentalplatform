@@ -3764,3 +3764,157 @@ not new schema.
   should confirm a submitted report lands in `property_reports`/
   `message_reports` with the correct `reporter_id`/`reason` against a
   real Supabase project.
+
+## Production hardening: two paywall bypasses, undeployed schema, broken /pricing (2026-11-19)
+
+This entry is mostly about the gap between the repo and the hosted
+project. Every item below was found by probing the live database and
+site, not by reading code — the code was largely correct; what was
+deployed was not.
+
+### Root cause: production was never managed by migrations
+
+`supabase_migrations.schema_migrations` did not exist in the hosted
+project — not the table, the whole schema. That table is created the
+first time the Supabase CLI touches a project, so its absence means no
+migration had ever been applied through the CLI. The entire production
+schema had been built by hand, pasted into the SQL editor.
+
+Nothing enforced that a migration committed here ever reached
+production, which is what produced all three findings below.
+
+Fixed by creating the schema/table with the shape the CLI expects and
+recording all 28 migration versions as applied (`recorded: 28`
+confirmed). `supabase db push` is now usable and is how future schema
+changes should ship. This was only safe because the deployed schema was
+verified first, layer by layer: 37 tables, 14 RPC functions probed with
+their real parameter names, `handle_new_user`/`sync_favourite_count`
+(both directions)/`set_updated_at` observed firing, both storage buckets
+present with correct visibility, RLS on every scout table, anon writes
+refused. Not verified from here: the `supabase_realtime` publication
+membership from `20260104000200` (not readable through the REST API).
+
+### Bypass 1: any signed-in renter could grant themselves a free pass
+
+`confirm_payment_and_activate_subscription` was executable by `anon` and
+`authenticated` in the hosted project. Reproduced end to end: sign up,
+let the checkout create a pending transaction, call the function on it,
+subscription flips to `active` with no payment. CLAUDE.md rule #6 was
+not being enforced.
+
+`20260103000100` already revoked it from PUBLIC — but in PostgreSQL a
+privilege held *directly* by a role is not removed by revoking from
+PUBLIC, so each role has to be named. `20261119000100` does that;
+`tests/unit/activation-rpc-grants.test.ts` guards it in the repo (it
+cannot see the deployed database, which is exactly how this got
+through). After applying: `anon` and `authenticated` both get
+`42501 permission denied`, `service_role` still executes.
+
+The paywall itself held under every other attack tried — inserting a
+conversation without a subscription, claiming another user as the
+renter, inserting or updating a subscription row directly. The gate is
+an RLS policy, not app logic, which is the right design. This was a hole
+beside it.
+
+### Bypass 2: /checkout/mock minted real passes
+
+`getPaymentProvider()` refuses the mock provider only when
+`VERCEL_ENV === "production"`. Every deployment of this project was a
+Vercel *preview* until today, so on the live site that guard never
+fired, and `/checkout/mock`'s "simulate payment" button posts to the
+real webhook with the real secret. Any signed-in renter who started a
+checkout could click through to a genuine 30-day pass.
+
+Closed as a side effect of setting the production branch (below), which
+made `VERCEL_ENV` actually `production`. **Still open as a decision:**
+whether `/checkout/mock` should exist outside development at all, rather
+than relying on an env check one variable away from being wrong.
+
+### The Scout Program had never been deployed
+
+All seven `scout_program` migrations were missing from production: 11
+tables and 5 functions. Meanwhile `/scouts` and `/scouts/apply` were
+live and the footer linked "Become a Scout" on every page. The apply
+page read "Applications aren't open for any area right now" — not a
+business decision, just `listOpenScoutAreas()` querying a table that did
+not exist.
+
+Applied to production, verified beforehand against a local Postgres
+carrying every other migration: the result is a public schema identical
+to a from-scratch build. The three seeded pilot areas are named
+"PILOT AREA n (placeholder — replace with a real neighbourhood)", so
+they were left `is_open = false`; the apply page reads exactly as it did
+before until real neighbourhoods are set.
+
+Registration was unaffected: `attributeScoutReferral` only runs for
+`intent=owner` with a referral code, and `maybeSingle()` on the missing
+table returned null and exited early.
+
+### /pricing returned 500 on the live site
+
+`app/pricing/page.tsx` called `getPaymentProvider()` during render, to
+decide whether to ask for a mobile money number. That function throws by
+design — right for a write path, wrong for a page that shows a price.
+The first real production deployment made the guard fire and the page
+broke for every visitor, with the link still in the header nav.
+
+`isPaymentProviderConfigured()` answers the same question without
+throwing. With no provider the page renders a "Not available yet" state
+and hides the checkout form; `startCheckoutAction` redirects to
+`?error=payments_unavailable` rather than "try again". The copy does not
+claim messaging is free in the meantime, because it is not — the
+subscription gate is an RLS policy and stays shut.
+
+Verified by building and serving the production bundle twice:
+`VERCEL_ENV=production` renders the unavailable state (200, no Subscribe
+button), `VERCEL_ENV=preview` still renders the working checkout form.
+
+### Deployments never promoted themselves
+
+Vercel's production branch was set to `claude/liberia-property-
+marketplace-6y08ar`, a branch 91 commits stale. Every merge to `main`
+built as a preview, the project's `live` flag was false, and the preview
+alias had to be re-pointed by hand — it had silently fallen four merges
+behind, which is why the discovery-first homepage (#39) was not visible
+on the live URL.
+
+Production branch is now `main` and auto-assign of production domains is
+on. Verified end to end: merging #44 built with `target: "production"`
+and took `domilink-preview.vercel.app` with no manual step.
+
+### The positive path, tested for the first time
+
+The paywall had only ever been tested in the negative. Ten checks
+against the production database, driven through the real webhook
+handler: conversation without a pass blocked (42501); confirmed webhook
+200; subscription `active` with a 30-day expiry; conversation then
+allowed; replayed webhook idempotent (still exactly one subscription);
+$1 paid for a $5 pass rejected and left `pending_payment`; unsigned
+webhook 401. All test data deleted and its removal confirmed; the six
+published listings untouched.
+
+### Found, not fixed — needs a decision
+
+- **Account deletion is broken for anyone who has ever paid.** The FK
+  chain `payment_webhook_events → payment_transactions → subscriptions →
+  auth.users` has no cascade, so `auth.admin.deleteUser` fails with
+  "Database error deleting user". Options: cascade (loses the payment
+  audit trail) or `on delete set null` plus anonymisation (keeps the
+  ledger, which is usually what financial-record retention expects).
+- **`/checkout/mock` outside development**, as above.
+
+### Still blocked on credentials or content
+
+- **Photos.** `property_images` has zero rows; every card reads "No
+  photo yet" on an image-led marketplace.
+- **A real payment provider.** `PAYMENTS_PROVIDER` is `mock` for both
+  production and preview, so nobody can pay. The MTN MoMo provider is
+  complete; it needs a subscription key, API user and API key, plus the
+  two values `docs/PAYMENTS.md` flags as unresolved
+  (`MTN_MOMO_TARGET_ENVIRONMENT` for Liberia, and the settlement
+  currency, almost certainly LRD).
+- **Rental HunterZ areas.** Deployed and closed; needs real
+  neighbourhoods and seat caps.
+- **Mobile on a real device.** Every mobile check in this session ran
+  through Expo's web target, which shares NativeWind's compilation but
+  not its native runtime.
