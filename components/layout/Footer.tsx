@@ -49,7 +49,10 @@ export function Footer() {
             <ul className="mt-3 flex flex-col gap-2">
               {col.links.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="text-sm text-charcoal-500 hover:text-accent-text">
+                  <Link
+                    href={link.href}
+                    className="focus-ring rounded-[var(--radius-sm)] text-sm text-charcoal-500 transition-colors duration-[var(--motion-fast)] ease-standard hover:text-accent-text"
+                  >
                     {link.label}
                   </Link>
                 </li>

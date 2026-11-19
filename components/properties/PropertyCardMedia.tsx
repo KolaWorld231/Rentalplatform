@@ -25,6 +25,35 @@ export function PropertyCardMedia({
   const [activeIndex, setActiveIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /**
+   * Per-image decode state, and the reason it is three-valued rather
+   * than a boolean.
+   *
+   * Absent means "nothing has told us anything", which is exactly the
+   * server-rendered case: the image renders visible. Server markup must
+   * never carry an `opacity-0` that only client JavaScript can clear --
+   * this component draws the cover photo of every listing in the app,
+   * so with JS slow, blocked or failed the whole marketplace would be
+   * empty boxes. That bug has been shipped on this page before.
+   *
+   * The ref callback runs on the client only, never during SSR, so it
+   * doubles as the hydration signal and no separate flag (or effect) is
+   * needed. It also catches the cached case: an image can finish
+   * decoding before React attaches `onLoad`, which would otherwise
+   * leave it faded out forever on a repeat visit.
+   */
+  const [status, setStatus] = useState<Record<string, "loading" | "loaded">>({});
+
+  function attach(node: HTMLImageElement | null, path: string) {
+    if (!node) return;
+    const next = node.complete ? "loaded" : "loading";
+    setStatus((prev) => (prev[path] === next || prev[path] === "loaded" ? prev : { ...prev, [path]: next }));
+  }
+
+  function markLoaded(path: string) {
+    setStatus((prev) => (prev[path] === "loaded" ? prev : { ...prev, [path]: "loaded" }));
+  }
+
   function startCycling() {
     if (paths.length < 2 || timerRef.current) return;
     timerRef.current = setInterval(() => {
@@ -56,16 +85,26 @@ export function PropertyCardMedia({
       onFocus={startCycling}
       onBlur={stopCycling}
     >
+      {/*
+        A photo that snaps in at full opacity is the most visible jank on
+        a slow connection, which is the normal case here, so each one
+        fades up as it decodes. `loaded` is per path rather than one
+        shared flag because the cycle images arrive at different times
+        and a shared flag would fade a later photo in under the current
+        one.
+      */}
       {paths.map((path, i) => (
         <Image
           key={path}
+          ref={(node) => attach(node, path)}
           src={propertyImageUrl(path)}
           alt={alt}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          onLoad={() => markLoaded(path)}
           className={cn(
             "object-cover transition-opacity duration-[var(--motion-base)] ease-standard motion-reduce:transition-none",
-            i === activeIndex ? "opacity-100" : "opacity-0",
+            i === activeIndex && status[path] !== "loading" ? "opacity-100" : "opacity-0",
           )}
           priority={i === 0}
         />

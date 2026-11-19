@@ -64,10 +64,10 @@ function Chip({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "focus-ring flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors motion-reduce:transition-none",
+        "focus-ring u-press flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-[color,background-color,border-color,transform,box-shadow] duration-[var(--motion-fast)] ease-standard motion-reduce:transition-none",
         active
-          ? "border-brand-600 bg-accent-soft font-medium text-accent-on-soft"
-          : "border-border text-charcoal-700 hover:border-charcoal-400",
+          ? "border-brand-600 bg-accent-soft font-medium text-accent-on-soft shadow-[var(--shadow-subtle)]"
+          : "border-border text-charcoal-700 hover:border-charcoal-400 hover:bg-surface-muted",
       )}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />

@@ -138,7 +138,13 @@ async function SearchResults({
             </Card>
           ) : (
             <>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {/* `stagger` is keyed on the query so a new search replays
+                  the arrival: results changing underneath you should look
+                  like results changing, not a silent text swap. */}
+              <div
+                key={searchQueryString}
+                className="stagger grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              >
                 {properties.map((property, i) => (
                   <PropertyCard
                     key={property.id}

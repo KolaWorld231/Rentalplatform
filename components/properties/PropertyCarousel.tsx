@@ -129,8 +129,11 @@ function ArrowButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "focus-ring flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface-raised text-charcoal-700 transition-shadow hover:shadow-[var(--shadow-subtle)] motion-reduce:transition-none",
-        disabled && "cursor-not-allowed opacity-40 hover:shadow-none",
+        "focus-ring u-press flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface-raised text-charcoal-700 transition-[transform,box-shadow,opacity,border-color] duration-[var(--motion-fast)] ease-standard hover:border-charcoal-400 hover:shadow-[var(--shadow-raised)] motion-reduce:transition-none",
+        // Fading rather than unmounting at the ends: an arrow that
+        // disappears shifts the pair sideways and moves the other arrow
+        // out from under the pointer mid-scroll.
+        disabled && "cursor-not-allowed opacity-40 hover:border-border hover:shadow-none",
       )}
     >
       {children}

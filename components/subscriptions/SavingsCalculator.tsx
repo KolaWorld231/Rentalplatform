@@ -44,8 +44,14 @@ export function SavingsCalculator({
         </div>
       </div>
 
+      {/*
+        Keyed on the figure so each drag of the slider re-stamps the
+        result. This line is the whole point of the control -- the number
+        changing is the argument being made, and a silent text swap
+        under a moving thumb is easy to miss entirely.
+      */}
       {savings > 0 && (
-        <p className="mt-4 text-center text-sm font-medium text-success">
+        <p key={savings} className="animate-stamp-in mt-4 text-center text-sm font-medium text-success">
           You&apos;d save {formatUsd(savings)} by contacting those {propertyCount} owners directly.
         </p>
       )}

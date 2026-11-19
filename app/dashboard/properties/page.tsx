@@ -45,7 +45,7 @@ export default async function OwnerPropertiesPage() {
           </Link>
         </Card>
       ) : (
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="stagger mt-6 flex flex-col gap-3">
           {properties.map((p) => {
             const cover = p.property_images.find((i) => i.is_cover) ?? p.property_images[0];
             const stale = p.listing_status === "published" && isAvailabilityStale(p.last_availability_confirmed_at);

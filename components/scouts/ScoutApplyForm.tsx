@@ -41,7 +41,7 @@ function Textarea({
       />
       {hint && !error && <p className="text-xs text-charcoal-400">{hint}</p>}
       {error && (
-        <p role="alert" className="text-xs font-medium text-error">
+        <p key={error} role="alert" className="animate-shake text-xs font-medium text-error">
           {error}
         </p>
       )}
@@ -72,7 +72,7 @@ function Checkbox({
         {children}
       </label>
       {error && (
-        <p role="alert" className="mt-1 text-xs font-medium text-error">
+        <p key={error} role="alert" className="animate-shake mt-1 text-xs font-medium text-error">
           {error}
         </p>
       )}
@@ -276,7 +276,7 @@ export function ScoutApplyForm({ areas }: { areas: ScoutArea[] }) {
       </Card>
 
       {state.error && (
-        <p role="alert" className="text-sm font-medium text-error">
+        <p key={state.error} role="alert" className="animate-shake text-sm font-medium text-error">
           {state.error}
         </p>
       )}

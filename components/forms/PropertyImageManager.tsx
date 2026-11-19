@@ -171,7 +171,11 @@ export function PropertyImageManager({
         onChange={(e) => e.target.files && handleFiles(e.target.files)}
       />
 
-      {error && <p className="text-sm font-medium text-error">{error}</p>}
+      {error && (
+        <p key={error} className="animate-shake text-sm font-medium text-error">
+          {error}
+        </p>
+      )}
       <p className="text-xs text-charcoal-400">
         JPEG, PNG, or WebP. Up to 8MB each &mdash; large photos are shrunk on this device before
         upload, so they cost less data to send.
