@@ -2,7 +2,7 @@
 
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Popover } from "@/components/ui/Popover";
 import { PROPERTY_CATEGORIES } from "@/types/database";
 import { formatCategory, formatUsd } from "@/lib/utils/format";
@@ -23,16 +23,26 @@ type Segment = "where" | "type" | "budget" | "filters";
  * Every value maps to a key `searchParamsSchema` already parses, so this
  * adds no backend surface -- it exposes filtering that existed.
  */
+/** Collapse once the bar has been scrolled well clear of; expand again
+ *  near the top. The gap between the two is hysteresis -- with a single
+ *  threshold, a scroll that hovers on the boundary flips the bar open
+ *  and shut on every wheel tick. */
+const COLLAPSE_AT = 160;
+const EXPAND_AT = 64;
+
 export function SegmentedSearch({
   counties = [],
   communities = [],
   className,
+  sticky = false,
 }: {
   /** Counties with at least one published listing (real data, not the full enum). */
   counties?: string[];
   /** Communities/cities with published listings, for suggestions. */
   communities?: string[];
   className?: string;
+  /** Stick below the header and shrink to a summary pill once scrolled. */
+  sticky?: boolean;
 }) {
   const router = useRouter();
   const [openSegment, setOpenSegment] = useState<Segment | null>(null);
@@ -45,6 +55,57 @@ export function SegmentedSearch({
   const [maxPrice, setMaxPrice] = useState("");
   const [bedrooms, setBedrooms] = useState("");
   const [furnished, setFurnished] = useState(false);
+
+  /**
+   * Scrolled past the bar, so it should shrink out of the way. Starts
+   * false, which is also what the server renders: the full bar is the
+   * no-JavaScript state, and `position: sticky` needs no script, so a
+   * visitor without JS still gets a search bar that follows them down
+   * the page -- just one that never shrinks.
+   */
+  const [scrolledPast, setScrolledPast] = useState(false);
+  /**
+   * Set when someone opens the collapsed pill. Without it, the next
+   * scroll event would shut the bar again while they were still typing
+   * in it. Cleared once they return to the top, where the bar is
+   * expanded anyway and the override has nothing left to override.
+   */
+  const [manuallyExpanded, setManuallyExpanded] = useState(false);
+  const frame = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!sticky) return;
+
+    function read() {
+      frame.current = null;
+      const y = window.scrollY;
+      setScrolledPast((was) => (was ? y > EXPAND_AT : y > COLLAPSE_AT));
+      if (y <= EXPAND_AT) setManuallyExpanded(false);
+    }
+
+    function onScroll() {
+      // Scroll fires far more often than the screen repaints, and this
+      // handler reads layout. Coalescing to one read per frame keeps a
+      // fast scroll from turning into a queue of forced reflows.
+      if (frame.current === null) frame.current = requestAnimationFrame(read);
+    }
+
+    read();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    };
+  }, [sticky]);
+
+  // An open popover or sheet keeps the bar expanded whatever the scroll
+  // position: collapsing the control a panel is anchored to would tear
+  // the panel off its trigger mid-interaction.
+  const collapsed = sticky && scrolledPast && !manuallyExpanded && !openSegment && !sheetOpen;
+
+  function expandFromPill() {
+    setManuallyExpanded(true);
+  }
 
   function submit() {
     const params = new URLSearchParams();
@@ -207,7 +268,40 @@ export function SegmentedSearch({
   );
 
   return (
-    <>
+    <div
+      className={cn(
+        // `top-16` clears the 64px header, which is itself sticky at
+        // z-40; this sits just under it so the two never fight. The
+        // negative margin plus matching padding lets the blurred
+        // backing run to the edges of the page gutter instead of
+        // leaving listings visible in a strip beside the bar.
+        sticky && "sticky top-16 z-30 -mx-4 px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8",
+        sticky &&
+          scrolledPast &&
+          "bg-surface-base/85 backdrop-blur transition-colors duration-[var(--motion-base)] ease-standard motion-reduce:transition-none",
+      )}
+    >
+      {/*
+        Collapsed: one pill carrying the current search, which expands
+        back on click. Desktop only -- a phone already shows a pill at
+        every scroll position, so there is nothing to collapse there.
+      */}
+      {collapsed && (
+        <button
+          type="button"
+          onClick={expandFromPill}
+          aria-label="Expand search"
+          data-search-pill=""
+          className="focus-ring u-press animate-scale-in mx-auto hidden w-full max-w-xl items-center gap-3 rounded-full bg-surface-raised px-5 py-2.5 text-left shadow-[var(--shadow-raised)] transition-shadow duration-[var(--motion-fast)] hover:shadow-[var(--shadow-floating)] sm:flex"
+        >
+          <Search className="h-4 w-4 shrink-0 text-accent-text" aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-charcoal-700">
+            {activeSummary || "Search properties"}
+          </span>
+          <span className="shrink-0 text-xs text-charcoal-400">Change</span>
+        </button>
+      )}
+
       <form
         role="search"
         onSubmit={(e) => {
@@ -216,6 +310,7 @@ export function SegmentedSearch({
         }}
         className={cn(
           "hidden rounded-full bg-surface-raised p-1.5 shadow-[var(--shadow-clay-raised)] sm:flex sm:items-center",
+          collapsed && "sm:hidden",
           className,
         )}
       >
@@ -366,7 +461,7 @@ export function SegmentedSearch({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
