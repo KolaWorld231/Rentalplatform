@@ -179,7 +179,7 @@ export default async function DashboardOverviewPage() {
             Renter inquiries about your properties will show up here — replying is always free.
           </p>
         ) : (
-          <ul className="mt-3 flex flex-col divide-y divide-border">
+          <ul className="stagger mt-3 flex flex-col divide-y divide-border">
             {inquiries.map((c) => {
               const unread = !c.owner_last_read_at || new Date(c.owner_last_read_at) < new Date(c.updated_at);
               return (

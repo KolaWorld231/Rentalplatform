@@ -40,7 +40,7 @@ export function ScoutPhoneVerify({
       <form action={startFormAction} onSubmit={() => setResetToPhone(false)} className="flex flex-col gap-2">
         <input type="hidden" name="phone" value={phone} />
         {startState.error && (
-          <p role="alert" className="text-sm font-medium text-error">
+          <p key={startState.error} role="alert" className="animate-shake text-sm font-medium text-error">
             {startState.error}
           </p>
         )}
@@ -65,7 +65,7 @@ export function ScoutPhoneVerify({
         error={verifyState.fieldErrors?.code}
       />
       {verifyState.error && (
-        <p role="alert" className="text-sm font-medium text-error">
+        <p key={verifyState.error} role="alert" className="animate-shake text-sm font-medium text-error">
           {verifyState.error}
         </p>
       )}

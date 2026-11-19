@@ -1,11 +1,20 @@
 import { cn } from "@/lib/utils/cn";
 
+/**
+ * A sweep of light rather than a pulse. A pulsing block fades toward
+ * the page background, which at a glance is indistinguishable from a
+ * disabled control; a sweep only ever means "something is coming".
+ *
+ * The sweep is a pseudo-element (`.u-shimmer`, app/globals.css) so the
+ * block keeps a solid token background, and it is clipped to the shape,
+ * so rounded corners stay rounded.
+ */
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       role="status"
       aria-label="Loading"
-      className={cn("animate-pulse rounded-[var(--radius-md)] bg-surface-muted", className)}
+      className={cn("u-shimmer rounded-[var(--radius-md)] bg-surface-muted", className)}
     />
   );
 }

@@ -45,7 +45,7 @@ export function PasskeyLoginButton() {
         Sign in with a passkey
       </Button>
       {error && (
-        <p role="alert" className="text-sm font-medium text-error">
+        <p key={error} role="alert" className="animate-shake text-sm font-medium text-error">
           {error}
         </p>
       )}

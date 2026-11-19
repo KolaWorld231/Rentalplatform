@@ -286,7 +286,7 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
       {similar.length > 0 && (
         <section className="mt-12">
           <h2 className="font-display text-xl font-semibold text-charcoal-700">{similarTitle}</h2>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="stagger mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {similar.map((p) => (
               <PropertyCard key={p.id} property={p} />
             ))}

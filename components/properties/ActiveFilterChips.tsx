@@ -69,22 +69,31 @@ export function ActiveFilterChips({ params }: { params: SearchParamsInput }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {/*
+        Each chip is keyed on its value as well as its key, so narrowing
+        a filter (Monrovia to Sinkor) replays the arrival rather than
+        swapping the label in place -- the chip row is the only thing on
+        a phone that says what the current search actually is.
+      */}
       {chips.map((chip) => (
         <Link
-          key={chip.key}
+          key={`${chip.key}:${chip.label}`}
           href={hrefWithout(chip.key)}
           aria-label={`Remove filter: ${chip.label}`}
-          className="focus-ring group flex items-center gap-1.5 rounded-full border border-border bg-surface-raised py-1.5 pl-3 pr-2 text-xs font-medium text-charcoal-700 transition-colors hover:border-charcoal-400 motion-reduce:transition-none"
+          className="focus-ring u-press group animate-scale-in flex items-center gap-1.5 rounded-full border border-border bg-surface-raised py-1.5 pl-3 pr-2 text-xs font-medium text-charcoal-700 transition-[color,background-color,border-color,transform,box-shadow] duration-[var(--motion-fast)] ease-standard hover:border-charcoal-400 hover:bg-surface-muted motion-reduce:transition-none"
         >
           {chip.label}
-          <X className="h-3.5 w-3.5 text-charcoal-400 group-hover:text-accent-text" aria-hidden="true" />
+          <X
+            className="h-3.5 w-3.5 text-charcoal-400 transition-colors duration-[var(--motion-fast)] group-hover:rotate-90 group-hover:text-accent-text motion-safe:transition-[color,transform] motion-reduce:transition-none"
+            aria-hidden="true"
+          />
         </Link>
       ))}
 
       {chips.length > 1 && (
         <Link
           href="/search"
-          className="focus-ring rounded-[var(--radius-sm)] px-2 py-1.5 text-xs font-medium text-charcoal-500 hover:text-accent-text"
+          className="focus-ring animate-fade-in rounded-[var(--radius-sm)] px-2 py-1.5 text-xs font-medium text-charcoal-500 transition-colors duration-[var(--motion-fast)] hover:text-accent-text"
         >
           Clear all
         </Link>

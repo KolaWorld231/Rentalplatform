@@ -55,7 +55,7 @@ export default async function NotificationsPage() {
           </p>
         </Card>
       ) : (
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="stagger mt-6 flex flex-col gap-2">
           {notifications.map((n) => (
             <div
               key={n.id}

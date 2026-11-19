@@ -572,3 +572,180 @@ dialog[open][data-drawer-side="right"] {
 .animate-hero-drift {
   animation: hero-drift 38s ease-in-out infinite;
 }
+
+/* ===================================================================
+   Motion library
+   -------------------------------------------------------------------
+   Keyframes and utilities built on the duration/easing scale defined at
+   the top of this file. Nothing here invents a new duration: a motion
+   that does not fit the scale is the wrong motion.
+
+   Two rules hold throughout.
+
+   First, anything that starts from invisible or displaced lives inside
+   `@media (prefers-reduced-motion: no-preference)`. The global reduce
+   block already collapses durations, but that still leaves an element
+   at `opacity: 0` for a frame and depends on the animation running at
+   all. Gating the rule itself means the default -- no CSS animation, no
+   JavaScript, reduced motion -- is content that is simply there. Motion
+   is the enhancement, never the thing holding content on screen.
+
+   Second, transforms and opacity only. Animating layout (width, height,
+   top, margin) forces reflow on every frame, which on the low-end
+   Android hardware this product is built for is the difference between
+   a 60fps lift and a visible stutter.
+   =================================================================== */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A sweep of light across a placeholder. Reads as "loading" far better
+   than a pulse, which at a glance looks like a disabled control. */
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* Rejection. Short, small and only twice -- a long or wide shake reads
+   as breakage rather than "look again at this field". */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+/* Confirmation, paired with a checkmark. The scale overshoot is what
+   makes it read as a stamp rather than a fade. */
+@keyframes stamp-in {
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* An indeterminate bar for work with no measurable progress, e.g. a
+   mobile money push waiting on the payer's handset. */
+@keyframes progress-sweep {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(400%); }
+}
+
+/* A single soft ring, used once on arrival to draw the eye to a state
+   change (a new message, a confirmed payment). Not a loop: a permanent
+   pulse is an alarm, and everything cannot be an alarm. */
+@keyframes ring-once {
+  from { box-shadow: 0 0 0 0 var(--accent-soft); }
+  to   { box-shadow: 0 0 0 12px transparent; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-up      { animation: fade-up var(--motion-reveal) var(--ease-entrance) both; }
+  .animate-fade-in      { animation: fade-in var(--motion-base) var(--ease-standard) both; }
+  .animate-scale-in     { animation: scale-in var(--motion-base) var(--ease-entrance) both; }
+  .animate-slide-in-right { animation: slide-in-right var(--motion-base) var(--ease-entrance) both; }
+  .animate-slide-in-left  { animation: slide-in-left var(--motion-base) var(--ease-entrance) both; }
+  .animate-stamp-in     { animation: stamp-in var(--motion-base) var(--ease-entrance) both; }
+  .animate-shake        { animation: shake var(--motion-base) var(--ease-standard); }
+  .animate-ring-once    { animation: ring-once var(--motion-slow) var(--ease-exit); }
+
+  /*
+    Route transition. `app/template.tsx` remounts on every navigation,
+    so this plays once per page without any router wiring or a library.
+    Deliberately short and small: a page transition is a seam, and the
+    longer it runs the more it costs someone who navigates a lot.
+  */
+  .page-enter { animation: fade-up var(--motion-base) var(--ease-entrance) both; }
+
+  /*
+    Stagger for lists and grids. Index-based delays as plain nth-child
+    rules, so a server-rendered grid needs no per-item inline style and
+    no client component. Capped at 12: past that the last card waits
+    long enough to feel broken rather than choreographed, so the rest
+    arrive together.
+  */
+  .stagger > * { animation: fade-up var(--motion-base) var(--ease-entrance) both; }
+  .stagger > *:nth-child(1)  { animation-delay: 0ms; }
+  .stagger > *:nth-child(2)  { animation-delay: 40ms; }
+  .stagger > *:nth-child(3)  { animation-delay: 80ms; }
+  .stagger > *:nth-child(4)  { animation-delay: 120ms; }
+  .stagger > *:nth-child(5)  { animation-delay: 160ms; }
+  .stagger > *:nth-child(6)  { animation-delay: 200ms; }
+  .stagger > *:nth-child(7)  { animation-delay: 240ms; }
+  .stagger > *:nth-child(8)  { animation-delay: 280ms; }
+  .stagger > *:nth-child(9)  { animation-delay: 320ms; }
+  .stagger > *:nth-child(10) { animation-delay: 360ms; }
+  .stagger > *:nth-child(11) { animation-delay: 400ms; }
+  .stagger > *:nth-child(n + 12) { animation-delay: 440ms; }
+}
+
+/*
+  Tactile press. The shared vocabulary for "this control answered me":
+  it sinks slightly and its shadow tightens, like pressing into clay.
+  Paired with the Claymorphism elevation tokens rather than a generic
+  opacity dip, which reads as disabled.
+*/
+.u-press {
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+.u-press:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+
+/* Hover lift for a whole surface: card, tile, row. */
+.u-lift {
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+.u-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-floating);
+}
+
+/*
+  Shimmer placeholder. The sweep is a pseudo-element so the skeleton's
+  own background stays a solid token colour; `overflow: hidden` on the
+  host keeps the sweep inside the shape, including rounded corners.
+*/
+.u-shimmer { position: relative; overflow: hidden; }
+.u-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-surface) 70%, transparent),
+    transparent
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .u-shimmer::after { animation: shimmer 1.6s var(--ease-standard) infinite; }
+}
+
+/*
+  An element that animates on arrival must not also animate when it is
+  merely re-rendered inside a list that reorders. Applying this class
+  opts an element out of the stagger it would otherwise inherit.
+*/
+.stagger > .no-stagger { animation: none; }

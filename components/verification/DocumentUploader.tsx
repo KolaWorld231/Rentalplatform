@@ -95,7 +95,11 @@ export function DocumentUploader({
         className="sr-only"
         onChange={(e) => e.target.files && handleFiles(e.target.files)}
       />
-      {error && <p className="text-xs font-medium text-error">{error}</p>}
+      {error && (
+        <p key={error} className="animate-shake text-xs font-medium text-error">
+          {error}
+        </p>
+      )}
       <p className="flex items-center gap-1 text-xs text-charcoal-400">
         <FileText className="h-3 w-3" />
         {documentCount} document{documentCount === 1 ? "" : "s"} uploaded · JPEG, PNG, or PDF, up to 10MB

@@ -17,7 +17,7 @@ export function MessageThread({
 }) {
   if (messages.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 py-10 text-center">
+      <div className="animate-fade-up flex flex-col items-center gap-2 py-10 text-center">
         <MessageCircle className="h-8 w-8 text-charcoal-400" aria-hidden="true" />
         <p className="text-sm font-medium text-charcoal-700">No messages yet.</p>
         <p className="max-w-xs text-sm text-charcoal-500">
@@ -70,9 +70,17 @@ export function MessageThread({
                   <Avatar name={counterpartName} size="sm" />
                 </div>
               )}
+              {/*
+                A bubble arrives from the side it belongs to, so a
+                message landing over Realtime reads as coming *from*
+                the other person rather than simply appearing. Keyed by
+                id, so React never replays this for a bubble that was
+                already on screen when the list re-renders.
+              */}
               <div
                 className={cn(
                   "max-w-[80%] rounded-[var(--radius-lg)] px-4 py-2.5 text-sm",
+                  isMine ? "animate-slide-in-right" : "animate-slide-in-left",
                   // Own messages were a solid saturated accent fill. Over a
                   // real conversation that makes half the thread a wall of
                   // red -- which both drowns out the places red is meant to

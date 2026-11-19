@@ -54,7 +54,11 @@ export function ContactOwnerForm({
           placeholder="Hi, I'm interested in this property. Is it still available?"
           className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface p-3 text-sm shadow-[var(--shadow-clay-inset)]"
         />
-        {state.error && <p className="text-sm font-medium text-error">{state.error}</p>}
+        {state.error && (
+          <p key={state.error} className="animate-shake text-sm font-medium text-error">
+            {state.error}
+          </p>
+        )}
         <Button
           type="submit"
           variant="clay"

@@ -95,7 +95,7 @@ export function PasskeyManager({ initialPasskeys }: { initialPasskeys: Passkey[]
       )}
 
       {error && (
-        <p role="alert" className="text-sm font-medium text-error">
+        <p key={error} role="alert" className="animate-shake text-sm font-medium text-error">
           {error}
         </p>
       )}

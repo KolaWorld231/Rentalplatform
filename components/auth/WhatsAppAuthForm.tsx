@@ -59,7 +59,7 @@ export function WhatsAppAuthForm({
           error={startState.fieldErrors?.phone}
         />
         {startState.error && (
-          <p role="alert" className="text-sm font-medium text-error">
+          <p key={startState.error} role="alert" className="animate-shake text-sm font-medium text-error">
             {startState.error}
           </p>
         )}
@@ -85,7 +85,7 @@ export function WhatsAppAuthForm({
         error={verifyState.fieldErrors?.code}
       />
       {verifyState.error && (
-        <p role="alert" className="text-sm font-medium text-error">
+        <p key={verifyState.error} role="alert" className="animate-shake text-sm font-medium text-error">
           {verifyState.error}
         </p>
       )}

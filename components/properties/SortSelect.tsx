@@ -28,7 +28,7 @@ export function SortSelect() {
         value={activeSort}
         onChange={(e) => changeSort(e.target.value)}
         aria-label="Sort properties"
-        className="focus-ring h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 text-sm shadow-[var(--shadow-subtle)]"
+        className="focus-ring h-9 cursor-pointer rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 text-sm shadow-[var(--shadow-subtle)] transition-[border-color,box-shadow] duration-[var(--motion-fast)] ease-standard hover:border-charcoal-400 hover:shadow-[var(--shadow-raised)]"
       >
         {SORT_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>

@@ -36,7 +36,9 @@ export function ReportListingButton({ propertyId }: { propertyId: string }) {
 
       <Dialog open={open} onClose={() => setOpen(false)} title="Report this listing">
         {submitted ? (
-          <p className="text-sm text-charcoal-700">
+          // Stamped rather than faded: a report is an act with a
+          // consequence, and the confirmation should feel like one.
+          <p className="animate-stamp-in text-sm text-charcoal-700">
             Thanks — your report has been sent to our moderation team for review.
           </p>
         ) : (
@@ -50,8 +52,11 @@ export function ReportListingButton({ propertyId }: { propertyId: string }) {
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 text-sm font-medium text-charcoal-700">Reason</legend>
               {REASONS.map((r) => (
-                <label key={r.value} className="flex items-center gap-2 text-sm text-charcoal-700">
-                  <input type="radio" name="reason" value={r.value} required className="h-4 w-4" />
+                <label
+                  key={r.value}
+                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] px-1.5 py-1 text-sm text-charcoal-700 transition-colors duration-[var(--motion-fast)] ease-standard hover:bg-surface-muted"
+                >
+                  <input type="radio" name="reason" value={r.value} required className="h-4 w-4 accent-brand-600" />
                   {r.label}
                 </label>
               ))}
@@ -64,7 +69,11 @@ export function ReportListingButton({ propertyId }: { propertyId: string }) {
                 className="focus-ring rounded-[var(--radius-md)] border border-border bg-surface p-3 text-sm shadow-[var(--shadow-clay-inset)]"
               />
             </label>
-            {state.error && <p className="text-sm font-medium text-error">{state.error}</p>}
+            {state.error && (
+              <p key={state.error} className="animate-shake text-sm font-medium text-error">
+                {state.error}
+              </p>
+            )}
             <Button type="submit" loading={pending} className="w-full">
               Submit report
             </Button>
