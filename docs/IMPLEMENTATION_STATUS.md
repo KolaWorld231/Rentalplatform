@@ -3826,9 +3826,23 @@ real webhook with the real secret. Any signed-in renter who started a
 checkout could click through to a genuine 30-day pass.
 
 Closed as a side effect of setting the production branch (below), which
-made `VERCEL_ENV` actually `production`. **Still open as a decision:**
-whether `/checkout/mock` should exist outside development at all, rather
-than relying on an env check one variable away from being wrong.
+made `VERCEL_ENV` actually `production`.
+
+Then closed properly: the route is deleted, and the mock provider is
+refused on *any* deployment rather than only the one labelled
+production — a preview is a public URL served from the production
+database, which is what made this reachable. The provider-selection test
+that asserted "returns the mock provider on a Vercel preview build" was
+asserting the bug; it now asserts the refusal. A payment is simulated
+the way a real provider does it, by POSTing the event to
+`/api/payments/webhook` with the secret header, which exercises
+verification, idempotency and activation instead of bypassing them.
+
+Removing the route also surfaced a latent bug in `startCheckout`: the
+`pending_payment` subscription and `initiated` transaction are created
+before the provider is called, because the provider needs their ids, and
+a provider failure left them behind forever. They are now removed in
+dependency order before the failure is surfaced.
 
 ### The Scout Program had never been deployed
 
@@ -3901,7 +3915,8 @@ published listings untouched.
   "Database error deleting user". Options: cascade (loses the payment
   audit trail) or `on delete set null` plus anonymisation (keeps the
   ledger, which is usually what financial-record retention expects).
-- **`/checkout/mock` outside development**, as above.
+- ~~`/checkout/mock` outside development~~ — done, see above: route
+  deleted, mock refused on any deployment.
 
 ### Still blocked on credentials or content
 

@@ -1,5 +1,5 @@
 import "server-only";
-import type { CheckoutParams, CheckoutResult, PaymentProvider, VerifiedWebhookEvent, WebhookVerificationInput } from "../types";
+import type { CheckoutResult, PaymentProvider, VerifiedWebhookEvent, WebhookVerificationInput } from "../types";
 
 /**
  * Development/test-only payment provider. It simulates a payment flow end
@@ -7,12 +7,19 @@ import type { CheckoutParams, CheckoutResult, PaymentProvider, VerifiedWebhookEv
  * money, so the subscription activation path can be built and tested
  * before a real Liberia-capable provider is integrated.
  *
- * Safety: `getPaymentProvider()` (../index.ts) refuses to construct this
- * provider when NODE_ENV === "production" — a mock payment can never
- * activate a production subscription. The "confirm" step requires the
- * caller to know PAYMENTS_WEBHOOK_SECRET, matching how a real provider's
- * webhook signature check works, so even in development nothing but this
- * app's own checkout page can trigger an activation.
+ * It has no checkout UI. There was one -- /checkout/mock, with a button
+ * that posted a "confirmed" event to the real webhook using the real
+ * secret. `getPaymentProvider()` refused the mock in production, but a
+ * Vercel *preview* is not production and is still a public URL served
+ * from the production database, so on the live site any signed-in renter
+ * could click through to a free 30-day pass. The page is deleted and the
+ * mock is now refused in every deployed environment.
+ *
+ * A payment is simulated the way a real provider does it: POST the event
+ * to /api/payments/webhook with the x-mock-webhook-secret header. That
+ * exercises the verification, idempotency and activation path exactly as
+ * production will, instead of a button that bypasses the provider
+ * entirely.
  */
 export class MockPaymentProvider implements PaymentProvider {
   readonly name = "mock";
@@ -20,12 +27,10 @@ export class MockPaymentProvider implements PaymentProvider {
   // The mock settles in the ledger currency, so its amounts are checkable.
   readonly reportsSettlementAmount = true;
 
-  async createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
-    const url = new URL("/checkout/mock", params.returnUrl);
-    url.searchParams.set("txn", params.transactionId);
-    url.searchParams.set("ref", params.internalReference);
-    url.searchParams.set("amount", params.amountUsd.toFixed(2));
-    return { kind: "redirect", redirectUrl: url.toString() };
+  async createCheckout(): Promise<CheckoutResult> {
+    throw new Error(
+      "The mock provider has no checkout page. Simulate a payment by POSTing the event to /api/payments/webhook with the x-mock-webhook-secret header — see lib/payments/providers/mock.ts.",
+    );
   }
 
   async verifyWebhook(input: WebhookVerificationInput): Promise<VerifiedWebhookEvent | null> {
