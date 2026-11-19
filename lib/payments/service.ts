@@ -131,13 +131,18 @@ export async function processVerifiedPaymentEvent(
       return { status: "error", error: "activation failed" };
     }
 
-    await notifyUser({
-      userId: transaction.user_id,
-      type: "subscription_activated",
-      title: "Your Direct Access Pass is active",
-      body: "You can now message property owners for the next 30 days.",
-      link: "/pricing",
-    });
+    // A provider can confirm a payment after the account was deleted, in
+    // which case the ledger row has no owner left to notify. Record the
+    // payment, skip the notification, never fail the webhook over it.
+    if (transaction.user_id) {
+      await notifyUser({
+        userId: transaction.user_id,
+        type: "subscription_activated",
+        title: "Your Direct Access Pass is active",
+        body: "You can now message property owners for the next 30 days.",
+        link: "/pricing",
+      });
+    }
     return { status: "confirmed" };
   }
 
@@ -155,7 +160,7 @@ export async function processVerifiedPaymentEvent(
     .eq("provider", providerName)
     .eq("event_id", event.eventId);
 
-  if (event.status === "failed") {
+  if (event.status === "failed" && transaction.user_id) {
     await notifyUser({
       userId: transaction.user_id,
       type: "payment_failed",
