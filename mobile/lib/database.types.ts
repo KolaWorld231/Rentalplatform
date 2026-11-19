@@ -140,7 +140,10 @@ export type SubscriptionStatus =
 
 export type Subscription = {
   id: string;
-  user_id: string;
+  /** Null once the account has been deleted: the ledger row is kept and
+   *  detached from the person (20261119000200). Hand-mirrored from
+   *  types/database.ts. */
+  user_id: string | null;
   plan_id: string;
   status: SubscriptionStatus;
   activated_at: string | null;

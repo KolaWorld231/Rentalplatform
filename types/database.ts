@@ -207,7 +207,10 @@ export type SubscriptionPlan = {
 
 export type Subscription = {
   id: string;
-  user_id: string;
+  /** Null once the account has been deleted: the ledger row is kept and
+   *  detached from the person (20261119000200). RLS is `user_id =
+   *  auth.uid()`, so an orphaned row is invisible to every client. */
+  user_id: string | null;
   plan_id: string;
   status: SubscriptionStatus;
   activated_at: string | null;
@@ -219,7 +222,8 @@ export type Subscription = {
 
 export type PaymentTransaction = {
   id: string;
-  user_id: string;
+  /** Null once the account has been deleted -- see Subscription.user_id. */
+  user_id: string | null;
   subscription_id: string | null;
   provider: string;
   provider_transaction_id: string | null;
