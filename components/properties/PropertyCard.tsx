@@ -3,21 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { formatCategory, formatRelativeDate, formatRentalFrequency, formatUsd, isRecentlyPublished } from "@/lib/utils/format";
 import type { PropertyWithCover } from "@/services/properties";
+import { AvailabilityMarker } from "./AvailabilityMarker";
 import { FavouriteButton } from "./FavouriteButton";
 import { PropertyCardMedia } from "./PropertyCardMedia";
-
-/**
- * `available` is deliberately absent. It is the default state of a live
- * listing, so badging it put an identical chip on essentially every card
- * -- noise that crowded out the signals that do carry information. A
- * badge here now marks an exception to the norm; availability is still
- * stated in full on the detail page.
- */
-const AVAILABILITY_LABEL: Record<string, { label: string; variant: "warning" | "error" }> = {
-  pending_rental: { label: "Pending", variant: "warning" },
-  rented: { label: "Rented", variant: "error" },
-  temporarily_unavailable: { label: "Unavailable", variant: "warning" },
-};
 
 const NEW_LISTING_WINDOW_MS = 72 * 60 * 60 * 1000;
 
@@ -40,7 +28,6 @@ export function PropertyCard({
   const orderedPaths = cover
     ? [cover, ...property.property_images.filter((img) => img.id !== cover.id)].map((img) => img.storage_path)
     : property.property_images.map((img) => img.storage_path);
-  const availability = AVAILABILITY_LABEL[property.availability_status];
   const isNew = isRecentlyPublished(property.published_at, NEW_LISTING_WINDOW_MS);
   const href = `/properties/${property.slug}${searchQuery ? `?${searchQuery}` : ""}`;
 
@@ -55,17 +42,26 @@ export function PropertyCard({
           not an alert, and on the image it competed with the two things
           a renter actually scans for.
         */}
-        {(isNew || availability) && (
+        {(isNew || property.is_showcase) && (
           <div className="absolute left-3 top-3 flex flex-wrap gap-2 pr-14">
+            {/*
+              Sits on the photo, first, and is the one badge that
+              overrides the "exception states only" rule for this
+              corner. A placeholder listing carries a stock photograph,
+              and a stock photograph of a building reads as a photograph
+              of *this* building unless something on the image says
+              otherwise. Disclosure on the owner's profile does not
+              reach someone scanning a grid.
+            */}
+            {property.is_showcase && (
+              <Badge variant="neutral" className="bg-surface-overlay/90">
+                Showcase listing
+              </Badge>
+            )}
             {isNew && (
               <Badge variant="clay" className="gap-1">
                 <Sparkles className="h-3 w-3" aria-hidden="true" />
                 New
-              </Badge>
-            )}
-            {availability && (
-              <Badge variant={availability.variant} className="bg-surface-overlay/90">
-                {availability.label}
               </Badge>
             )}
           </div>
@@ -118,6 +114,10 @@ export function PropertyCard({
         </p>
 
         <p className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-charcoal-500">
+          <AvailabilityMarker
+            status={property.availability_status}
+            vacantFrom={property.move_in_date}
+          />
           <span>{formatCategory(property.category)}</span>
           {property.bedrooms !== null && (
             <span className="flex items-center gap-1">

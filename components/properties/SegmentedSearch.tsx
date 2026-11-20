@@ -30,11 +30,27 @@ type Segment = "where" | "type" | "budget" | "filters";
 const COLLAPSE_AT = 160;
 const EXPAND_AT = 64;
 
+/** The filters this bar can express, as a results page already holds
+ *  them. Deliberately a subset of SearchParamsInput: `sort` and `page`
+ *  are not search terms, and carrying them here would imply this
+ *  control owns them. */
+export interface SegmentedSearchInitial {
+  county?: string;
+  city?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  bedrooms?: number;
+  furnished?: boolean;
+}
+
 export function SegmentedSearch({
   counties = [],
   communities = [],
   className,
   sticky = false,
+  initial,
+  query,
 }: {
   /** Counties with at least one published listing (real data, not the full enum). */
   counties?: string[];
@@ -43,18 +59,34 @@ export function SegmentedSearch({
   className?: string;
   /** Stick below the header and shrink to a summary pill once scrolled. */
   sticky?: boolean;
+  /**
+   * The search currently being displayed. On a results page the bar
+   * showed its own empty defaults -- "Anywhere in Liberia" beside a page
+   * of results filtered to one community -- and collapsed to a pill
+   * reading "Search properties" while filters were plainly applied. A
+   * control that denies what the page is doing is worse than no control.
+   */
+  initial?: SegmentedSearchInitial;
+  /**
+   * The free-text query, which this bar cannot edit but must not
+   * destroy. `submit()` rebuilds the URL from scratch, so without this a
+   * visitor on `?q=beach` lost their query the moment they touched any
+   * filter.
+   */
+  query?: string;
 }) {
   const router = useRouter();
   const [openSegment, setOpenSegment] = useState<Segment | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const [county, setCounty] = useState("");
-  const [place, setPlace] = useState("");
-  const [category, setCategory] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [bedrooms, setBedrooms] = useState("");
-  const [furnished, setFurnished] = useState(false);
+  const num = (v: number | undefined) => (v === undefined ? "" : String(v));
+  const [county, setCounty] = useState(initial?.county ?? "");
+  const [place, setPlace] = useState(initial?.city ?? "");
+  const [category, setCategory] = useState(initial?.category ?? "");
+  const [minPrice, setMinPrice] = useState(num(initial?.minPrice));
+  const [maxPrice, setMaxPrice] = useState(num(initial?.maxPrice));
+  const [bedrooms, setBedrooms] = useState(num(initial?.bedrooms));
+  const [furnished, setFurnished] = useState(initial?.furnished ?? false);
 
   /**
    * Scrolled past the bar, so it should shrink out of the way. Starts
@@ -109,6 +141,10 @@ export function SegmentedSearch({
 
   function submit() {
     const params = new URLSearchParams();
+    // Carried rather than rebuilt: this bar has no text field, so
+    // dropping it would delete a search the visitor can still see in the
+    // results heading.
+    if (query?.trim()) params.set("q", query.trim());
     if (place.trim()) params.set("city", place.trim());
     if (county) params.set("county", county);
     if (category) params.set("category", category);
@@ -145,9 +181,12 @@ export function SegmentedSearch({
   const filtersLabel = extraCount > 0 ? `${extraCount} filter${extraCount > 1 ? "s" : ""}` : "More filters";
 
   const activeSummary = [
+    query?.trim() ? `“${query.trim()}”` : "",
     place.trim() || county,
     category ? formatCategory(category) : "",
     minPrice || maxPrice ? budgetLabel : "",
+    bedrooms ? `${bedrooms}+ bed` : "",
+    furnished ? "Furnished" : "",
   ]
     .filter(Boolean)
     .join(" · ");

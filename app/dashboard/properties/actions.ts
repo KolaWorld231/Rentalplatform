@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { propertyFormSchema, type PropertyFormInput } from "@/lib/validation/property";
+import { propertyFormSchema, vacancySchema, type PropertyFormInput } from "@/lib/validation/property";
 import { slugify } from "@/services/properties";
+import { firstFieldErrors } from "@/lib/auth/field-errors";
 import type { ActionState } from "@/lib/auth/actions";
 import type { AvailabilityStatus, ListingStatus } from "@/types/database";
 
@@ -71,7 +72,10 @@ function toRow(input: PropertyFormInput) {
     other_fees_amount: input.otherFeesAmount,
     other_fees_description: input.otherFeesDescription || null,
     lease_duration_months: input.leaseDurationMonths,
-    move_in_date: input.moveInDate || null,
+    // move_in_date is deliberately absent. It is the vacancy date, and
+    // setVacancyAction owns it. Writing it from here would mean saving
+    // any unrelated field -- a typo in the description -- silently
+    // erased the date the owner set on the availability switch.
   };
 }
 
@@ -137,6 +141,64 @@ export async function setAvailabilityAction(propertyId: string, status: Availabi
   await supabase.from("properties").update({ availability_status: status }).eq("id", propertyId);
   revalidatePath("/dashboard/properties");
   revalidatePath(`/dashboard/properties/${propertyId}/edit`);
+}
+
+/**
+ * The owner's vacancy switch, plus the date an occupied property frees
+ * up. One action rather than two, because the status and the date are a
+ * single decision -- setting them separately leaves a window where a
+ * listing says "occupied" with a date that belongs to the previous
+ * tenancy.
+ *
+ * Writes `move_in_date`, which is the same fact under its existing
+ * name: the earliest date a renter can move in. Clearing the switch to
+ * vacant also clears the date, so a property cannot be free now and
+ * free later at the same time.
+ *
+ * Ownership is enforced by RLS (properties_update_owner), which is the
+ * real boundary here -- this runs under the caller's own session, not
+ * the service role, so a property that is not theirs matches no row.
+ */
+export async function setVacancyAction(
+  propertyId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const parsed = vacancySchema.safeParse({
+    vacant: formData.get("vacant") === "on",
+    vacantFrom: formData.get("vacantFrom") ?? "",
+  });
+  if (!parsed.success) {
+    return { fieldErrors: firstFieldErrors(parsed.error) };
+  }
+
+  const { vacant, vacantFrom } = parsed.data;
+  const supabase = await createClient();
+  // `.select()` matters: an update that matches no row -- the usual sign
+  // of RLS refusing it -- comes back with error null and no indication
+  // anything was skipped. Without this the action would report success
+  // while the listing stayed exactly as it was.
+  const { data: updated, error: updateError } = await supabase
+    .from("properties")
+    .update({
+      availability_status: vacant ? "available" : "rented",
+      move_in_date: vacant ? null : vacantFrom || null,
+    })
+    .eq("id", propertyId)
+    .select("id");
+
+  if (updateError) return { error: "Couldn't update availability. Please try again." };
+  if (!updated || updated.length === 0) {
+    return { error: "Couldn't update this listing. Please reload and try again." };
+  }
+
+  revalidatePath("/dashboard/properties");
+  revalidatePath(`/dashboard/properties/${propertyId}/edit`);
+  // No success flag: revalidation re-renders the switch in its new
+  // position, which is the confirmation. ActionState carries failures.
+  return {};
 }
 
 export async function deletePropertyImageAction(propertyId: string, imageId: string, storagePath: string) {

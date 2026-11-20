@@ -221,12 +221,9 @@ export function PropertyForm({
             min={0}
             defaultValue={property?.lease_duration_months ?? ""}
           />
-          <Input
-            label="Earliest move-in date"
-            name="moveInDate"
-            type="date"
-            defaultValue={property?.move_in_date ?? ""}
-          />
+          {/* The move-in date lives on the availability switch above,
+              which owns it together with vacant/occupied. Two inputs for
+              one value is how they end up disagreeing. */}
         </div>
       </section>
       )}

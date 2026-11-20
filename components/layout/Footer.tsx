@@ -6,7 +6,8 @@ const columns = [
     heading: "Renters",
     links: [
       { href: "/search", label: "Browse Properties" },
-      { href: "/pricing", label: "Direct Access Pass" },
+      // Direct Access Pass omitted while it cannot be bought -- see the
+      // note on navLinks in components/layout/Header.tsx.
       { href: "/safety", label: "Safety Guidance" },
     ],
   },

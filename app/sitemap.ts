@@ -4,7 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 const STATIC_ROUTES = [
   "",
   "/search",
-  "/pricing",
+  // /pricing is intentionally not submitted for indexing: the route
+  // still serves the payment flow's return states, but it has nothing
+  // to sell until a provider is configured, and a search result leading
+  // to "Not available yet" is a wasted click. Restore with the nav
+  // entry when payments go live.
   "/how-it-works",
   "/safety",
   "/about",
