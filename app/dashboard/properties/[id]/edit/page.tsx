@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/Card";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { listingCompleteness, type PropertyWithImages } from "@/services/properties";
-import { setAvailabilityAction, setListingStatusAction, updatePropertyAction } from "../../actions";
+import { setListingStatusAction, updatePropertyAction } from "../../actions";
+import { VacancyControl } from "@/components/properties/VacancyControl";
 import { confirmAvailabilityAction } from "@/app/dashboard/verification/actions";
 import { daysSince } from "@/lib/utils/format";
 
@@ -155,25 +156,12 @@ export default async function EditPropertyPage({ params, searchParams }: PagePro
 
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal-400">Availability</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <form action={async () => { "use server"; await setAvailabilityAction(id, "available"); }}>
-                <Button
-                  type="submit"
-                  variant={property.availability_status === "available" ? "primary" : "secondary"}
-                  size="sm"
-                >
-                  Available
-                </Button>
-              </form>
-              <form action={async () => { "use server"; await setAvailabilityAction(id, "rented"); }}>
-                <Button
-                  type="submit"
-                  variant={property.availability_status === "rented" ? "primary" : "secondary"}
-                  size="sm"
-                >
-                  Rented
-                </Button>
-              </form>
+            <div className="mt-2">
+              <VacancyControl
+                propertyId={id}
+                status={property.availability_status}
+                vacantFrom={property.move_in_date}
+              />
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContactOwnerForm, ContactOwnerGuestPrompt } from "@/components/properties/ContactOwnerForm";
 import { FavouriteButton } from "@/components/properties/FavouriteButton";
+import { AvailabilityMarker } from "@/components/properties/AvailabilityMarker";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyGallery } from "@/components/properties/PropertyGallery";
 import { ReportListingButton } from "@/components/properties/ReportListingButton";
@@ -222,9 +223,21 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
                 {formatRentalFrequency(property.rental_frequency)}
               </span>
             </p>
+            {/*
+              Directly under the price, because whether a renter can
+              actually move in decides whether the price matters. The
+              reconfirmation line sits below it as supporting evidence:
+              the state is the claim, the date is how fresh the claim is.
+            */}
+            <AvailabilityMarker
+              status={property.availability_status}
+              vacantFrom={property.move_in_date}
+              size="md"
+              className="mt-2"
+            />
             {property.last_availability_confirmed_at && (
-              <p className="mt-1 text-xs font-medium text-success">
-                Availability reconfirmed {formatRelativeDate(property.last_availability_confirmed_at)}
+              <p className="mt-1 text-xs text-charcoal-500">
+                Reconfirmed by the owner {formatRelativeDate(property.last_availability_confirmed_at)}
               </p>
             )}
 

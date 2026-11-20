@@ -90,3 +90,39 @@ export const reportPropertySchema = z.object({
   ]),
   details: z.string().trim().max(1000).optional().or(z.literal("")),
 });
+
+/**
+ * The owner's vacancy control.
+ *
+ * `vacantFrom` is only meaningful while a property is occupied -- it is
+ * the date it frees up. It is rejected rather than ignored when the
+ * property is marked vacant, because silently dropping a date an owner
+ * deliberately entered is how a listing ends up saying something its
+ * owner did not intend.
+ */
+export const vacancySchema = z
+  .object({
+    vacant: z.boolean(),
+    vacantFrom: z
+      .string()
+      .trim()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a date as YYYY-MM-DD.")
+      .optional()
+      .or(z.literal("")),
+  })
+  .refine((v) => !(v.vacant && v.vacantFrom), {
+    path: ["vacantFrom"],
+    message: "A vacant property does not need a vacant-from date.",
+  })
+  .refine(
+    (v) => {
+      if (!v.vacantFrom) return true;
+      const [y, m, d] = v.vacantFrom.split("-").map(Number);
+      const picked = new Date(y, m - 1, d);
+      const today = new Date();
+      return picked.getTime() >= new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    },
+    { path: ["vacantFrom"], message: "Pick today or a future date." },
+  );
+
+export type VacancyInput = z.infer<typeof vacancySchema>;
