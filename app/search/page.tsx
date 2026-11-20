@@ -94,11 +94,27 @@ async function SearchResults({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <SegmentedSearch counties={counties} communities={communities} />
-      </div>
+      {/*
+        Not wrapped in a spacing div. A sticky element can only travel
+        inside its parent's box, and a wrapper sized to the bar gives it
+        nowhere to go -- it would scroll away while looking, in the
+        markup, exactly as though it should stick. The spacing moves to
+        the section below instead.
 
-      <div className="mb-5 flex flex-col gap-3">
+        `initial` and `query` keep the bar describing the search the
+        page is actually showing: without them it rendered its empty
+        defaults, and collapsed to a pill reading "Search properties"
+        beside a filtered result set.
+      */}
+      <SegmentedSearch
+        counties={counties}
+        communities={communities}
+        sticky
+        initial={params}
+        query={params.q}
+      />
+
+      <div className="mb-5 mt-6 flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-xl font-semibold text-charcoal-700">
             {total === 0
