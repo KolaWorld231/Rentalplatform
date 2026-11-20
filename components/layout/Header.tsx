@@ -11,9 +11,18 @@ import { IntentChoiceDialog } from "@/components/auth/IntentChoiceDialog";
 import { brand } from "@/lib/config/brand";
 import { cn } from "@/lib/utils/cn";
 
+/**
+ * Pricing is deliberately absent. The Direct Access Pass cannot be
+ * bought yet -- no payment provider is configured, so /pricing renders
+ * its "Not available yet" state -- and a link in the main nav sent
+ * every visitor to that dead end.
+ *
+ * The route itself is very much alive: checkout failures, the mobile
+ * money callback and payment notifications all land there. This only
+ * stops advertising it. Restore this entry when payments go live.
+ */
 const navLinks = [
   { href: "/search", label: "Browse Properties" },
-  { href: "/pricing", label: "Pricing" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/safety", label: "Safety" },
 ];

@@ -2,7 +2,6 @@
 
 import {
   BadgeCheck,
-  CreditCard,
   Heart,
   HelpCircle,
   LayoutDashboard,
@@ -18,7 +17,6 @@ import { useState, type ComponentType } from "react";
 import { logoutAction } from "@/lib/auth/actions";
 import { Avatar } from "@/components/ui/Avatar";
 import { Popover } from "@/components/ui/Popover";
-import { subscriptionPlan } from "@/lib/config/brand";
 
 type Item = { href: string; label: string; icon: ComponentType<{ className?: string }> };
 
@@ -48,10 +46,13 @@ export function AccountMenu({
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
+  // The pass is not listed here while it cannot be bought. It stays
+  // reachable for anyone who already has one, or is mid-flow, through
+  // Account -> Direct Access Pass, which shows status, expiry and
+  // payment history. See the note on navLinks in Header.tsx.
   const renterItems: Item[] = [
     { href: "/favourites", label: "Saved properties", icon: Heart },
     { href: "/messages", label: "Messages", icon: MessageCircle },
-    { href: "/pricing", label: subscriptionPlan.name, icon: CreditCard },
   ];
 
   const ownerItems: Item[] = isOwner
